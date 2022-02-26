@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -52,21 +52,20 @@ func httpJob(args JobArgs) error {
 		return err
 	}
 	for i := 0; i < jobConfig.Count; i++ {
-		switch strings.ToLower(jobConfig.Method) {
-		case "get":
-			resp, err := http.Get(jobConfig.Path)
-			if err != nil {
-				log.Printf("error sending get request to [%s]: %v", jobConfig.Path, err)
-				continue
-			}
-			resp.Body.Close() // No need for response
-			if resp.StatusCode >= 400 {
-				log.Printf("bad response from [%s]: status code %v", jobConfig.Path, resp.StatusCode)
-			} else {
-				log.Printf("successful http response")
-			}
-		default:
-			log.Printf("method not implemented - %s", jobConfig.Method)
+		req, err := http.NewRequest(jobConfig.Method, jobConfig.Path, bytes.NewReader(jobConfig.Body))
+		if err != nil {
+			log.Printf("error creating request: %v", err)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Printf("error sending request to [%s]: %v", jobConfig.Path, err)
+			continue
+		}
+		resp.Body.Close() // No need for response
+		if resp.StatusCode >= 400 {
+			log.Printf("bad response from [%s]: status code %v", jobConfig.Path, resp.StatusCode)
+		} else {
+			log.Printf("successful http response")
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
