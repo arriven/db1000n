@@ -1,10 +1,10 @@
 {
   "jobs": [
     {
-      "name": "test",
+      "type": "http",
       "args": {
-        "foo": 1,
-        "bar": 2
+        "method": "GET",
+        "path": "http://localhost:8080"
       }
     }
   ]
