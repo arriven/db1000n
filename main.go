@@ -5,24 +5,72 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
+	"time"
 )
 
+// JobArgs comment for linter
 type JobArgs = json.RawMessage
 
-type job interface {
-	Run(JobArgs)
-}
+type job = func(JobArgs) error
 
+// JobConfig comment for linter
 type JobConfig struct {
-	Name string
+	Type string
 	Args JobArgs
 }
 
+var jobs = map[string]job{
+	"http": httpJob,
+}
+
+// Config comment for linter
 type Config struct {
 	Jobs []JobConfig
+}
+
+func httpJob(args JobArgs) error {
+	type httpJobConfig struct {
+		Path       string
+		Method     string
+		Body       json.RawMessage
+		IntervalMs int `json:"interval_ms,omitempty"`
+		Count      int `json:"count,omitempty"`
+	}
+	// Init defaults
+	jobConfig := httpJobConfig{
+		Count:      1000,
+		IntervalMs: 0,
+	}
+	// Read from json
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < jobConfig.Count; i++ {
+		switch strings.ToLower(jobConfig.Method) {
+		case "get":
+			resp, err := http.Get(jobConfig.Path)
+			if err != nil {
+				log.Printf("error sending get request to [%s]: %v", jobConfig.Path, err)
+				continue
+			}
+			resp.Body.Close() // No need for response
+			if resp.StatusCode >= 400 {
+				log.Printf("bad response from [%s]: status code %v", jobConfig.Path, resp.StatusCode)
+			} else {
+				log.Printf("successful http response")
+			}
+		default:
+			log.Printf("method not implemented - %s", jobConfig.Method)
+		}
+		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+	}
+	return nil
 }
 
 func main() {
@@ -31,10 +79,10 @@ func main() {
 	flag.Parse()
 	var configBytes []byte
 	var err error
-	if configUrl, err := url.ParseRequestURI(configPath); err == nil {
-		resp, err := http.Get(configUrl.String())
+	if configURL, err := url.ParseRequestURI(configPath); err == nil {
+		resp, err := http.Get(configURL.String())
 		if err != nil {
-			fmt.Printf("error getting url at [%s]: %v\n", configUrl.String(), err)
+			fmt.Printf("error sending get request to [%s]: %v\n", configURL.String(), err)
 			return
 		}
 		defer resp.Body.Close()
@@ -60,7 +108,12 @@ func main() {
 		fmt.Printf("error parsing json config: %v\n", err)
 		return
 	}
-	for _, job := range config.Jobs {
-		fmt.Println("read job", job.Name, "with args", job.Args)
+	for _, jobDesc := range config.Jobs {
+		if job, ok := jobs[jobDesc.Type]; ok {
+			go job(jobDesc.Args)
+		} else {
+			log.Printf("no such job - %s", jobDesc.Type)
+		}
 	}
+	fmt.Scanln()
 }
