@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,6 +27,7 @@ type JobConfig struct {
 
 var jobs = map[string]job{
 	"http": httpJob,
+	"tcp":  tcpJob,
 }
 
 // Config comment for linter
@@ -90,17 +92,34 @@ func httpJob(args JobArgs) error {
 func tcpJob(args JobArgs) error {
 	type tcpJobConfig struct {
 		BasicJobConfig
-		Host   int
-		Port   int
-		Header json.RawMessage
-		Body   json.RawMessage //repeated
+		Address string
+		Body    json.RawMessage
 	}
+	log.Println("in job")
 	var jobConfig tcpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
 		return err
 	}
-	// TODO
+	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.Address)
+	if err != nil {
+		return err
+	}
+	for jobConfig.Next() {
+		conn, err := net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			log.Printf("error connecting to [%s]: %v", jobConfig.Address, err)
+			continue
+		}
+
+		_, err = conn.Write(jobConfig.Body)
+		if err != nil {
+			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)
+		} else {
+			log.Printf("sent body to [%s]", jobConfig.Address)
+		}
+		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+	}
 	return nil
 }
 
