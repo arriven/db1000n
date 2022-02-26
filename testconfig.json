@@ -4,7 +4,18 @@
       "type": "http",
       "args": {
         "method": "GET",
-        "path": "http://localhost:8080"
+        "path": "http://localhost:8080",
+        "headers": {
+          "Authorization": "wtf"
+        }
+      }
+    },
+    {
+      "type": "tcp",
+      "args": {
+        "address": "localhost:9090",
+        "header": "test",
+        "body": "more_test"
       }
     }
   ]
