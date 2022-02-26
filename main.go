@@ -209,7 +209,7 @@ func main() {
 		config, err := fetchConfig(configPath)
 		if err != nil {
 			fmt.Printf("error fetching json config: %v\n", err)
-			return
+			continue
 		}
 		if cancel != nil {
 			cancel()
@@ -228,5 +228,6 @@ func main() {
 				log.Printf("no such job - %s", jobDesc.Type)
 			}
 		}
+		time.Sleep(refreshTimeout)
 	}
 }
