@@ -21,8 +21,9 @@ type job = func(JobArgs) error
 
 // JobConfig comment for linter
 type JobConfig struct {
-	Type string
-	Args JobArgs
+	Type  string
+	Count int
+	Args  JobArgs
 }
 
 var jobs = map[string]job{
@@ -195,8 +196,13 @@ func main() {
 		return
 	}
 	for _, jobDesc := range config.Jobs {
+		if jobDesc.Count < 1 {
+			jobDesc.Count = 1
+		}
 		if job, ok := jobs[jobDesc.Type]; ok {
-			go job(jobDesc.Args)
+			for i := 0; i < jobDesc.Count; i++ {
+				go job(jobDesc.Args)
+			}
 		} else {
 			log.Printf("no such job - %s", jobDesc.Type)
 		}
