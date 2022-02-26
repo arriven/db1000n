@@ -200,7 +200,7 @@ func fetchConfig(configPath string) (*Config, error) {
 func main() {
 	var configPath string
 	var refreshTimeout time.Duration
-	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json, "path to a config file, can be web endpoint")
+	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.Parse()
 	var cancel context.CancelFunc
