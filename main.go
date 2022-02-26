@@ -28,6 +28,7 @@ type JobConfig struct {
 var jobs = map[string]job{
 	"http": httpJob,
 	"tcp":  tcpJob,
+	"udp":  udpJob,
 }
 
 // Config comment for linter
@@ -89,13 +90,17 @@ func httpJob(args JobArgs) error {
 	return nil
 }
 
+// RawNetJobConfig comment for linter
+type RawNetJobConfig struct {
+	BasicJobConfig
+	Address string
+	Body    json.RawMessage
+}
+
 func tcpJob(args JobArgs) error {
 	type tcpJobConfig struct {
-		BasicJobConfig
-		Address string
-		Body    json.RawMessage
+		RawNetJobConfig
 	}
-	log.Println("in job")
 	var jobConfig tcpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
@@ -112,6 +117,37 @@ func tcpJob(args JobArgs) error {
 			continue
 		}
 
+		_, err = conn.Write(jobConfig.Body)
+		if err != nil {
+			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)
+		} else {
+			log.Printf("sent body to [%s]", jobConfig.Address)
+		}
+		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+	}
+	return nil
+}
+
+func udpJob(args JobArgs) error {
+	type udpJobConfig struct {
+		RawNetJobConfig
+	}
+	var jobConfig udpJobConfig
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		return err
+	}
+	udpAddr, err := net.ResolveUDPAddr("udp", jobConfig.Address)
+	if err != nil {
+		return err
+	}
+	conn, err := net.DialUDP("udp", nil, udpAddr)
+	if err != nil {
+		log.Printf("error connecting to [%s]: %v", jobConfig.Address, err)
+		return err
+	}
+
+	for jobConfig.Next() {
 		_, err = conn.Write(jobConfig.Body)
 		if err != nil {
 			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)

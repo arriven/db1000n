@@ -17,6 +17,14 @@
         "header": "test",
         "body": "more_test"
       }
+    },
+    {
+      "type": "udp",
+      "args": {
+        "address": "localhost:9191",
+        "header": "test",
+        "body": "more_test"
+      }
     }
   ]
 }
