@@ -33,28 +33,43 @@ type Config struct {
 	Jobs []JobConfig
 }
 
+// BasicJobConfig comment for linter
+type BasicJobConfig struct {
+	IntervalMs int `json:"interval_ms,omitempty"`
+	Count      int `json:"count,omitempty"`
+
+	iter int
+}
+
+// Next comment for linter
+func (c *BasicJobConfig) Next() bool {
+	if c.Count > 0 {
+		defer func() { c.iter++ }()
+		return c.iter < c.Count
+	}
+	return true
+}
+
 func httpJob(args JobArgs) error {
 	type httpJobConfig struct {
-		Path       string
-		Method     string
-		Body       json.RawMessage
-		IntervalMs int `json:"interval_ms,omitempty"`
-		Count      int `json:"count,omitempty"`
+		BasicJobConfig
+		Path    string
+		Method  string
+		Body    json.RawMessage
+		Headers map[string]string
 	}
-	// Init defaults
-	jobConfig := httpJobConfig{
-		Count:      1000,
-		IntervalMs: 0,
-	}
-	// Read from json
+	var jobConfig httpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
 		return err
 	}
-	for i := 0; i < jobConfig.Count; i++ {
+	for jobConfig.Next() {
 		req, err := http.NewRequest(jobConfig.Method, jobConfig.Path, bytes.NewReader(jobConfig.Body))
 		if err != nil {
 			log.Printf("error creating request: %v", err)
+		}
+		for key, value := range jobConfig.Headers {
+			req.Header.Add(key, value)
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -69,6 +84,23 @@ func httpJob(args JobArgs) error {
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
+	return nil
+}
+
+func tcpJob(args JobArgs) error {
+	type tcpJobConfig struct {
+		BasicJobConfig
+		Host   int
+		Port   int
+		Header json.RawMessage
+		Body   json.RawMessage //repeated
+	}
+	var jobConfig tcpJobConfig
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		return err
+	}
+	// TODO
 	return nil
 }
 
