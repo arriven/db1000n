@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 // JobArgs comment for linter
 type JobArgs = json.RawMessage
 
-type job = func(JobArgs) error
+type job = func(context.Context, JobArgs) error
 
 // JobConfig comment for linter
 type JobConfig struct {
@@ -46,7 +47,12 @@ type BasicJobConfig struct {
 }
 
 // Next comment for linter
-func (c *BasicJobConfig) Next() bool {
+func (c *BasicJobConfig) Next(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	default:
+	}
 	if c.Count > 0 {
 		defer func() { c.iter++ }()
 		return c.iter < c.Count
@@ -54,7 +60,7 @@ func (c *BasicJobConfig) Next() bool {
 	return true
 }
 
-func httpJob(args JobArgs) error {
+func httpJob(ctx context.Context, args JobArgs) error {
 	type httpJobConfig struct {
 		BasicJobConfig
 		Path    string
@@ -67,7 +73,7 @@ func httpJob(args JobArgs) error {
 	if err != nil {
 		return err
 	}
-	for jobConfig.Next() {
+	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(jobConfig.Method, jobConfig.Path, bytes.NewReader(jobConfig.Body))
 		if err != nil {
 			log.Printf("error creating request: %v", err)
@@ -98,7 +104,7 @@ type RawNetJobConfig struct {
 	Body    json.RawMessage
 }
 
-func tcpJob(args JobArgs) error {
+func tcpJob(ctx context.Context, args JobArgs) error {
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -111,7 +117,7 @@ func tcpJob(args JobArgs) error {
 	if err != nil {
 		return err
 	}
-	for jobConfig.Next() {
+	for jobConfig.Next(ctx) {
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
 			log.Printf("error connecting to [%s]: %v", jobConfig.Address, err)
@@ -129,7 +135,7 @@ func tcpJob(args JobArgs) error {
 	return nil
 }
 
-func udpJob(args JobArgs) error {
+func udpJob(ctx context.Context, args JobArgs) error {
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -148,7 +154,7 @@ func udpJob(args JobArgs) error {
 		return err
 	}
 
-	for jobConfig.Next() {
+	for jobConfig.Next(ctx) {
 		_, err = conn.Write(jobConfig.Body)
 		if err != nil {
 			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)
@@ -160,52 +166,67 @@ func udpJob(args JobArgs) error {
 	return nil
 }
 
-func main() {
-	var configPath string
-	flag.StringVar(&configPath, "c", "", "path to a config file, can be web endpoint")
-	flag.Parse()
+func fetchConfig(configPath string) (*Config, error) {
 	var configBytes []byte
 	var err error
 	if configURL, err := url.ParseRequestURI(configPath); err == nil {
 		resp, err := http.Get(configURL.String())
 		if err != nil {
-			fmt.Printf("error sending get request to [%s]: %v\n", configURL.String(), err)
-			return
+			return nil, err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			fmt.Println("bad response:", resp.StatusCode)
-			return
+			return nil, err
 		}
 		configBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("error reading response body: %v\n", err)
-			return
+			return nil, err
 		}
 	} else {
 		configBytes, err = os.ReadFile(configPath)
 		if err != nil {
-			fmt.Printf("error reading file at [%s]: %v\n", configPath, err)
-			return
+			return nil, err
 		}
 	}
 	var config Config
 	err = json.Unmarshal(configBytes, &config)
 	if err != nil {
 		fmt.Printf("error parsing json config: %v\n", err)
-		return
+		return nil, err
 	}
-	for _, jobDesc := range config.Jobs {
-		if jobDesc.Count < 1 {
-			jobDesc.Count = 1
+	return &config, nil
+}
+
+func main() {
+	var configPath string
+	var refreshTimeout time.Duration
+	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/Arriven/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
+	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
+	flag.Parse()
+	var cancel context.CancelFunc
+	defer cancel()
+	for {
+		config, err := fetchConfig(configPath)
+		if err != nil {
+			fmt.Printf("error fetching json config: %v\n", err)
+			return
 		}
-		if job, ok := jobs[jobDesc.Type]; ok {
-			for i := 0; i < jobDesc.Count; i++ {
-				go job(jobDesc.Args)
+		if cancel != nil {
+			cancel()
+		}
+		var ctx context.Context
+		ctx, cancel = context.WithCancel(context.Background())
+		for _, jobDesc := range config.Jobs {
+			if jobDesc.Count < 1 {
+				jobDesc.Count = 1
 			}
-		} else {
-			log.Printf("no such job - %s", jobDesc.Type)
+			if job, ok := jobs[jobDesc.Type]; ok {
+				for i := 0; i < jobDesc.Count; i++ {
+					go job(ctx, jobDesc.Args)
+				}
+			} else {
+				log.Printf("no such job - %s", jobDesc.Type)
+			}
 		}
 	}
-	fmt.Scanln()
 }
