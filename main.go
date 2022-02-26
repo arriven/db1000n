@@ -27,7 +27,7 @@ type Config struct {
 
 func main() {
 	var configPath string
-	flag.StringVar(&configPath, "f", "", "path to a config file, can be web endpoint")
+	flag.StringVar(&configPath, "c", "", "path to a config file, can be web endpoint")
 	flag.Parse()
 	var configBytes []byte
 	var err error
@@ -38,7 +38,7 @@ func main() {
 			return
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusAccepted {
+		if resp.StatusCode < 200 || resp.StatusCode > 299 {
 			fmt.Println("bad response:", resp.StatusCode)
 			return
 		}
