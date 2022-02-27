@@ -6,3 +6,5 @@ This is a simple distributed load generation client written in go. It is able to
 
 The software is provided as is under no guarantee.
 I will update both the repo and this readme as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
+
+Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood and slightly patched. I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules. Will figure it out better later (sorry to the owner).
