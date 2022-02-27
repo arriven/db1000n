@@ -253,7 +253,7 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		<-ctx.Done()
 		shouldStop <- true
 	}()
-	l.Debug("sending syn flood with params:", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+	l.Debug("sending syn flood with params: Host %v, Port %v , PayloadLength %v, FloodType %v", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }
 
