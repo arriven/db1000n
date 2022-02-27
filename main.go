@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -74,7 +76,11 @@ func parseByteTemplate(input []byte) []byte {
 
 func parseStringTemplate(input string) string {
 	funcMap := template.FuncMap{
-		"random_uuid": randomUUID,
+		"random_uuid":   randomUUID,
+		"random_int_n":  rand.Intn,
+		"random_int":    rand.Int,
+		"base64_encode": base64.StdEncoding.EncodeToString,
+		"base64_decode": base64.StdEncoding.DecodeString,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
