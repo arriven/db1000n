@@ -120,16 +120,22 @@ func httpJob(ctx context.Context, args JobArgs) error {
 		for key, value := range jobConfig.Headers {
 			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
+
+		startedAt := time.Now().Unix()
+		log.Printf("[DEBUG] %s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
+
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Printf("error sending request %v: %v", req, err)
 			continue
 		}
+		finishedAt := time.Now().Unix()
+		log.Printf("[DEBUG] %s %s duration %d s", jobConfig.Method, jobConfig.Path, finishedAt - startedAt)
 		resp.Body.Close() // No need for response
 		if resp.StatusCode >= 400 {
-			log.Printf("bad response from [%s]: status code %v", req.URL, resp.StatusCode)
+			log.Printf("[DEBUG] %s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
 		} else {
-			log.Printf("successful http response")
+			log.Printf("[DEBUG] %s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -157,6 +163,10 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 		return err
 	}
 	for jobConfig.Next(ctx) {
+
+		startedAt := time.Now().Unix()
+		log.Printf("[DEBUG] %s started at %d", jobConfig.Address, startedAt)
+
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
 			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
@@ -164,10 +174,14 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 		}
 
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+
+		finishedAt := time.Now().Unix()
+		log.Printf("[DEBUG] %s duration %d s", jobConfig.Address, finishedAt - startedAt)
+
 		if err != nil {
-			log.Printf("error sending body to [%v]: %v", tcpAddr, err)
+			log.Printf("[DEBUG] %s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			log.Printf("sent body to [%v]", tcpAddr)
+			log.Printf("[DEBUG] %s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -187,6 +201,8 @@ func udpJob(ctx context.Context, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	startedAt := time.Now().Unix()
+	log.Printf("[DEBUG] %s started at %d", jobConfig.Address, startedAt)
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		log.Printf("error connecting to [%v]: %v", udpAddr, err)
@@ -195,10 +211,14 @@ func udpJob(ctx context.Context, args JobArgs) error {
 
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+
+		finishedAt := time.Now().Unix()
+		log.Printf("[DEBUG] %s duration %d s", jobConfig.Address, finishedAt - startedAt)
+
 		if err != nil {
-			log.Printf("error sending body to [%v]: %v", udpAddr, err)
+			log.Printf("[DEBUG] %s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			log.Printf("sent body to [%v]", udpAddr)
+			log.Printf("[DEBUG] %s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
