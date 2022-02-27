@@ -13,14 +13,30 @@ Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood
 
 # how to install
 
-### first way
+### download binary from releases
 go to releases page and install latest version for your os
 
 
-### second way
+### go install
 
 run command in your terminal 
 ```
 go install github.com/Arriven/db1000n@latest
 ~/go/bin/db1000n
+```
+
+### docker install 
+
+how to install docker?
+
+https://docs.docker.com/get-docker/
+
+make sure you've set all available resources to docker
+
+https://docs.docker.com/desktop/windows/#resources
+https://docs.docker.com/desktop/mac/#resources
+
+run d1000n
+```
+docker run zmitry/d1000n
 ```
