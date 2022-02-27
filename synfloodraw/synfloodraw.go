@@ -109,7 +109,8 @@ func buildIpPacket(srcIpStr, dstIpStr string) *layers.IPv4 {
 
 // buildTcpPacket generates a layers.TCP and returns it with source port and destination port
 func buildTcpPacket(srcPort, dstPort int, floodType string) *layers.TCP {
-	var isSyn, isAck bool
+	var isSyn, isAck, isFin, isRst, isPsh, isUrg, isEce, isCwr, isNs bool
+	var SeqNum uint32 = 1105024978
 	switch floodType {
 	case TypeSyn:
 		isSyn = true
@@ -118,6 +119,17 @@ func buildTcpPacket(srcPort, dstPort int, floodType string) *layers.TCP {
 	case TypeSynAck:
 		isSyn = true
 		isAck = true
+	case TypeRandom:
+		isSyn = rand.Intn(100) < 90
+		isAck = rand.Intn(100) < 90
+		isFin = rand.Intn(100) < 10
+		isRst = rand.Intn(100) < 10
+		isPsh = rand.Intn(100) < 10
+		isUrg = rand.Intn(100) < 20
+		isEce = rand.Intn(100) < 20
+		isCwr = rand.Intn(100) < 10
+		isNs = rand.Intn(100) < 5
+		SeqNum = rand.Uint32()
 	}
 
 	return &layers.TCP{
@@ -127,10 +139,17 @@ func buildTcpPacket(srcPort, dstPort int, floodType string) *layers.TCP {
 		Window: 14600,
 		// Urgent:  0,
 		//Seq:     11050,
-		Seq: 1105024978,
+		Seq: SeqNum,
 		// Ack:     0,
 		SYN: isSyn,
 		ACK: isAck,
+		FIN: isFin,
+		RST: isRst,
+		PSH: isPsh,
+		URG: isUrg,
+		ECE: isEce,
+		CWR: isCwr,
+		NS:  isNs,
 	}
 }
 

