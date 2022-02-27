@@ -20,6 +20,8 @@ import (
 
 	"github.com/Arriven/db1000n/synfloodraw"
 	"github.com/google/uuid"
+
+	"db1000n/logs"
 )
 
 // JobArgs comment for linter
@@ -101,6 +103,8 @@ func parseStringTemplate(input string) string {
 }
 
 func httpJob(ctx context.Context, args JobArgs) error {
+	l := logs.Logs{}
+
 	type httpJobConfig struct {
 		BasicJobConfig
 		Path    string
@@ -116,22 +120,28 @@ func httpJob(ctx context.Context, args JobArgs) error {
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
-			log.Printf("error creating request: %v", err)
+			l.Error("error creating request: %v", err)
 			continue
 		}
 		for key, value := range jobConfig.Headers {
 			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
+
+		startedAt := time.Now().Unix()
+		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
+
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Printf("error sending request %v: %v", req, err)
+			l.Error("error sending request %v: %v", req, err)
 			continue
 		}
+
+		finishedAt := time.Now().Unix()
 		resp.Body.Close() // No need for response
 		if resp.StatusCode >= 400 {
-			log.Printf("bad response from [%s]: status code %v", req.URL, resp.StatusCode)
+			l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
 		} else {
-			log.Printf("successful http response")
+			l.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -146,6 +156,8 @@ type RawNetJobConfig struct {
 }
 
 func tcpJob(ctx context.Context, args JobArgs) error {
+	l := logs.Logs{}
+
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -159,6 +171,10 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 		return err
 	}
 	for jobConfig.Next(ctx) {
+
+		startedAt := time.Now().Unix()
+		l.Debug("%s started at %d", jobConfig.Address, startedAt)
+
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
 			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
@@ -166,10 +182,12 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 		}
 
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+
+		finishedAt := time.Now().Unix()
 		if err != nil {
-			log.Printf("error sending body to [%v]: %v", tcpAddr, err)
+			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			log.Printf("sent body to [%v]", tcpAddr)
+			l.Debug("%s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -177,6 +195,8 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 }
 
 func udpJob(ctx context.Context, args JobArgs) error {
+	l := logs.Logs{}
+
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -189,6 +209,8 @@ func udpJob(ctx context.Context, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	startedAt := time.Now().Unix()
+	l.Debug("%s started at %d", jobConfig.Address, startedAt)
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		log.Printf("error connecting to [%v]: %v", udpAddr, err)
@@ -197,10 +219,12 @@ func udpJob(ctx context.Context, args JobArgs) error {
 
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+
+		finishedAt := time.Now().Unix()
 		if err != nil {
-			log.Printf("error sending body to [%v]: %v", udpAddr, err)
+			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			log.Printf("sent body to [%v]", udpAddr)
+			l.Debug("%s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -262,17 +286,21 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func main() {
+	l := logs.Logs{}
+
 	var configPath string
 	var refreshTimeout time.Duration
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.Parse()
 	var cancel context.CancelFunc
-	defer cancel()
+	defer func() {
+		cancel()
+	}()
 	for {
 		config, err := fetchConfig(configPath)
 		if err != nil {
-			fmt.Printf("error fetching json config: %v\n", err)
+			l.Error("fetching json config: %v\n", err)
 			continue
 		}
 		if cancel != nil {
@@ -289,7 +317,7 @@ func main() {
 					go job(ctx, jobDesc.Args)
 				}
 			} else {
-				log.Printf("no such job - %s", jobDesc.Type)
+				l.Error("no such job - %s", jobDesc.Type)
 			}
 		}
 		time.Sleep(refreshTimeout)
