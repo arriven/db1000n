@@ -18,9 +18,17 @@ type Logger struct {
 	Level Level
 }
 
+var Default = Logger{Level: Info}
+
 func (l Logger) Debug(format string, a ...interface{}) {
 	if l.Level <= Debug {
 		log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
+	}
+}
+
+func (l Logger) Warning(format string, a ...interface{}) {
+	if l.Level <= Warning {
+		log.Printf("[WARN] %s", fmt.Sprintf(format, a...))
 	}
 }
 
