@@ -24,10 +24,14 @@ import (
 	"db1000n/logs"
 )
 
+type App struct {
+	Logger *logs.Logger
+}
+
 // JobArgs comment for linter
 type JobArgs = json.RawMessage
 
-type job = func(context.Context, *logs.Logger, JobArgs) error
+type job = func(App, context.Context, JobArgs) error
 
 // JobConfig comment for linter
 type JobConfig struct {
@@ -37,10 +41,10 @@ type JobConfig struct {
 }
 
 var jobs = map[string]job{
-	"http":      httpJob,
-	"tcp":       tcpJob,
-	"udp":       udpJob,
-	"syn-flood": synFloodJob,
+	"http":      App.httpJob,
+	"tcp":       App.tcpJob,
+	"udp":       App.udpJob,
+	"syn-flood": App.synFloodJob,
 }
 
 // Config comment for linter
@@ -102,7 +106,7 @@ func parseStringTemplate(input string) string {
 	return output.String()
 }
 
-func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+func (a App) httpJob(ctx context.Context, args JobArgs) error {
 	type httpJobConfig struct {
 		BasicJobConfig
 		Path    string
@@ -118,7 +122,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
-			l.Error("error creating request: %v", err)
+			a.Logger.Error("error creating request: %v", err)
 			continue
 		}
 		for key, value := range jobConfig.Headers {
@@ -126,20 +130,20 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		}
 
 		startedAt := time.Now().Unix()
-		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
+		a.Logger.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			l.Error("error sending request %v: %v", req, err)
+			a.Logger.Error("error sending request %v: %v", req, err)
 			continue
 		}
 
 		finishedAt := time.Now().Unix()
 		resp.Body.Close() // No need for response
 		if resp.StatusCode >= 400 {
-			l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
+			a.Logger.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
 		} else {
-			l.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
+			a.Logger.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -153,7 +157,7 @@ type RawNetJobConfig struct {
 	Body    json.RawMessage
 }
 
-func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+func (a App) tcpJob(ctx context.Context, args JobArgs) error {
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -169,7 +173,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	for jobConfig.Next(ctx) {
 
 		startedAt := time.Now().Unix()
-		l.Debug("%s started at %d", jobConfig.Address, startedAt)
+		a.Logger.Debug("%s started at %d", jobConfig.Address, startedAt)
 
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
@@ -181,16 +185,16 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
-			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
+			a.Logger.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			l.Debug("%s started at %d", jobConfig.Address, finishedAt)
+			a.Logger.Debug("%s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 	return nil
 }
 
-func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+func (a App) udpJob(ctx context.Context, args JobArgs) error {
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -204,7 +208,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 	startedAt := time.Now().Unix()
-	l.Debug("%s started at %d", jobConfig.Address, startedAt)
+	a.Logger.Debug("%s started at %d", jobConfig.Address, startedAt)
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		log.Printf("error connecting to [%v]: %v", udpAddr, err)
@@ -216,16 +220,16 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
-			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
+			a.Logger.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
-			l.Debug("%s started at %d", jobConfig.Address, finishedAt)
+			a.Logger.Debug("%s started at %d", jobConfig.Address, finishedAt)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 	return nil
 }
 
-func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+func (a App) synFloodJob(ctx context.Context, args JobArgs) error {
 	type synFloodJobConfig struct {
 		BasicJobConfig
 		Host          string
@@ -288,15 +292,21 @@ func main() {
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Error, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Error")
 	flag.Parse()
-	l := logs.Logger{Level: logLevel}
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
 	}()
+
+	app := App{
+		Logger: &logs.Logger{
+			Level: logLevel,
+		},
+	}
+
 	for {
 		config, err := fetchConfig(configPath)
 		if err != nil {
-			l.Error("fetching json config: %v\n", err)
+			app.Logger.Error("fetching json config: %v\n", err)
 			continue
 		}
 		if cancel != nil {
@@ -310,10 +320,10 @@ func main() {
 			}
 			if job, ok := jobs[jobDesc.Type]; ok {
 				for i := 0; i < jobDesc.Count; i++ {
-					go job(ctx, &l, jobDesc.Args)
+					go job(app, ctx, jobDesc.Args)
 				}
 			} else {
-				l.Error("no such job - %s", jobDesc.Type)
+				app.Logger.Error("no such job - %s", jobDesc.Type)
 			}
 		}
 		time.Sleep(refreshTimeout)
