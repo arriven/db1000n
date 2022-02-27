@@ -27,7 +27,7 @@ import (
 // JobArgs comment for linter
 type JobArgs = json.RawMessage
 
-type job = func(context.Context, JobArgs) error
+type job = func(context.Context, *logs.Logger, JobArgs) error
 
 // JobConfig comment for linter
 type JobConfig struct {
@@ -102,9 +102,7 @@ func parseStringTemplate(input string) string {
 	return output.String()
 }
 
-func httpJob(ctx context.Context, args JobArgs) error {
-	l := logs.Logs{}
-
+func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	type httpJobConfig struct {
 		BasicJobConfig
 		Path    string
@@ -155,9 +153,7 @@ type RawNetJobConfig struct {
 	Body    json.RawMessage
 }
 
-func tcpJob(ctx context.Context, args JobArgs) error {
-	l := logs.Logs{}
-
+func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -194,9 +190,7 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 	return nil
 }
 
-func udpJob(ctx context.Context, args JobArgs) error {
-	l := logs.Logs{}
-
+func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -231,7 +225,7 @@ func udpJob(ctx context.Context, args JobArgs) error {
 	return nil
 }
 
-func synFloodJob(ctx context.Context, args JobArgs) error {
+func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	type synFloodJobConfig struct {
 		BasicJobConfig
 		Host          string
@@ -286,13 +280,15 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func main() {
-	l := logs.Logs{}
 
 	var configPath string
 	var refreshTimeout time.Duration
+	var logLevel logs.Level
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
+	flag.IntVar(&logLevel, "l", logs.Error, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Error")
 	flag.Parse()
+	l := logs.Logger{Level: logLevel}
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
@@ -314,7 +310,7 @@ func main() {
 			}
 			if job, ok := jobs[jobDesc.Type]; ok {
 				for i := 0; i < jobDesc.Count; i++ {
-					go job(ctx, jobDesc.Args)
+					go job(ctx, &l, jobDesc.Args)
 				}
 			} else {
 				l.Error("no such job - %s", jobDesc.Type)
