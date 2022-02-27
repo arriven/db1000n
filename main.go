@@ -288,8 +288,34 @@ func fetchConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func main() {
+func dumpMetrics(l *logs.Logger, name string) {
+	bytesPerSecond := metrics.Default.Read(name)
+	l.Info("The app is generating %v bytes per second", bytesPerSecond)
+	type metricsDump struct {
+		BytesPerSecond int `json:"bytes_per_second"`
+	}
+	dump := &metricsDump{
+		BytesPerSecond: bytesPerSecond,
+	}
+	dumpBytes, err := json.Marshal(dump)
+	if err != nil {
+		l.Warning("failed marshaling metrics: %v", err)
+		return
+	}
+	// TODO: use proper ip
+	url := fmt.Sprintf("https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic?ip=%s", "0.0.0.0")
+	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
+	if err != nil {
+		l.Warning("failed sending metrics: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
+	}
+}
 
+func main() {
 	var configPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
@@ -301,7 +327,7 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
-			l.Info("Generating %v bytes per second", metrics.Default.Read("traffic"))
+			dumpMetrics(&l, "traffic")
 		}
 	}()
 	var cancel context.CancelFunc
