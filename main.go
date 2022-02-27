@@ -17,12 +17,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/synfloodraw"
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
 	"db1000n/logs"
 	"db1000n/metrics"
+	"db1000n/synfloodraw"
 )
 
 // JobArgs comment for linter
