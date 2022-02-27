@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/Arriven/db1000n/synfloodraw v0.0.0-00010101000000-000000000000
+	github.com/corpix/uarand v0.1.1
 	github.com/google/uuid v1.3.0
 )
 
 require (
-	github.com/corpix/uarand v0.1.1 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
