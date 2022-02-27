@@ -42,7 +42,7 @@
         "host": "localhost",
         "port": 80,
         "payload_len": 1000,
-        "flood_type": "syn"
+        "flood_type": "random"
       }
     }
   ]

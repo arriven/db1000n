@@ -6,4 +6,5 @@ const (
 	TypeSyn    = "syn"
 	TypeAck    = "ack"
 	TypeSynAck = "synAck"
+	TypeRandom = "random"
 )
