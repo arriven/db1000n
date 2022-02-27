@@ -21,7 +21,6 @@ import (
 	"github.com/google/uuid"
 
 	"db1000n/logs"
-	"db1000n/metrics"
 )
 
 // JobArgs comment for linter
@@ -102,7 +101,6 @@ func parseStringTemplate(input string) string {
 }
 
 func httpJob(ctx context.Context, args JobArgs) error {
-	m := metrics.Metrics{}
 	l := logs.Logs{}
 
 	type httpJobConfig struct {
@@ -137,8 +135,6 @@ func httpJob(ctx context.Context, args JobArgs) error {
 		}
 
 		finishedAt := time.Now().Unix()
-		m.TrackDuration(jobConfig.Path, finishedAt-startedAt)
-
 		resp.Body.Close() // No need for response
 		if resp.StatusCode >= 400 {
 			l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
@@ -158,7 +154,6 @@ type RawNetJobConfig struct {
 }
 
 func tcpJob(ctx context.Context, args JobArgs) error {
-	m := metrics.Metrics{}
 	l := logs.Logs{}
 
 	type tcpJobConfig struct {
@@ -187,8 +182,6 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
-		m.TrackDuration(jobConfig.Address, finishedAt-startedAt)
-
 		if err != nil {
 			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
@@ -200,7 +193,6 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 }
 
 func udpJob(ctx context.Context, args JobArgs) error {
-	m := metrics.Metrics{}
 	l := logs.Logs{}
 
 	type udpJobConfig struct {
@@ -227,9 +219,6 @@ func udpJob(ctx context.Context, args JobArgs) error {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
-
-		m.TrackDuration(jobConfig.Address, finishedAt-startedAt)
-
 		if err != nil {
 			l.Debug("%s failed at %d with err: %s", jobConfig.Address, finishedAt, err.Error())
 		} else {
@@ -272,10 +261,7 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func main() {
-	m := metrics.Metrics{}
 	l := logs.Logs{}
-
-	instance := randomUUID()
 
 	var configPath string
 	var refreshTimeout time.Duration
@@ -284,11 +270,9 @@ func main() {
 	flag.Parse()
 	var cancel context.CancelFunc
 	defer func() {
-		m.TrackFinish(instance, time.Now().Unix())
 		cancel()
 	}()
 	for {
-		m.TrackStart(instance, time.Now().Unix())
 		config, err := fetchConfig(configPath)
 		if err != nil {
 			l.Error("fetching json config: %v\n", err)
