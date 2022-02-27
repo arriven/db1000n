@@ -25,12 +25,6 @@ import (
 	"db1000n/logs"
 )
 
-// Init environment
-func initEnvironment() {
-	os.Setenv("CONFIG_PATH", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
-	//os.Setenv("CONFIG_PATH", "./config.json")
-}
-
 // JobArgs comment for linter
 type JobArgs = json.RawMessage
 
@@ -291,9 +285,6 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func main() {
-	// Init env variables
-	initEnvironment()
-
 	var configPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
