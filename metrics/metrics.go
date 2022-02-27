@@ -7,7 +7,7 @@ import (
 )
 
 type MetricsStorage struct {
-	trackers map[string]metricTracker
+	trackers map[string]*metricTracker
 }
 
 type metricTracker struct {
@@ -17,8 +17,8 @@ type metricTracker struct {
 var Default MetricsStorage
 
 func init() {
-	Default = MetricsStorage{trackers: make(map[string]metricTracker)}
-	Default.trackers["traffic"] = metricTracker{}
+	Default = MetricsStorage{trackers: make(map[string]*metricTracker)}
+	Default.trackers["traffic"] = &metricTracker{}
 }
 
 func (ms *MetricsStorage) Write(name, jobID string, value int) {

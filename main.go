@@ -298,6 +298,12 @@ func main() {
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
 	flag.Parse()
 	l := logs.Logger{Level: logLevel}
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			l.Info("Generating %v bytes per second", metrics.Default.Read("traffic"))
+		}
+	}()
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
