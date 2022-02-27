@@ -68,6 +68,10 @@ func randomUUID() string {
 	return uuid.New().String()
 }
 
+func parseByteTemplate(input []byte) []byte {
+	return []byte(parseStringTemplate(string(input)))
+}
+
 func parseStringTemplate(input string) string {
 	funcMap := template.FuncMap{
 		"random_uuid": randomUUID,
@@ -102,7 +106,7 @@ func httpJob(ctx context.Context, args JobArgs) error {
 		return err
 	}
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(jobConfig.Body))
+		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
 			log.Printf("error creating request: %v", err)
 			continue
@@ -153,7 +157,7 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 			continue
 		}
 
-		_, err = conn.Write(jobConfig.Body)
+		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
 		if err != nil {
 			log.Printf("error sending body to [%v]: %v", tcpAddr, err)
 		} else {
@@ -184,7 +188,7 @@ func udpJob(ctx context.Context, args JobArgs) error {
 	}
 
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write(jobConfig.Body)
+		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
 		if err != nil {
 			log.Printf("error sending body to [%v]: %v", udpAddr, err)
 		} else {
