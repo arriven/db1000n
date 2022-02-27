@@ -6,13 +6,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // JobArgs comment for linter
@@ -60,6 +64,30 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 	return true
 }
 
+func randomUUID() string {
+	return uuid.New().String()
+}
+
+func parseStringTemplate(input string) string {
+	funcMap := template.FuncMap{
+		"random_uuid": randomUUID,
+	}
+	// TODO: consider adding ability to populate custom data
+	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
+	if err != nil {
+		log.Println(err)
+		return input
+	}
+	var output strings.Builder
+	err = tmpl.Execute(&output, nil)
+	if err != nil {
+		log.Println(err)
+		return input
+	}
+
+	return output.String()
+}
+
 func httpJob(ctx context.Context, args JobArgs) error {
 	type httpJobConfig struct {
 		BasicJobConfig
@@ -74,21 +102,22 @@ func httpJob(ctx context.Context, args JobArgs) error {
 		return err
 	}
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(jobConfig.Method, jobConfig.Path, bytes.NewReader(jobConfig.Body))
+		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(jobConfig.Body))
 		if err != nil {
 			log.Printf("error creating request: %v", err)
+			continue
 		}
 		for key, value := range jobConfig.Headers {
-			req.Header.Add(key, value)
+			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Printf("error sending request to [%s]: %v", jobConfig.Path, err)
+			log.Printf("error sending request %v: %v", req, err)
 			continue
 		}
 		resp.Body.Close() // No need for response
 		if resp.StatusCode >= 400 {
-			log.Printf("bad response from [%s]: status code %v", jobConfig.Path, resp.StatusCode)
+			log.Printf("bad response from [%s]: status code %v", req.URL, resp.StatusCode)
 		} else {
 			log.Printf("successful http response")
 		}
@@ -113,22 +142,22 @@ func tcpJob(ctx context.Context, args JobArgs) error {
 	if err != nil {
 		return err
 	}
-	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.Address)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
 	}
 	for jobConfig.Next(ctx) {
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
-			log.Printf("error connecting to [%s]: %v", jobConfig.Address, err)
+			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			continue
 		}
 
 		_, err = conn.Write(jobConfig.Body)
 		if err != nil {
-			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)
+			log.Printf("error sending body to [%v]: %v", tcpAddr, err)
 		} else {
-			log.Printf("sent body to [%s]", jobConfig.Address)
+			log.Printf("sent body to [%v]", tcpAddr)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -144,22 +173,22 @@ func udpJob(ctx context.Context, args JobArgs) error {
 	if err != nil {
 		return err
 	}
-	udpAddr, err := net.ResolveUDPAddr("udp", jobConfig.Address)
+	udpAddr, err := net.ResolveUDPAddr("udp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
 	}
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
-		log.Printf("error connecting to [%s]: %v", jobConfig.Address, err)
+		log.Printf("error connecting to [%v]: %v", udpAddr, err)
 		return err
 	}
 
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write(jobConfig.Body)
 		if err != nil {
-			log.Printf("error sending body to [%s]: %v", jobConfig.Address, err)
+			log.Printf("error sending body to [%v]: %v", udpAddr, err)
 		} else {
-			log.Printf("sent body to [%s]", jobConfig.Address)
+			log.Printf("sent body to [%v]", udpAddr)
 		}
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}

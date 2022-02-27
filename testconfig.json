@@ -4,7 +4,7 @@
       "type": "http",
       "args": {
         "method": "GET",
-        "path": "http://localhost:8080",
+        "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
         "headers": {
           "Authorization": "wtf"
         }
@@ -24,7 +24,8 @@
       "args": {
         "address": "localhost:9191",
         "header": "test",
-        "body": "more_test"
+        "body": "more_test",
+        "interval_ms": 1000
       }
     }
   ]
