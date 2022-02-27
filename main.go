@@ -341,7 +341,7 @@ func fetchConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func dumpMetrics(l *logs.Logger, name string) {
+func dumpMetrics(l *logs.Logger, name, clientID string) {
 	bytesPerSecond := metrics.Default.Read(name)
 	l.Info("The app is generating %v bytes per second", bytesPerSecond)
 	type metricsDump struct {
@@ -356,7 +356,7 @@ func dumpMetrics(l *logs.Logger, name string) {
 		return
 	}
 	// TODO: use proper ip
-	url := fmt.Sprintf("https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic?ip=%s", "0.0.0.0")
+	url := fmt.Sprintf("https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic?id=%s", clientID)
 	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
 	if err != nil {
 		l.Warning("failed sending metrics: %v", err)
@@ -377,10 +377,11 @@ func main() {
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
 	flag.Parse()
 	l := logs.Logger{Level: logLevel}
+	clientID := uuid.New().String()
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
-			dumpMetrics(&l, "traffic")
+			dumpMetrics(&l, "traffic", clientID)
 		}
 	}()
 	var cancel context.CancelFunc
