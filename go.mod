@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/corpix/uarand v0.1.1 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect

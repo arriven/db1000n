@@ -1,0 +1,15 @@
+{
+  "jobs": [
+    {
+      "type": "http",
+      "args": {
+        "method": "GET",
+        "path": "https://www.sberbank.ru/ru/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
+        "headers": {
+          "Auth": false
+        }
+      }
+    }
+
+  ]
+}
