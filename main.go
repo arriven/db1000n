@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Arriven/db1000n/synfloodraw"
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
 	"db1000n/logs"
@@ -122,6 +123,9 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			l.Debug("error creating request: %v", err)
 			continue
 		}
+
+		// Add random user agent
+		req.Header.Set("user-agent", uarand.GetRandom())
 		for key, value := range jobConfig.Headers {
 			trafficMonitor.Add(len(key))
 			trafficMonitor.Add(len(value))
