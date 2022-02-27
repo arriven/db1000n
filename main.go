@@ -21,13 +21,10 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
-	"db1000n/slowloris"
-
+	"github.com/Arriven/db1000n/logs"
+	"github.com/Arriven/db1000n/metrics"
+	"github.com/Arriven/db1000n/slowloris"
 	"github.com/Arriven/db1000n/synfloodraw"
-
-	"db1000n/logs"
-	"db1000n/metrics"
-	"db1000n/synfloodraw"
 )
 
 // JobArgs comment for linter
