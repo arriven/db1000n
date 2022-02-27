@@ -27,6 +27,7 @@ import (
 
 	"db1000n/logs"
 	"db1000n/metrics"
+	"db1000n/synfloodraw"
 )
 
 // JobArgs comment for linter
