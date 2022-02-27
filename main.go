@@ -26,6 +26,7 @@ import (
 	"github.com/Arriven/db1000n/synfloodraw"
 
 	"db1000n/logs"
+	"db1000n/metrics"
 )
 
 // JobArgs comment for linter
@@ -121,6 +122,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
@@ -131,8 +133,13 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		// Add random user agent
 		req.Header.Set("user-agent", uarand.GetRandom())
 		for key, value := range jobConfig.Headers {
+			trafficMonitor.Add(len(key))
+			trafficMonitor.Add(len(value))
 			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
 		}
+		trafficMonitor.Add(len(jobConfig.Method))
+		trafficMonitor.Add(len(jobConfig.Path))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		startedAt := time.Now().Unix()
 		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
@@ -171,12 +178,12 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	tcpAddr, err := net.ResolveTCPAddr("tcp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
 	}
 	for jobConfig.Next(ctx) {
-
 		startedAt := time.Now().Unix()
 		l.Debug("%s started at %d", jobConfig.Address, startedAt)
 
@@ -187,6 +194,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		}
 
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
@@ -208,6 +216,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	if err != nil {
 		return err
 	}
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	udpAddr, err := net.ResolveUDPAddr("udp", parseStringTemplate(jobConfig.Address))
 	if err != nil {
 		return err
@@ -222,6 +231,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
 		if err != nil {
