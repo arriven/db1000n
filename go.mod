@@ -1,4 +1,4 @@
-module db1000n
+module github.com/Arriven/db1000n
 
 go 1.17
 
