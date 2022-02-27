@@ -15,7 +15,3 @@
 # vendor/
 
 main
-.terraform
-*.hcl
-terraform.tfstate
-.terraform.tfstate.lock.info
