@@ -1,20 +1,37 @@
 package metrics
 
-import (
-	"log"
-)
+import "sync"
 
-type Metrics struct {
+type MetricsStorage struct {
+	trackers map[string]metricTracker
 }
 
-func (m Metrics) TrackDuration(addr string, s int64) {
-	log.Printf("[METRIC] %s duration %d s", addr, s)
+type metricTracker struct {
+	metrics sync.Map
 }
 
-func (m Metrics) TrackStart(instance string, s int64) {
-	log.Printf("[METRIC] %s started at %d", instance, s)
+var Default MetricsStorage
+
+func init() {
+	Default = MetricsStorage{trackers: make(map[string]metricTracker)}
+	Default.trackers["traffic"] = metricTracker{}
 }
 
-func (m Metrics) TrackFinish(instance string, s int64) {
-	log.Printf("[METRIC] %s finished at %d s", instance, s)
+func (ms *MetricsStorage) Write(name, jobID string, value int) {
+	if tracker, ok := ms.trackers[name]; ok {
+		tracker.metrics.Store(jobID, value)
+	}
+}
+
+func (ms *MetricsStorage) Read(name string) int {
+	sum := 0
+	if tracker, ok := ms.trackers[name]; ok {
+		tracker.metrics.Range(func(k, v interface{}) bool {
+			if value, ok := v.(int); ok {
+				sum = sum + value
+			}
+			return true
+		})
+	}
+	return sum
 }
