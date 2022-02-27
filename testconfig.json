@@ -44,6 +44,12 @@
         "payload_len": 1000,
         "flood_type": "syn"
       }
+    },
+    {
+      "type": "slow-loris",
+      "args": {
+        "path": "https://kapital-rus.ru/inc2/common/js/doo/modules/searchSite/u.php"
+      }
     }
   ]
 }
