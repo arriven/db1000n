@@ -1,7 +1,6 @@
 package packetgen
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/google/gopacket"
@@ -12,7 +11,8 @@ import (
 type PacketConfig struct {
 	Ethernet EthernetPacketConfig
 	IP       IPPacketConfig
-	TCP      TCPPacketConfig
+	TCP      *TCPPacketConfig
+	UDP      *UDPPacketConfig
 	Payload  string
 }
 
@@ -21,6 +21,8 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		ipHeader   *ipv4.Header
 		packetConn net.PacketConn
 		rawConn    *ipv4.RawConn
+		udpPacket  *layers.UDP
+		tcpPacket  *layers.TCP
 		err        error
 	)
 	destinationHost, err = resolveHost(destinationHost)
@@ -28,10 +30,17 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		return 0, err
 	}
 
-	tcpPacket := buildTcpPacket(c.TCP)
 	ipPacket := buildIpPacket(c.IP)
-	if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-		return 0, err
+	if c.UDP != nil {
+		udpPacket = buildUdpPacket(*c.UDP)
+		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
+			return 0, err
+		}
+	} else if c.TCP != nil {
+		tcpPacket = buildTcpPacket(*c.TCP)
+		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
+			return 0, err
+		}
 	}
 
 	// Serialize.  Note:  we only serialize the TCP layer, because the
@@ -53,24 +62,34 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	}
 
 	ethernetLayer := buildEthernetPacket(c.Ethernet)
-	tcpPayloadBuf := gopacket.NewSerializeBuffer()
+	payloadBuf := gopacket.NewSerializeBuffer()
 	pyl := gopacket.Payload(c.Payload)
 
-	if err = gopacket.SerializeLayers(tcpPayloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
-		return 0, err
-	}
+	if udpPacket != nil {
+		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, udpPacket, pyl); err != nil {
+			return 0, err
+		}
 
-	// XXX send packet
-	if packetConn, err = net.ListenPacket("ip4:tcp", "0.0.0.0"); err != nil {
-		fmt.Println("wtf")
-		return 0, err
+		// XXX send packet
+		if packetConn, err = net.ListenPacket("ip4:udp", "0.0.0.0"); err != nil {
+			return 0, err
+		}
+	} else if tcpPacket != nil {
+		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
+			return 0, err
+		}
+
+		// XXX send packet
+		if packetConn, err = net.ListenPacket("ip4:tcp", "0.0.0.0"); err != nil {
+			return 0, err
+		}
 	}
 
 	if rawConn, err = ipv4.NewRawConn(packetConn); err != nil {
 		return 0, err
 	}
 
-	if err = rawConn.WriteTo(ipHeader, tcpPayloadBuf.Bytes(), nil); err != nil {
+	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
 		return 0, err
 	}
 	return len(c.Payload), nil
@@ -88,6 +107,18 @@ func buildIpPacket(c IPPacketConfig) *layers.IPv4 {
 		DstIP:    net.ParseIP(c.DstIP).To4(),
 		Version:  4,
 		Protocol: layers.IPProtocolTCP,
+	}
+}
+
+type UDPPacketConfig struct {
+	SrcPort int `json:"src_port,string"`
+	DstPort int `json:"dst_port,string"`
+}
+
+func buildUdpPacket(c UDPPacketConfig) *layers.UDP {
+	return &layers.UDP{
+		SrcPort: layers.UDPPort(c.SrcPort),
+		DstPort: layers.UDPPort(c.DstPort),
 	}
 }
 
