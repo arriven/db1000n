@@ -11,13 +11,13 @@ Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood
 
 
 
-# how to install
+# How to install
 
-### download binary from releases
+## binary install
 go to releases page and install latest version for your os
 
 
-### go install
+## go install
 
 run command in your terminal 
 ```
@@ -25,7 +25,7 @@ go install github.com/Arriven/db1000n@latest
 ~/go/bin/db1000n
 ```
 
-### docker install 
+## docker install 
 
 how to install docker?
 
