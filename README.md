@@ -48,3 +48,9 @@ run install script directly into the shell (useful for install through ssh)
 ```
 curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh | sh
 ```
+
+the command above will detect the os and architecture, dowload the archive, validate it, and extract db1000n executable into the working directory. You can then run it via 
+
+```
+./db1000n
+```
