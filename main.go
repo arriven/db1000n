@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +47,7 @@ var jobs = map[string]job{
 	"udp":        udpJob,
 	"syn-flood":  synFloodJob,
 	"slow-loris": slowLoris,
+	"packetgen":  packetgenJob,
 }
 
 // Config comment for linter
@@ -310,6 +312,47 @@ func slowLoris(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	l.Debug("sending slow loris with params: %v", jobConfig)
 
 	return slowloris.Start(l, jobConfig)
+}
+
+func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	type packetgenJobConfig struct {
+		BasicJobConfig
+		Packet json.RawMessage
+		Host   string
+		Port   string
+	}
+	var jobConfig packetgenJobConfig
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		l.Error("error parsing json: %v", err)
+		return err
+	}
+
+	host := parseStringTemplate(jobConfig.Host)
+	port, err := strconv.Atoi(parseStringTemplate(jobConfig.Port))
+	if err != nil {
+		l.Error("error parsing port: %v", err)
+		return err
+	}
+
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+
+	for jobConfig.Next(ctx) {
+		packetConfigBytes := parseByteTemplate(jobConfig.Packet)
+		var packetConfig packetgen.PacketConfig
+		err := json.Unmarshal(packetConfigBytes, &packetConfig)
+		if err != nil {
+			l.Error("error parsing json: %v", err)
+			return err
+		}
+		len, err := packetgen.SendPacket(packetConfig, host, port)
+		if err != nil {
+			l.Error("error sending packet: %v", err)
+			return err
+		}
+		trafficMonitor.Add(len)
+	}
+	return nil
 }
 
 func fetchConfig(configPath string) (*Config, error) {
