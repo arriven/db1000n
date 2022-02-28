@@ -69,6 +69,10 @@
           "tcp": {
             "src_port": "{{ random_port }}",
             "dst_port": "{{ random_port }}"
+          },
+          "udp": {
+            "src_port": "{{ random_port }}",
+            "dst_port": "{{ random_port }}"
           }
         }
       }
