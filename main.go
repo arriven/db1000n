@@ -338,9 +338,12 @@ func fetchConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func dumpMetrics(l *logs.Logger, name, clientID string) {
+func dumpMetrics(l *logs.Logger, path, name, clientID string) {
+	if path == "" {
+		return
+	}
 	bytesPerSecond := metrics.Default.Read(name)
-	l.Info("The app is generating %v bytes per second", bytesPerSecond)
+	l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
 	type metricsDump struct {
 		BytesPerSecond int `json:"bytes_per_second"`
 	}
@@ -353,7 +356,7 @@ func dumpMetrics(l *logs.Logger, name, clientID string) {
 		return
 	}
 	// TODO: use proper ip
-	url := fmt.Sprintf("https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic?id=%s", clientID)
+	url := fmt.Sprintf("%s?id=%s", path, clientID)
 	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
 	if err != nil {
 		l.Warning("failed sending metrics: %v", err)
@@ -370,10 +373,12 @@ func main() {
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
 	var help bool
+	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
+	flag.StringVar(&metricsPath, "m", "https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic", "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.Parse()
 	if help {
 		flag.CommandLine.Usage()
@@ -384,7 +389,7 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
-			dumpMetrics(&l, "traffic", clientID)
+			dumpMetrics(&l, metricsPath, "traffic", clientID)
 		}
 	}()
 	var cancel context.CancelFunc
