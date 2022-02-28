@@ -18,8 +18,13 @@ jobs:
             goos: windows
     steps:
       - uses: actions/checkout@v2
+      - name: Set APP_VERSION env
+        run: echo APP_VERSION=$(basename ${GITHUB_REF}) >> ${GITHUB_ENV}
+      - name: Set BUILD_TIME env
+        run: echo BUILD_TIME=$(date --iso-8601=seconds) >> ${GITHUB_ENV}
       - uses: wangyoucao577/go-release-action@v1.25
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
+          ldflags: "-X 'main.Version=${{ env.APP_VERSION }}' -X 'main.Time=${{ env.BUILD_TIME }}'"
