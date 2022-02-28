@@ -23,6 +23,7 @@ import (
 
 	"github.com/Arriven/db1000n/logs"
 	"github.com/Arriven/db1000n/metrics"
+	"github.com/Arriven/db1000n/packetgen"
 	"github.com/Arriven/db1000n/slowloris"
 	"github.com/Arriven/db1000n/synfloodraw"
 )
@@ -84,11 +85,15 @@ func parseByteTemplate(input []byte) []byte {
 
 func parseStringTemplate(input string) string {
 	funcMap := template.FuncMap{
-		"random_uuid":   randomUUID,
-		"random_int_n":  rand.Intn,
-		"random_int":    rand.Int,
-		"base64_encode": base64.StdEncoding.EncodeToString,
-		"base64_decode": base64.StdEncoding.DecodeString,
+		"random_uuid":     randomUUID,
+		"random_int_n":    rand.Intn,
+		"random_int":      rand.Int,
+		"random_payload":  packetgen.RandomPayload,
+		"random_ip":       packetgen.RandomIP,
+		"random_port":     packetgen.RandomPort,
+		"random_mac_addr": packetgen.RandomMacAddr,
+		"base64_encode":   base64.StdEncoding.EncodeToString,
+		"base64_decode":   base64.StdEncoding.DecodeString,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
