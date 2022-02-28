@@ -76,7 +76,7 @@ The config is expected to be in json format and has following configuration valu
 
 - `jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
 - `jobs[*]` - `[object]` single job definition as json object
-- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`
+- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`, or `packetgen`
 - `jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
 - `jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
 
@@ -104,6 +104,31 @@ The config is expected to be in json format and has following configuration valu
 - `payload_length` - `[number]` refer to original syn-flood package docs
 - `flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
 
+Warning: `packetgen` requires root privilleges to run
+
+`packetgen` args:
+
+- `host` - `[string]` host to attack, can be either DNS name or IP
+- `port` - `[string]` numerical value of port to attack (string to allow template generation)
+- `payload` - `[string]` payload to include into packets
+- `ethernet` - `[object]` ethernet layer configuration
+- `ethernet.src_mac` - `[string]`
+- `ethernet.dst_mac` - `[string]`
+- `ip` - `[object]` ip layer configuration
+- `ip.src_ip` - `[string]`
+- `ip.dst_ip` - `[string]`
+- `udp` - `[object]` udp layer configuration (disables tcp if present)
+- `udp.src_port` - `[number]`
+- `udp.dst_port` - `[number]`
+- `tcp` - `[object]` tcp layer configuration (excluded if udp is present)
+- `tcp.src_port` - `[number]`
+- `tcp.dst_port` - `[number]`
+- `tcp.seq` - `[number]`
+- `tcp.ack` - `[number]`
+- `tcp.window` - `[number]`
+- `tcp.urgent` - `[number]`
+- `tcp.flags` - `[object]` flags for tcp (every flag has it's respective name)
+
 Warning: `slow-loris` from testconfig.json is not yet finished and may overload the app due to not handling config refreshes
 
 Almost every leaf `[string]` or `[object]` parameter can be templated with go template syntax. I've also added couple helper functions (list will be growing):
@@ -111,6 +136,10 @@ Almost every leaf `[string]` or `[object]` parameter can be templated with go te
 - `random_uuid`
 - `random_int`
 - `random_int_n`
+- `random_ip`
+- `random_payload`
+- `random_mac_addr`
+- `random_port`
 - `base64_encode`
 - `base64_decode`
 
