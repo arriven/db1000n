@@ -1,6 +1,7 @@
 package packetgen
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/google/gopacket"
@@ -12,7 +13,7 @@ type PacketConfig struct {
 	Ethernet EthernetPacketConfig
 	IP       IPPacketConfig
 	TCP      TCPPacketConfig
-	Payload  []byte
+	Payload  string
 }
 
 func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (int, error) {
@@ -22,6 +23,11 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		rawConn    *ipv4.RawConn
 		err        error
 	)
+	destinationHost, err = resolveHost(destinationHost)
+	if err != nil {
+		return 0, err
+	}
+
 	tcpPacket := buildTcpPacket(c.TCP)
 	ipPacket := buildIpPacket(c.IP)
 	if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
@@ -56,6 +62,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 
 	// XXX send packet
 	if packetConn, err = net.ListenPacket("ip4:tcp", "0.0.0.0"); err != nil {
+		fmt.Println("wtf")
 		return 0, err
 	}
 
@@ -97,8 +104,8 @@ type TCPFlagsConfig struct {
 }
 
 type TCPPacketConfig struct {
-	SrcPort int `json:"src_port"`
-	DstPort int `json:"dst_port"`
+	SrcPort int `json:"src_port,string"`
+	DstPort int `json:"dst_port,string"`
 	Seq     uint32
 	Ack     uint32
 	Window  uint16
@@ -128,14 +135,16 @@ func buildTcpPacket(c TCPPacketConfig) *layers.TCP {
 }
 
 type EthernetPacketConfig struct {
-	SrcMAC []byte `json:"src_mac"`
-	DstMAC []byte `json:"dst_mac"`
+	SrcMAC string `json:"src_mac"`
+	DstMAC string `json:"dst_mac"`
 }
 
 // buildEthernetPacket generates an layers.Ethernet and returns it with source MAC address and destination MAC address
 func buildEthernetPacket(c EthernetPacketConfig) *layers.Ethernet {
+	srcMac := net.HardwareAddr(c.SrcMAC)
+	dstMac := net.HardwareAddr(c.DstMAC)
 	return &layers.Ethernet{
-		SrcMAC: net.HardwareAddr{c.SrcMAC[0], c.SrcMAC[1], c.SrcMAC[2], c.SrcMAC[3], c.SrcMAC[4], c.SrcMAC[5]},
-		DstMAC: net.HardwareAddr{c.DstMAC[0], c.DstMAC[1], c.DstMAC[2], c.DstMAC[3], c.DstMAC[4], c.DstMAC[5]},
+		SrcMAC: net.HardwareAddr{srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]},
+		DstMAC: net.HardwareAddr{dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]},
 	}
 }

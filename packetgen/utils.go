@@ -27,10 +27,11 @@ func RandomPort() int {
 	return rand.Intn(maxPort-minPort) + minPort
 }
 
-func RandomMacAddr() []byte {
+func RandomMacAddr() net.HardwareAddr {
 	buf := make([]byte, 6)
 	rand.Read(buf)
-	return buf
+	var addr net.HardwareAddr = buf
+	return net.HardwareAddr(addr.String())
 }
 
 // getIps returns a string slice to spoof ip packets with dummy source ip addresses
