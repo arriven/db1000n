@@ -96,6 +96,7 @@ func parseStringTemplate(input string) string {
 		"random_mac_addr": packetgen.RandomMacAddr,
 		"base64_encode":   base64.StdEncoding.EncodeToString,
 		"base64_decode":   base64.StdEncoding.DecodeString,
+		"json_encode":     json.Marshal,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
