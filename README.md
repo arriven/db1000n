@@ -38,5 +38,5 @@ https://docs.docker.com/desktop/mac/#resources
 
 run d1000n
 ```
-docker run zmitry/d1000n
+docker run ghcr.io/arriven/db1000n:latest
 ```
