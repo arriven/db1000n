@@ -9,23 +9,22 @@ I will update both the repo and this readme as I go during following days (date 
 
 Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood and slightly patched. I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules. Will figure it out better later (sorry to the owner).
 
+## How to install
 
+### binary install
 
-# How to install
-
-## binary install
 go to releases page and install latest version for your os
 
+### go install
 
-## go install
+run command in your terminal
 
-run command in your terminal 
 ```
 go install github.com/Arriven/db1000n@latest
 ~/go/bin/db1000n
 ```
 
-## docker install 
+### docker install
 
 how to install docker?
 
@@ -37,6 +36,15 @@ https://docs.docker.com/desktop/windows/#resources
 https://docs.docker.com/desktop/mac/#resources
 
 run d1000n
+
 ```
 docker run ghcr.io/arriven/db1000n:latest
+```
+
+### shell install
+
+run install script directly into the shell (useful for install through ssh)
+
+```
+curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh | sh
 ```
