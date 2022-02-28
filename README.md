@@ -74,35 +74,35 @@ Usage of /tmp/go-build715614787/b001/exe/db1000n:
 
 The config is expected to be in json format and has following configuration values:
 
-`jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
-`jobs[*]` - `[object]` single job definition as json object
-`jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`
-`jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
-`jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
+- `jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
+- `jobs[*]` - `[object]` single job definition as json object
+- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`
+- `jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
+- `jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
 
 `http` args:
 
-`method` - `[string]` http method to use (passed directly to go `http.NewRequest`)
-`path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
-`body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
-`headers` - `[object]` key-value map of http headers
+- `method` - `[string]` http method to use (passed directly to go `http.NewRequest`)
+- `path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
+- `body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
+- `headers` - `[object]` key-value map of http headers
 
 `tcp` and `udp` shared args:
 
-`address` - `[string]` network host to connect to, can be either `hostname:port` or `ip:port`
-`body` - `[object]` json data to be repeatedly sent over the network
+- `address` - `[string]` network host to connect to, can be either `hostname:port` or `ip:port`
+- `body` - `[object]` json data to be repeatedly sent over the network
 
 `http`, `tcp`, and `udp` shared args:
 
-`interval_ms` - `[number]` interval between requests in milliseconds. Defaults to 0 (Care, in case of udp job it might generate the data faster than your OS/network card can process it)
-`count` - `[number]` limit the amount of requests to send with this job invocation. Defaults to 0 (no limit). Note: if config is refreshed before this limit is reached the job will be restarted and the counter will be reset
+- `interval_ms` - `[number]` interval between requests in milliseconds. Defaults to 0 (Care, in case of udp job it might generate the data faster than your OS/network card can process it)
+- `count` - `[number]` limit the amount of requests to send with this job invocation. Defaults to 0 (no limit). Note: if config is refreshed before this limit is reached the job will be restarted and the counter will be reset
 
 `syn-flood` args:
 
-`host` - `[string]` host to attack, can be either DNS name or IP
-`port` - `[number]` port to attack
-`payload_length` - `[number]` refer to original syn-flood package docs
-`flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
+- `host` - `[string]` host to attack, can be either DNS name or IP
+- `port` - `[number]` port to attack
+- `payload_length` - `[number]` refer to original syn-flood package docs
+- `flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
 
 Warning: `slow-loris` from testconfig.json is not yet finished and may overload the app due to not handling config refreshes
 
@@ -114,4 +114,4 @@ Almost every leaf `[string]` or `[object]` parameter can be templated with go te
 - `base64_encode`
 - `base64_decode`
 
-Please refer to official go documentation for these
+Please refer to official go documentation and code for these for now
