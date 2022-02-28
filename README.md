@@ -19,7 +19,7 @@ go to releases page and install latest version for your os
 
 run command in your terminal
 
-```
+```bash
 go install github.com/Arriven/db1000n@latest
 ~/go/bin/db1000n
 ```
@@ -37,7 +37,7 @@ https://docs.docker.com/desktop/mac/#resources
 
 run d1000n
 
-```
+```bash
 docker run ghcr.io/arriven/db1000n:latest
 ```
 
@@ -45,12 +45,73 @@ docker run ghcr.io/arriven/db1000n:latest
 
 run install script directly into the shell (useful for install through ssh)
 
-```
+```bash
 curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh | sh
 ```
 
-the command above will detect the os and architecture, dowload the archive, validate it, and extract db1000n executable into the working directory. You can then run it via 
+the command above will detect the os and architecture, dowload the archive, validate it, and extract db1000n executable into the working directory. You can then run it via this command
 
-```
+```bash
 ./db1000n
 ```
+
+## Configuration
+
+### Commandline reference
+
+```text
+Usage of /tmp/go-build715614787/b001/exe/db1000n:
+  -c string
+        path to a config file, can be web endpoint (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
+  -h    print help message and exit
+  -l int
+        logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info (default 1)
+  -r duration
+        refresh timeout for updating the config (default 1m0s)
+```
+
+### Config file reference
+
+The config is expected to be in json format and has following configuration values:
+
+`jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
+`jobs[*]` - `[object]` single job definition as json object
+`jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`
+`jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
+`jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
+
+`http` args:
+
+`method` - `[string]` http method to use (passed directly to go `http.NewRequest`)
+`path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
+`body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
+`headers` - `[object]` key-value map of http headers
+
+`tcp` and `udp` shared args:
+
+`address` - `[string]` network host to connect to, can be either `hostname:port` or `ip:port`
+`body` - `[object]` json data to be repeatedly sent over the network
+
+`http`, `tcp`, and `udp` shared args:
+
+`interval_ms` - `[number]` interval between requests in milliseconds. Defaults to 0 (Care, in case of udp job it might generate the data faster than your OS/network card can process it)
+`count` - `[number]` limit the amount of requests to send with this job invocation. Defaults to 0 (no limit). Note: if config is refreshed before this limit is reached the job will be restarted and the counter will be reset
+
+`syn-flood` args:
+
+`host` - `[string]` host to attack, can be either DNS name or IP
+`port` - `[number]` port to attack
+`payload_length` - `[number]` refer to original syn-flood package docs
+`flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
+
+Warning: `slow-loris` from testconfig.json is not yet finished and may overload the app due to not handling config refreshes
+
+Almost every leaf `[string]` or `[object]` parameter can be templated with go template syntax. I've also added couple helper functions (list will be growing):
+
+- `random_uuid`
+- `random_int`
+- `random_int_n`
+- `base64_encode`
+- `base64_decode`
+
+Please refer to official go documentation for these

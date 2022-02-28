@@ -23,8 +23,8 @@ import (
 
 	"github.com/Arriven/db1000n/logs"
 	"github.com/Arriven/db1000n/metrics"
-	"github.com/Arriven/db1000n/synfloodraw"
 	"github.com/Arriven/db1000n/slowloris"
+	"github.com/Arriven/db1000n/synfloodraw"
 )
 
 // JobArgs comment for linter
@@ -369,10 +369,16 @@ func main() {
 	var configPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
+	var help bool
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
-	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info")
+	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
+	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.Parse()
+	if help {
+		flag.CommandLine.Usage()
+		return
+	}
 	l := logs.Logger{Level: logLevel}
 	clientID := uuid.New().String()
 	go func() {
