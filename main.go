@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 
 	"github.com/Arriven/db1000n/logs"
 	"github.com/Arriven/db1000n/metrics"
+	"github.com/Arriven/db1000n/packetgen"
 	"github.com/Arriven/db1000n/slowloris"
 	"github.com/Arriven/db1000n/synfloodraw"
 )
@@ -45,6 +47,7 @@ var jobs = map[string]job{
 	"udp":        udpJob,
 	"syn-flood":  synFloodJob,
 	"slow-loris": slowLoris,
+	"packetgen":  packetgenJob,
 }
 
 // Config comment for linter
@@ -84,11 +87,16 @@ func parseByteTemplate(input []byte) []byte {
 
 func parseStringTemplate(input string) string {
 	funcMap := template.FuncMap{
-		"random_uuid":   randomUUID,
-		"random_int_n":  rand.Intn,
-		"random_int":    rand.Int,
-		"base64_encode": base64.StdEncoding.EncodeToString,
-		"base64_decode": base64.StdEncoding.DecodeString,
+		"random_uuid":     randomUUID,
+		"random_int_n":    rand.Intn,
+		"random_int":      rand.Int,
+		"random_payload":  packetgen.RandomPayload,
+		"random_ip":       packetgen.RandomIP,
+		"random_port":     packetgen.RandomPort,
+		"random_mac_addr": packetgen.RandomMacAddr,
+		"base64_encode":   base64.StdEncoding.EncodeToString,
+		"base64_decode":   base64.StdEncoding.DecodeString,
+		"json_encode":     json.Marshal,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
@@ -305,6 +313,47 @@ func slowLoris(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	l.Debug("sending slow loris with params: %v", jobConfig)
 
 	return slowloris.Start(l, jobConfig)
+}
+
+func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	type packetgenJobConfig struct {
+		BasicJobConfig
+		Packet json.RawMessage
+		Host   string
+		Port   string
+	}
+	var jobConfig packetgenJobConfig
+	err := json.Unmarshal(args, &jobConfig)
+	if err != nil {
+		l.Error("error parsing json: %v", err)
+		return err
+	}
+
+	host := parseStringTemplate(jobConfig.Host)
+	port, err := strconv.Atoi(parseStringTemplate(jobConfig.Port))
+	if err != nil {
+		l.Error("error parsing port: %v", err)
+		return err
+	}
+
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+
+	for jobConfig.Next(ctx) {
+		packetConfigBytes := parseByteTemplate(jobConfig.Packet)
+		var packetConfig packetgen.PacketConfig
+		err := json.Unmarshal(packetConfigBytes, &packetConfig)
+		if err != nil {
+			l.Error("error parsing json: %v", err)
+			return err
+		}
+		len, err := packetgen.SendPacket(packetConfig, host, port)
+		if err != nil {
+			l.Error("error sending packet: %v", err)
+			return err
+		}
+		trafficMonitor.Add(len)
+	}
+	return nil
 }
 
 func fetchConfig(configPath string) (*Config, error) {
