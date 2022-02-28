@@ -76,7 +76,7 @@ The config is expected to be in json format and has following configuration valu
 
 - `jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
 - `jobs[*]` - `[object]` single job definition as json object
-- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`
+- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`, or `packetgen`
 - `jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
 - `jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
 
