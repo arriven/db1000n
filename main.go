@@ -173,14 +173,12 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		l.Error("error parsing json: %v", err)
 		return err
 	}
-	fmt.Println(string(parseByteTemplate(jobConfig.Client)))
 	var clientConfig HTTPClientConfig
 	err = json.Unmarshal(parseByteTemplate(jobConfig.Client), &clientConfig)
 	if err != nil {
 		l.Error("error parsing json: %v", err)
 		return err
 	}
-	fmt.Println(clientConfig.ProxyURLs)
 
 	timeout := time.Second * 90
 	if clientConfig.Timeout != nil {
