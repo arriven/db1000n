@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -118,18 +119,85 @@ func parseStringTemplate(input string) string {
 }
 
 func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	type HTTPClientConfig struct {
+		TLSClientConfig *tls.Config `json:"tls_config,omitempty"`
+		Timeout         *time.Duration
+		MaxIdleConns    *int
+		ProxyURLs       []string `json:"proxy_urls"`
+	}
 	type httpJobConfig struct {
 		BasicJobConfig
 		Path    string
 		Method  string
 		Body    json.RawMessage
 		Headers map[string]string
+		Client  *HTTPClientConfig
 	}
 
 	var jobConfig httpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
 		return err
+	}
+
+	timeout := time.Second * 90
+	maxIdleConns := 1000
+	var client = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			Dial: (&net.Dialer{
+				Timeout:   timeout,
+				KeepAlive: timeout,
+			}).Dial,
+			MaxIdleConns:          maxIdleConns,
+			IdleConnTimeout:       timeout,
+			TLSHandshakeTimeout:   timeout,
+			ExpectContinueTimeout: timeout,
+		},
+		Timeout: timeout,
+	}
+	if jobConfig.Client != nil {
+		if jobConfig.Client.Timeout != nil {
+			timeout = *jobConfig.Client.Timeout
+		}
+
+		if jobConfig.Client.MaxIdleConns != nil {
+			maxIdleConns = *jobConfig.Client.MaxIdleConns
+		}
+
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		if jobConfig.Client.TLSClientConfig != nil {
+			tlsConfig = jobConfig.Client.TLSClientConfig
+		}
+
+		var proxy func(r *http.Request) (*url.URL, error)
+		if len(jobConfig.Client.ProxyURLs) > 0 {
+			// Return random proxy from the list
+			proxy = func(r *http.Request) (*url.URL, error) {
+				proxyID := rand.Intn(len(jobConfig.Client.ProxyURLs))
+				return url.Parse(jobConfig.Client.ProxyURLs[proxyID])
+			}
+		}
+
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+				Dial: (&net.Dialer{
+					Timeout:   timeout,
+					KeepAlive: timeout,
+				}).Dial,
+				MaxIdleConns:          maxIdleConns,
+				IdleConnTimeout:       timeout,
+				TLSHandshakeTimeout:   timeout,
+				ExpectContinueTimeout: timeout,
+				Proxy:                 proxy,
+			},
+			Timeout: timeout,
+		}
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	for jobConfig.Next(ctx) {
@@ -153,7 +221,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		startedAt := time.Now().Unix()
 		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			l.Debug("error sending request %v: %v", req, err)
 			continue
