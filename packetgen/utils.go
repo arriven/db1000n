@@ -34,6 +34,20 @@ func RandomMacAddr() net.HardwareAddr {
 	return net.HardwareAddr(addr.String())
 }
 
+func LocalMacAddres() string {
+	ifas, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+	for _, ifa := range ifas {
+		a := ifa.HardwareAddr.String()
+		if a != "" {
+			return a
+		}
+	}
+	return ""
+}
+
 // GetLocalIP returns the non loopback local IP of the host
 func LocalIP() string {
 	addrs, err := net.InterfaceAddrs()
