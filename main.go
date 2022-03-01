@@ -92,7 +92,7 @@ func getProxylist() (urls []string) {
 }
 
 func getProxylistURL() string {
-	return "https://raw.githubusercontent.com/Arriven/db1000n/get-url-template/proxylist.json"
+	return "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json"
 }
 
 func getURLContent(url string) (string, error) {
