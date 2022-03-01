@@ -199,15 +199,26 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 	var proxy func(r *http.Request) (*url.URL, error)
 	if len(clientConfig.ProxyURLs) > 0 {
+		l.Debug("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
 		var proxyURLs []string
 		err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs)
 		if err == nil {
+			l.Debug("proxyURLs: %v", proxyURLs)
 			// Return random proxy from the list
 			proxy = func(r *http.Request) (*url.URL, error) {
-				proxyID := rand.Intn(len(clientConfig.ProxyURLs))
-				return url.Parse(proxyURLs[proxyID])
+				proxyID := rand.Intn(len(proxyURLs))
+				proxyString := proxyURLs[proxyID]
+				u, err := url.Parse(proxyString)
+				if err != nil {
+					u, err = url.Parse(r.URL.Scheme + proxyString)
+					if err != nil {
+						l.Warning("failed to parse proxy: %v\nsending request directly", err)
+					}
+				}
+				return u, nil
 			}
-
+		} else {
+			l.Warning("failed to parse proxies: %v", err)
 		}
 	}
 
