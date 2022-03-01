@@ -534,11 +534,13 @@ func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 
 func main() {
 	var configPath string
+	var backupConfigPath string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
+	flag.StringVar(&backupConfigPath, "b", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a backup config file in case primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -563,8 +565,12 @@ func main() {
 	for {
 		config, err := fetchConfig(configPath)
 		if err != nil {
-			l.Warning("fetching json config: %v\n", err)
-			continue
+			l.Debug("error fetching main config, retrieving backup ones")
+			config, err = fetchConfig(backupConfigPath)
+			if err != nil {
+				l.Warning("fetching json config: %v\n", err)
+				continue
+			}
 		}
 		if cancel != nil {
 			cancel()
