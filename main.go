@@ -533,7 +533,8 @@ func fetchConfig(configPath string) (*Config, error) {
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 	bytesPerSecond := metrics.Default.Read(name)
 	if bytesPerSecond > 0 {
-		l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
+		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		l.Info("Attack is successful! Russian warship, go fuck yourself!")
 	} else {
 		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
 	}
