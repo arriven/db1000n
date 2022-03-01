@@ -388,11 +388,11 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
+	bytesPerSecond := metrics.Default.Read(name)
+	l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
 	if path == "" {
 		return
 	}
-	bytesPerSecond := metrics.Default.Read(name)
-	l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
 	type metricsDump struct {
 		BytesPerSecond int `json:"bytes_per_second"`
 	}
@@ -427,7 +427,7 @@ func main() {
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
-	flag.StringVar(&metricsPath, "m", "https://us-central1-db1000n-metrics.cloudfunctions.net/addTrafic", "path where to dump usage metrics, can be URL or file, empty to disable")
+	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.Parse()
 	if help {
 		flag.CommandLine.Usage()
