@@ -2,9 +2,7 @@
 
 Developed by Bohdan Ivashko (https://github.com/Arriven)
 
-This repo is inspired by solution provided by [disbalancer](disbalancer.com) team. I became aware of it when they offered to use it against russian infrastructure during russian invasion to Ukraine
-
-This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I'm not aware of internal implementation of original disbalancer but I do know that it uses a lot more sophisticated techniques to balance the load and stuff. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
+This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
 
 The software is provided as is under no guarantee.
 I will update both the repo and this readme as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
@@ -62,12 +60,16 @@ the command above will detect the os and architecture, dowload the archive, vali
 ### Commandline reference
 
 ```text
-Usage of /tmp/go-build715614787/b001/exe/db1000n:
+Usage of /tmp/go-build781992389/b001/exe/main:
+  -b string
+        path to a backup config file in case primary one is unavailable (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
   -c string
         path to a config file, can be web endpoint (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
   -h    print help message and exit
   -l int
-        logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error. Default is Info (default 1)
+        logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error (default 1)
+  -m string
+        path where to dump usage metrics, can be URL or file, empty to disable
   -r duration
         refresh timeout for updating the config (default 1m0s)
 ```
