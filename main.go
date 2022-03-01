@@ -94,9 +94,11 @@ func parseStringTemplate(input string) string {
 		"random_ip":       packetgen.RandomIP,
 		"random_port":     packetgen.RandomPort,
 		"random_mac_addr": packetgen.RandomMacAddr,
+		"local_ip":        packetgen.LocalIP,
 		"base64_encode":   base64.StdEncoding.EncodeToString,
 		"base64_decode":   base64.StdEncoding.DecodeString,
 		"json_encode":     json.Marshal,
+		"json_decode":     json.Unmarshal,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
@@ -340,12 +342,19 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 
 	for jobConfig.Next(ctx) {
 		packetConfigBytes := parseByteTemplate(jobConfig.Packet)
+		l.Debug("[packetgen] parsed packet config template:\n%s", string(packetConfigBytes))
 		var packetConfig packetgen.PacketConfig
 		err := json.Unmarshal(packetConfigBytes, &packetConfig)
 		if err != nil {
 			l.Error("error parsing json: %v", err)
 			return err
 		}
+		packetConfigBytes, err = json.Marshal(packetConfig)
+		if err != nil {
+			l.Error("error marshaling back to json: %v", err)
+			return err
+		}
+		l.Debug("[packetgen] parsed packet config:\n%v", string(packetConfigBytes))
 		len, err := packetgen.SendPacket(packetConfig, host, port)
 		if err != nil {
 			l.Error("error sending packet: %v", err)

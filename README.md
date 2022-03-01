@@ -140,6 +140,7 @@ Almost every leaf `[string]` or `[object]` parameter can be templated with go te
 - `random_payload`
 - `random_mac_addr`
 - `random_port`
+- `local_ip`
 - `base64_encode`
 - `base64_decode`
 

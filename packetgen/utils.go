@@ -34,6 +34,23 @@ func RandomMacAddr() net.HardwareAddr {
 	return net.HardwareAddr(addr.String())
 }
 
+// GetLocalIP returns the non loopback local IP of the host
+func LocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
+}
+
 // getIps returns a string slice to spoof ip packets with dummy source ip addresses
 func getIps() []string {
 	ips := make([]string, 0)
