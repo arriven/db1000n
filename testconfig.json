@@ -63,12 +63,15 @@
             "dst_mac": "{{ random_mac_addr }}"
           },
           "ip": {
-            "src_ip": "{{ random_ip }}",
+            "src_ip": "{{ local_ip }}",
             "dst_ip": "{{ random_ip }}"
           },
           "tcp": {
             "src_port": "{{ random_port }}",
-            "dst_port": "{{ random_port }}"
+            "dst_port": "{{ random_port }}",
+            "flags": {
+              "syn": true
+            }
           },
           "udp": {
             "src_port": "{{ random_port }}",
