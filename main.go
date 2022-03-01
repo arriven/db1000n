@@ -526,31 +526,9 @@ func fetchConfig(configPath string) (*Config, error) {
 
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 	bytesPerSecond := metrics.Default.Read(name)
-	l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
-	if path == "" {
-		return
-	}
-	type metricsDump struct {
-		BytesPerSecond int `json:"bytes_per_second"`
-	}
-	dump := &metricsDump{
-		BytesPerSecond: bytesPerSecond,
-	}
-	dumpBytes, err := json.Marshal(dump)
-	if err != nil {
-		l.Warning("failed marshaling metrics: %v", err)
-		return
-	}
-	// TODO: use proper ip
-	url := fmt.Sprintf("%s?id=%s", path, clientID)
-	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
-	if err != nil {
-		l.Warning("failed sending metrics: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
+	if bytesPerSecond > 0 {
+		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		l.Info("Attack is successful! Russian warship, go fuck yourself!")
 	}
 }
 
