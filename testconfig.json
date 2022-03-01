@@ -35,7 +35,7 @@
       "type": "http",
       "args": {
         "method": "GET",
-        "path": "https://www.sberbank.ru/ru/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
+        "path": "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
         "headers": {}
       }
     },
@@ -51,7 +51,7 @@
     {
       "type": "slow-loris",
       "args": {
-        "path": "https://kapital-rus.ru/inc2/common/js/doo/modules/searchSite/u.php"
+        "path": "https://localhost:9090/inc2/common/js/doo/modules/searchSite/u.php"
       }
     },
     {
