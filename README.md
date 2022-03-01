@@ -86,6 +86,11 @@ The config is expected to be in json format and has following configuration valu
 - `path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
 - `body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
 - `headers` - `[object]` key-value map of http headers
+- `client` - `[object]` http client config for the job
+- `client.tls_config` - `[object]` tls config for transport (InsecureSkipVerify is true by default)
+- `client.proxy_urls` - `[array]` string urls for proxies to use (chosen randomly for each request)
+- `client.timeout` - `[time.Duration]`
+- `client.max_idle_connections` - `[number]`
 
 `tcp` and `udp` shared args:
 
