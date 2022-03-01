@@ -120,10 +120,10 @@ func parseStringTemplate(input string) string {
 
 func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	type HTTPClientConfig struct {
-		TLSClientConfig *tls.Config `json:"tls_config,omitempty"`
-		Timeout         *time.Duration
-		MaxIdleConns    *int
-		ProxyURLs       []string `json:"proxy_urls"`
+		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
+		Timeout         *time.Duration `json:"timeout"`
+		MaxIdleConns    *int           `json:"max_idle_connections"`
+		ProxyURLs       []string       `json:"proxy_urls"`
 	}
 	type httpJobConfig struct {
 		BasicJobConfig
