@@ -95,6 +95,7 @@ func parseStringTemplate(input string) string {
 		"random_port":     packetgen.RandomPort,
 		"random_mac_addr": packetgen.RandomMacAddr,
 		"local_ip":        packetgen.LocalIP,
+		"local_mac_addr":  packetgen.LocalMacAddres,
 		"base64_encode":   base64.StdEncoding.EncodeToString,
 		"base64_decode":   base64.StdEncoding.DecodeString,
 		"json_encode":     json.Marshal,
