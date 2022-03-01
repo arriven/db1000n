@@ -7,6 +7,9 @@
         "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
         "headers": {
           "Authorization": "wtf"
+        },
+        "client": {
+          "proxy_urls": ["http://proxyIp:80"]
         }
       }
     },
