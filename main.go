@@ -78,6 +78,36 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 	return true
 }
 
+func getProxylist() (urls []string) {
+	resp, err := http.Get(getProxylistURL())
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	err = json.NewDecoder(resp.Body).Decode(&urls)
+	if err != nil {
+		return nil
+	}
+	return urls
+}
+
+func getProxylistURL() string {
+	return "https://raw.githubusercontent.com/Arriven/db1000n/get-url-template/proxylist.json"
+}
+
+func getURLContent(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(buf), nil
+}
+
 func randomUUID() string {
 	return uuid.New().String()
 }
@@ -101,6 +131,9 @@ func parseStringTemplate(input string) string {
 		"base64_decode":   base64.StdEncoding.DecodeString,
 		"json_encode":     json.Marshal,
 		"json_decode":     json.Unmarshal,
+		"get_url":         getURLContent,
+		"proxylist_url":   getProxylistURL,
+		"get_proxylist":   getProxylist,
 	}
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
@@ -123,7 +156,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
 		Timeout         *time.Duration `json:"timeout"`
 		MaxIdleConns    *int           `json:"max_idle_connections"`
-		ProxyURLs       []string       `json:"proxy_urls"`
+		ProxyURLs       string         `json:"proxy_urls"`
 	}
 	type httpJobConfig struct {
 		BasicJobConfig
@@ -131,21 +164,57 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Method  string
 		Body    json.RawMessage
 		Headers map[string]string
-		Client  *HTTPClientConfig
+		Client  json.RawMessage
 	}
 	var jobConfig httpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
+		l.Error("error parsing json: %v", err)
 		return err
 	}
+	fmt.Println(string(parseByteTemplate(jobConfig.Client)))
+	var clientConfig HTTPClientConfig
+	err = json.Unmarshal(parseByteTemplate(jobConfig.Client), &clientConfig)
+	if err != nil {
+		l.Error("error parsing json: %v", err)
+		return err
+	}
+	fmt.Println(clientConfig.ProxyURLs)
 
 	timeout := time.Second * 90
+	if clientConfig.Timeout != nil {
+		timeout = *clientConfig.Timeout
+	}
+
 	maxIdleConns := 1000
+	if clientConfig.MaxIdleConns != nil {
+		maxIdleConns = *clientConfig.MaxIdleConns
+	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	if clientConfig.TLSClientConfig != nil {
+		tlsConfig = clientConfig.TLSClientConfig
+	}
+
+	var proxy func(r *http.Request) (*url.URL, error)
+	if len(clientConfig.ProxyURLs) > 0 {
+		var proxyURLs []string
+		err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs)
+		if err == nil {
+			// Return random proxy from the list
+			proxy = func(r *http.Request) (*url.URL, error) {
+				proxyID := rand.Intn(len(clientConfig.ProxyURLs))
+				return url.Parse(proxyURLs[proxyID])
+			}
+
+		}
+	}
+
 	var client = &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+			TLSClientConfig: tlsConfig,
 			Dial: (&net.Dialer{
 				Timeout:   timeout,
 				KeepAlive: timeout,
@@ -154,49 +223,9 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			IdleConnTimeout:       timeout,
 			TLSHandshakeTimeout:   timeout,
 			ExpectContinueTimeout: timeout,
+			Proxy:                 proxy,
 		},
 		Timeout: timeout,
-	}
-	if jobConfig.Client != nil {
-		if jobConfig.Client.Timeout != nil {
-			timeout = *jobConfig.Client.Timeout
-		}
-
-		if jobConfig.Client.MaxIdleConns != nil {
-			maxIdleConns = *jobConfig.Client.MaxIdleConns
-		}
-
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: true,
-		}
-		if jobConfig.Client.TLSClientConfig != nil {
-			tlsConfig = jobConfig.Client.TLSClientConfig
-		}
-
-		var proxy func(r *http.Request) (*url.URL, error)
-		if len(jobConfig.Client.ProxyURLs) > 0 {
-			// Return random proxy from the list
-			proxy = func(r *http.Request) (*url.URL, error) {
-				proxyID := rand.Intn(len(jobConfig.Client.ProxyURLs))
-				return url.Parse(jobConfig.Client.ProxyURLs[proxyID])
-			}
-		}
-
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
-				Dial: (&net.Dialer{
-					Timeout:   timeout,
-					KeepAlive: timeout,
-				}).Dial,
-				MaxIdleConns:          maxIdleConns,
-				IdleConnTimeout:       timeout,
-				TLSHandshakeTimeout:   timeout,
-				ExpectContinueTimeout: timeout,
-				Proxy:                 proxy,
-			},
-			Timeout: timeout,
-		}
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	for jobConfig.Next(ctx) {
