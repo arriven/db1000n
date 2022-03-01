@@ -1,5 +1,70 @@
 # Death by 1000 needles
 
+Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
+
+# HOWTO: Manual for newbies / Інструкція для новачків [ENGISH and UKRAINIAN]
+
+## [Українська версія] Інструкція
+
+### Увімкніть VPN
+
+Найкраще - це на Росію. Але інші країни також підійдуть. Головне - не залишатись у кіберпросторі України!
+
+### Установка і запуск - для новачків
+
+1. Качаємо свою платформу:
+   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-linux-amd64.tar.gz)
+2. Розпаковуємо архів
+3. Запускаємо файл всередині
+4. Готово!
+
+<em>Може бути застереження - “Компьютер не може підтвердити походження файлу”. Ігноруємо його, запускаємо все одно</em>
+
+### Установка і запуск - через docker
+
+`docker run ghcr.io/arriven/db1000n`
+
+### Що робити далі
+
+Вам потрібно лише тримати увімкненим VPN, свій ком’ютер і цю програму на ньому.
+Наші спеціалісти координують атаки без відволікання вас від справ.
+
+## [English version] Tutorial
+
+### Use VPN!!!
+
+Switch to Russia if possible. Don’t use Ukraine as a VPN location! But any other country or VPN location is okay. Stay safe!
+
+### For dummies
+
+1. Download application for your platform:
+   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-linux-amd64.tar.gz)
+2. Unzip the archive
+3. Launch the file inside the archive
+4. Done!
+
+<em>You can get warnings from your computer about the file - ignore them. Our software is open source. It can be checked and compiled by you yourself.</em>
+
+### Docker usage
+
+`docker run ghcr.io/arriven/db1000n`
+
+### What’s next
+
+You need to keep your computer active, use VPN and make sure that the application is up and running.
+Our experts coordinate our attacks remotely without disturbing and interrupting you.
+Thanks for your help!
+
+Developed by Arriven (https://github.com/Arriven)
+
 This repo is inspired by solution provided by [disbalancer](disbalancer.com) team. I became aware of it when they offered to use it against russian infrastructure during russian invasion to Ukraine
 
 This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I'm not aware of internal implementation of original disbalancer but I do know that it uses a lot more sophisticated techniques to balance the load and stuff. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
