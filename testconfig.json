@@ -10,7 +10,8 @@
         },
         "client": {
           "proxy_urls": "{{ get_proxylist }}"
-        }
+        },
+        "interval_ms": 100
       }
     },
     {

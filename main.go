@@ -566,15 +566,106 @@ func panicHandler() {
 	}
 }
 
+var defaultConfig = `
+  {
+	"jobs": [
+	  {
+		"type": "http",
+		"args": {
+		  "method": "GET",
+		  "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
+		  "headers": {
+			"Authorization": "wtf"
+		  },
+		  "client": {
+			"proxy_urls": "{{ get_proxylist }}"
+		  },
+		  "interval_ms": 100
+		}
+	  },
+	  {
+		"type": "tcp",
+		"args": {
+		  "address": "localhost:9090",
+		  "header": "test",
+		  "body": "more_test"
+		}
+	  },
+	  {
+		"type": "udp",
+		"count": 100,
+		"args": {
+		  "address": "localhost:9191",
+		  "header": "test",
+		  "body": "more_test",
+		  "interval_ms": 1000
+		}
+	  },
+	  {
+		"type": "http",
+		"args": {
+		  "method": "GET",
+		  "path": "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
+		  "headers": {}
+		}
+	  },
+	  {
+		"type": "syn-flood",
+		"args": {
+		  "host": "localhost",
+		  "port": 80,
+		  "payload_len": 1000,
+		  "flood_type": "random"
+		}
+	  },
+	  {
+		"type": "slow-loris",
+		"args": {
+		  "path": "https://localhost:9090/inc2/common/js/doo/modules/searchSite/u.php"
+		}
+	  },
+	  {
+		"type": "packetgen",
+		"args": {
+		  "host": "{{ random_ip }}",
+		  "port": "{{ random_port }}",
+		  "packet": {
+			"payload": "test:blah",
+			"ethernet": {
+			  "src_mac": "{{ random_mac_addr }}",
+			  "dst_mac": "{{ random_mac_addr }}"
+			},
+			"ip": {
+			  "src_ip": "{{ local_ip }}",
+			  "dst_ip": "{{ random_ip }}"
+			},
+			"tcp": {
+			  "src_port": "{{ random_port }}",
+			  "dst_port": "{{ random_port }}",
+			  "flags": {
+				"syn": true
+			  }
+			},
+			"udp": {
+			  "src_port": "{{ random_port }}",
+			  "dst_port": "{{ random_port }}"
+			}
+		  }
+		}
+	  }
+	]
+  }  
+`
+
 func main() {
 	var configPath string
-	var backupConfigPath string
+	var backupConfig string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
-	flag.StringVar(&backupConfigPath, "b", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a backup config file in case primary one is unavailable")
+	flag.StringVar(&backupConfig, "b", defaultConfig, "path to a backup config file in case primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -600,7 +691,7 @@ func main() {
 		config, err := fetchConfig(configPath)
 		if err != nil {
 			l.Debug("error fetching main config, retrieving backup ones")
-			config, err = fetchConfig(backupConfigPath)
+			err = json.Unmarshal([]byte(backupConfig), &config)
 			if err != nil {
 				l.Warning("fetching json config: %v\n", err)
 				continue
