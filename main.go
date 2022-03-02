@@ -227,6 +227,9 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			l.Debug("proxyURLs: %v", proxyURLs)
 			// Return random proxy from the list
 			proxy = func(r *http.Request) (*url.URL, error) {
+				if len(proxyURLs) == 0 {
+					return nil, fmt.Errorf("proxylist is empty")
+				}
 				proxyID := rand.Intn(len(proxyURLs))
 				proxyString := proxyURLs[proxyID]
 				u, err := url.Parse(proxyString)
