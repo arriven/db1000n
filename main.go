@@ -174,6 +174,7 @@ func parseStringTemplate(input string) string {
 }
 
 func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	type HTTPClientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
 		Timeout         *time.Duration `json:"timeout"`
@@ -305,6 +306,7 @@ type RawNetJobConfig struct {
 }
 
 func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -343,6 +345,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 }
 
 func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -380,6 +383,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 }
 
 func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	type synFloodJobConfig struct {
 		BasicJobConfig
 		Host          string
@@ -403,6 +407,7 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 }
 
 func slowLoris(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	var jobConfig *slowloris.Config
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
@@ -446,6 +451,7 @@ func slowLoris(ctx context.Context, l *logs.Logger, args JobArgs) error {
 }
 
 func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
+	defer panicHandler()
 	type packetgenJobConfig struct {
 		BasicJobConfig
 		Packet json.RawMessage
@@ -551,6 +557,12 @@ func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
+	}
+}
+
+func panicHandler() {
+	if err := recover(); err != nil {
+		logs.Default.Warning("caught panic: %v\n some of the attacks may be unsupported on your system", err)
 	}
 }
 
