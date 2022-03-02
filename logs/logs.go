@@ -2,7 +2,9 @@ package logs
 
 import (
 	"fmt"
-	"log"
+	"os"
+
+	logs "github.com/withmandala/go-log"
 )
 
 type Level = int
@@ -15,29 +17,35 @@ const (
 )
 
 type Logger struct {
-	Level Level
+	Level  Level
+	logger *logs.Logger
 }
 
-var Default = Logger{Level: Info}
+func New(level Level) *Logger {
+	logger := logs.New(os.Stderr).WithDebug().WithColor()
+	return &Logger{Level: level, logger: logger}
+}
+
+var Default = New(Info)
 
 func (l Logger) Debug(format string, a ...interface{}) {
-	if l.Level <= Debug {
-		log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
+	if l.Level <= Debug && l.logger != nil {
+		l.logger.Debugf("[DEBUG] %s", fmt.Sprintf(format, a...))
 	}
 }
 
 func (l Logger) Info(format string, a ...interface{}) {
-	if l.Level <= Info {
-		log.Printf("[INFO] %s", fmt.Sprintf(format, a...))
+	if l.Level <= Info && l.logger != nil {
+		l.logger.Infof("[INFO] %s", fmt.Sprintf(format, a...))
 	}
 }
 
 func (l Logger) Warning(format string, a ...interface{}) {
-	if l.Level <= Warning {
-		log.Printf("[WARN] %s", fmt.Sprintf(format, a...))
+	if l.Level <= Warning && l.logger != nil {
+		l.logger.Warnf("[WARN] %s", fmt.Sprintf(format, a...))
 	}
 }
 
 func (l Logger) Error(format string, a ...interface{}) {
-	log.Printf("[ERROR] %s", fmt.Sprintf(format, a...))
+	l.logger.Errorf("[ERROR] %s", fmt.Sprintf(format, a...))
 }
