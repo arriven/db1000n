@@ -680,7 +680,7 @@ func main() {
 	clientID := uuid.New().String()
 	go func() {
 		for {
-			time.Sleep(10 * time.Second)
+			time.Sleep(refreshTimeout)
 			dumpMetrics(&l, metricsPath, "traffic", clientID)
 		}
 	}()
