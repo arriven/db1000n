@@ -9,13 +9,25 @@ jobs:
     strategy:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
-        goos: [linux, windows, darwin]
-        goarch: ["386", amd64, arm64]
+        goos: [linux, windows, darwin, js]
+        goarch: ["386", amd64, arm64, wasm]
         exclude:
           - goarch: "386"
             goos: darwin
           - goarch: arm64
             goos: windows
+          - goarch: wasm
+            goos: linux
+          - goarch: wasm
+            goos: darwin
+          - goarch: wasm
+            goos: windows
+          - goarch: "386"
+            goos: js
+          - goarch: amd64
+            goos: js
+          - goarch: arm64
+            goos: js
     steps:
       - uses: actions/checkout@v2
       - uses: wangyoucao577/go-release-action@v1.25
