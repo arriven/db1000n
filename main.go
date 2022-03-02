@@ -239,7 +239,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 				return u, nil
 			}
 		} else {
-			l.Warning("failed to parse proxies: %v", err)
+			l.Debug("failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
 		}
 	}
 
