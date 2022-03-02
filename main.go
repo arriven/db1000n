@@ -533,7 +533,11 @@ func fetchConfig(configPath string) (*Config, error) {
 
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 	bytesPerSecond := metrics.Default.Read(name)
-	l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
+	if bytesPerSecond > 0 {
+		l.Info("The app is generating approximately %v bytes per second", bytesPerSecond)
+	} else {
+		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
+	}
 	if path == "" {
 		return
 	}
@@ -676,12 +680,12 @@ func main() {
 		flag.CommandLine.Usage()
 		return
 	}
-	l := logs.Logger{Level: logLevel}
+	l := logs.New(logLevel)
 	clientID := uuid.New().String()
 	go func() {
 		for {
 			time.Sleep(refreshTimeout)
-			dumpMetrics(&l, metricsPath, "traffic", clientID)
+			dumpMetrics(l, metricsPath, "traffic", clientID)
 		}
 	}()
 	var cancel context.CancelFunc
@@ -709,7 +713,7 @@ func main() {
 			}
 			if job, ok := jobs[jobDesc.Type]; ok {
 				for i := 0; i < jobDesc.Count; i++ {
-					go job(ctx, &l, jobDesc.Args)
+					go job(ctx, l, jobDesc.Args)
 				}
 			} else {
 				l.Warning("no such job - %s", jobDesc.Type)
