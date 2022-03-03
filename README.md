@@ -48,7 +48,7 @@ docker run ghcr.io/arriven/db1000n:latest
 
 ### kubernetes install
 
-for experienced specialists, see instructions in [helm/](helm/)
+for experienced users, see instructions in [helm/](helm/)
 
 ### shell install
 
