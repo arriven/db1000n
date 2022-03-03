@@ -1,5 +1,10 @@
 # Death by 1000 needles
 
+## Manual for newbies / Інструкція для новачків
+
+https://docs.google.com/document/d/1onvSrNu1FnNKDHD0Mtwf0KoOSuZJOClHqHOs5cu20Mc/edit#
+
+
 Developed by Bohdan Ivashko (https://github.com/Arriven)
 
 This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
