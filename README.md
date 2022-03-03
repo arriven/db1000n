@@ -60,6 +60,26 @@ the command above will detect the os and architecture, dowload the archive, vali
 ./db1000n
 ```
 
+### k8s run
+
+Enter k8s directory
+
+```bash
+$ cd k8s-manifest
+```
+
+Create deployment
+
+```bash
+$ kubectl create -f ./
+```
+
+Sacale if you have resources
+
+```bash
+$ kubectl scale deployment/db1000n --replicas=10
+```
+
 ## Configuration
 
 ### Commandline reference
