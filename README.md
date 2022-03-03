@@ -104,6 +104,10 @@ run d1000n
 docker run ghcr.io/arriven/db1000n:latest
 ```
 
+### kubernetes install
+
+for experienced specialists, see instructions in [helm/](helm/)
+
 ### shell install
 
 run install script directly into the shell (useful for install through ssh)
