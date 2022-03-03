@@ -575,9 +575,6 @@ func panicHandler() {
 	}
 }
 
-var defaultConfig = `
-`
-
 func updateConfig(configPath, backupConfig string) (config *Config, err error) {
 	configPaths := strings.Split(configPath, ",")
 	for _, path := range configPaths {
