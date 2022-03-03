@@ -78,7 +78,7 @@ Create deployment
 $ kubectl create -f ./
 ```
 
-Sacale if you have resources
+Scale it, if you have resources
 
 ```bash
 $ kubectl scale deployment/db1000n --replicas=10 -n db1000n
