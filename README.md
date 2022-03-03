@@ -101,7 +101,7 @@ https://docs.docker.com/desktop/mac/#resources
 run d1000n
 
 ```bash
-docker run ghcr.io/arriven/db1000n:latest
+docker run --pull always ghcr.io/arriven/db1000n:latest
 ```
 
 ### kubernetes install
