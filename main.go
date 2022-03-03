@@ -93,11 +93,14 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 		return false
 	default:
 	}
-	if c.Count > 0 {
-		defer func() { c.iter++ }()
-		return c.iter < c.Count
+
+	if c.Count <= 0 {
+		return true
 	}
-	return true
+
+	c.iter++
+
+	return c.iter <= c.Count
 }
 
 func getProxylist() (urls []string) {
@@ -247,7 +250,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		}
 	}
 
-	var client = &http.Client{
+	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 			Dial: (&net.Dialer{
