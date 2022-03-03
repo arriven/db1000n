@@ -263,11 +263,20 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Timeout: timeout,
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
 	for jobConfig.Next(ctx) {
 		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
 		if err != nil {
 			l.Debug("error creating request: %v", err)
 			continue
+		}
+
+		select {
+		case <-ticker.C:
+			l.Info("Attacking %v", jobConfig.Path)
+		default:
 		}
 
 		// Add random user agent
@@ -476,9 +485,18 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 
 	for jobConfig.Next(ctx) {
+		select {
+		case <-ticker.C:
+			l.Info("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
+		default:
+		}
+
 		packetConfigBytes := parseByteTemplate(jobConfig.Packet)
 		l.Debug("[packetgen] parsed packet config template:\n%s", string(packetConfigBytes))
 		var packetConfig packetgen.PacketConfig
