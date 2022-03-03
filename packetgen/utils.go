@@ -25,10 +25,11 @@ package packetgen
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"regexp"
+
+	"github.com/Arriven/db1000n/logs"
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
@@ -132,7 +133,7 @@ func isDNS(host string) bool {
 	)
 
 	if res, err = regexp.MatchString(dnsRegex, host); err != nil {
-		log.Fatalf("a fatal error occured while matching provided --host with DNS regex: %s", err.Error())
+		logs.Default.Error("a fatal error occured while matching provided --host with DNS regex: %s", err.Error())
 	}
 
 	return res
@@ -146,7 +147,7 @@ func isIP(host string) bool {
 	)
 
 	if res, err = regexp.MatchString(ipRegex, host); err != nil {
-		log.Fatalf("a fatal error occured while matching provided --host with IP regex: %s", err.Error())
+		logs.Default.Error("a fatal error occured while matching provided --host with IP regex: %s", err.Error())
 	}
 
 	return res
@@ -155,17 +156,17 @@ func isIP(host string) bool {
 // resolveHost function gets a string and returns the ip address while deciding it is an ip address already or DNS record
 func resolveHost(host string) (string, error) {
 	if !isIP(host) && isDNS(host) {
-		log.Printf("%s is a DNS record, making DNS lookup\n", host)
+		logs.Default.Debug("%s is a DNS record, making DNS lookup\n", host)
 		ipRecords, err := net.DefaultResolver.LookupIP(context.Background(), "ip4", host)
 		if err != nil {
-			log.Printf("an error occured on dns lookup: %s\n", err.Error())
+			logs.Default.Error("an error occured on dns lookup: %s\n", err.Error())
 			return "", err
 		}
 
-		log.Printf("dns lookup succeeded, found %s for %s\n", ipRecords[0].String(), host)
+		logs.Default.Debug("dns lookup succeeded, found %s for %s\n", ipRecords[0].String(), host)
 		host = ipRecords[0].String()
 	} else {
-		log.Printf("%s is already an IP address, skipping DNS resolution\n", host)
+		logs.Default.Debug("%s is already an IP address, skipping DNS resolution\n", host)
 	}
 
 	return host, nil
