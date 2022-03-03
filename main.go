@@ -578,6 +578,18 @@ func panicHandler() {
 var defaultConfig = `
 `
 
+func updateConfig(configPath, backupConfig string) (config *Config, err error) {
+	configPaths := strings.Split(configPath, ",")
+	for _, path := range configPaths {
+		config, err = fetchConfig(path)
+		if err == nil {
+			return config, nil
+		}
+	}
+	err = json.Unmarshal([]byte(backupConfig), &config)
+	return config, err
+}
+
 func main() {
 	var configPath string
 	var backupConfig string
@@ -585,7 +597,7 @@ func main() {
 	var logLevel logs.Level
 	var help bool
 	var metricsPath string
-	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to a config file, can be web endpoint")
+	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", defaultConfig, "path to a backup config file in case primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
@@ -609,14 +621,10 @@ func main() {
 		cancel()
 	}()
 	for {
-		config, err := fetchConfig(configPath)
+		config, err := updateConfig(configPath, backupConfig)
 		if err != nil {
-			l.Debug("error fetching main config, retrieving backup ones")
-			err = json.Unmarshal([]byte(backupConfig), &config)
-			if err != nil {
-				l.Warning("fetching json config: %v\n", err)
-				continue
-			}
+			l.Warning("fetching json config: %v\n", err)
+			continue
 		}
 		if cancel != nil {
 			cancel()
