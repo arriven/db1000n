@@ -17,3 +17,11 @@
 main
 
 config.json
+
+# macos
+.DS_Store
+
+# terraform
+**/.terraform*
+**/terraform.tfvars
+**/terraform.tfstate*
