@@ -341,7 +341,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	tcpAddr, err := net.ResolveTCPAddr("tcp", parseStringTemplate(jobConfig.Address))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(parseStringTemplate(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
@@ -380,7 +380,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	udpAddr, err := net.ResolveUDPAddr("udp", parseStringTemplate(jobConfig.Address))
+	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(parseStringTemplate(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
