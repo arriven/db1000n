@@ -48,6 +48,7 @@ import (
 	"github.com/Arriven/db1000n/packetgen"
 	"github.com/Arriven/db1000n/slowloris"
 	"github.com/Arriven/db1000n/synfloodraw"
+	"github.com/Arriven/db1000n/template"
 	"github.com/Arriven/db1000n/utils"
 )
 
@@ -127,7 +128,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	}
 
 	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(parseStringTemplate(string(jobConfig.Client))), &clientConfig); err != nil {
+	if err := json.Unmarshal([]byte(template.Execute(string(jobConfig.Client))), &clientConfig); err != nil {
 		l.Debug("error parsing json: %v", err)
 	}
 
@@ -196,8 +197,8 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	defer ticker.Stop()
 
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path),
-			bytes.NewReader([]byte(parseStringTemplate(string(jobConfig.Body)))))
+		req, err := http.NewRequest(template.Execute(jobConfig.Method), template.Execute(jobConfig.Path),
+			bytes.NewReader([]byte(template.Execute(string(jobConfig.Body)))))
 		if err != nil {
 			l.Debug("error creating request: %v", err)
 			continue
@@ -214,7 +215,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		for key, value := range jobConfig.Headers {
 			trafficMonitor.Add(len(key))
 			trafficMonitor.Add(len(value))
-			req.Header.Add(parseStringTemplate(key), parseStringTemplate(value))
+			req.Header.Add(template.Execute(key), template.Execute(value))
 		}
 		trafficMonitor.Add(len(jobConfig.Method))
 		trafficMonitor.Add(len(jobConfig.Path))
@@ -268,7 +269,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(parseStringTemplate(jobConfig.Address)))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(template.Execute(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
@@ -282,7 +283,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			continue
 		}
 
-		_, err = conn.Write([]byte(parseStringTemplate(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(template.Execute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
@@ -307,7 +308,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(parseStringTemplate(jobConfig.Address)))
+	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(template.Execute(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
@@ -320,7 +321,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	}
 
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write([]byte(parseStringTemplate(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(template.Execute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
@@ -417,8 +418,8 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		return err
 	}
 
-	host := parseStringTemplate(jobConfig.Host)
-	port, err := strconv.Atoi(parseStringTemplate(jobConfig.Port))
+	host := template.Execute(jobConfig.Host)
+	port, err := strconv.Atoi(template.Execute(jobConfig.Port))
 	if err != nil {
 		l.Error("error parsing port: %v", err)
 		return err
@@ -436,7 +437,7 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		default:
 		}
 
-		packetConfigBytes := []byte(parseStringTemplate(string(jobConfig.Packet)))
+		packetConfigBytes := []byte(template.Execute(string(jobConfig.Packet)))
 		l.Debug("[packetgen] parsed packet config template:\n%s", string(packetConfigBytes))
 		var packetConfig packetgen.PacketConfig
 		err := json.Unmarshal(packetConfigBytes, &packetConfig)
