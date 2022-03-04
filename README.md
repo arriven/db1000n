@@ -1,21 +1,8 @@
 # Death by 1000 needles
 
-Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Thanks.
+Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
 
-# How to choose VPN
-
-## Free by request or promo code
-* https://clearvpn.com/ with the promo code `SAVEUKRAINE` or just click https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE you would 
-  get 1 year of subscription
-* NordVPN: You need to fill out form https://nordvpn.org/emergency-vpn/
-* https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
-
-## Free
-* https://protonvpn.com/
-* https://www.f-secure.com/
-* https://www.urban-vpn.com/
-
-# HOWTO: Manual for newbies / Інструкція для новачків [ENGLISH and UKRAINIAN]
+# HOWTO: Manual for newbies / Інструкція для новачків [ENGISH and UKRAINIAN]
 
 ## [Українська версія] Інструкція
 
@@ -41,21 +28,6 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 `docker run ghcr.io/arriven/db1000n`
 
-у випадку запуску на сервері можете використовувати цю команду:
-```
-docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
-```
-
-де:
-
-`--restart=always` - перезапуск після помилки абощо
-
-`--name=desinform_stop` - присвоєння імені контейнеру
-
-`--detach` - запуск в окремому процесі
-
-` --pull=always` - оновлення образу перед запуском
-
 ### Що робити далі
 
 Вам потрібно лише тримати увімкненим VPN, свій ком’ютер і цю програму на ньому.
@@ -65,7 +37,7 @@ docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arrive
 
 ### Use VPN!!!
 
-Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other country or VPN location is okay. Stay safe!
+Switch to Russia if possible. Don’t use Ukraine as a VPN location! But any other country or VPN location is okay. Stay safe!
 
 ### For dummies
 
@@ -85,28 +57,13 @@ Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other
 
 `docker run ghcr.io/arriven/db1000n`
 
-or use this command in case of running on servers:
-```
-docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
-```
-
-where:
-
-`--restart=always` - restart after exit
-
-`--name=desinform_stop` - assign a name to the container
-
-`--detach` - run in separate process
-
-` --pull=always` - pull image before running
-
 ### What’s next
 
 You need to keep your computer active, use VPN and make sure that the application is up and running.
 Our experts coordinate our attacks remotely without disturbing and interrupting you.
 Thanks for your help!
 
-Developed by Arriven (https://github.com/Arriven)
+Developed by Bohdan Ivashko (https://github.com/Arriven)
 
 This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
 
@@ -114,6 +71,7 @@ The software is provided as is under no guarantee.
 I will update both the repo and this readme as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
 
 Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood and slightly patched. I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules. Will figure it out better later (sorry to the owner).
+
 ## How to install
 
 ### binary install
@@ -170,12 +128,14 @@ the command above will detect the os and architecture, dowload the archive, vali
 ./db1000n
 ```
 
-### k8s run
+### Kubernetes run
 
-Enter k8s directory
+## Simple run with deployment
+
+Enter to k8s simple deployment directory
 
 ```bash
-$ cd k8s-manifest
+$ cd k8s-manifest/simple
 ```
 
 Create deployment
@@ -189,6 +149,34 @@ Scale it, if you have resources
 ```bash
 $ kubectl scale deployment/db1000n --replicas=10 -n db1000n
 ```
+
+## Advanced run with DaemonSets
+
+Get and label nodes where you need to run db1000n. It should be nodes at least with 2CPU and 2GB of RAM, CPU resources in priority for db1000n:
+
+```bash
+$ kubectl get nodes
+```
+
+Select nodes where you want to run db1000n from the output and label it:
+
+```bash
+$ kubectl label nodes ${YOUR_UNIQUE_NODE_NAME} db1000n=true
+```
+
+Enter to k8s advanced manifest directory
+
+```bash
+$ cd k8s-manifest/advanced
+```
+
+Create DaemonSet with db1000n:
+
+```bash
+$ kubectl create -f ./
+```
+
+How does it work? DaemonSet will create db1000n on each node which was labeled as db1000n=true, only one pod per node. Where it can be useful? In large cluster types what can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes
 
 ## Configuration
 
