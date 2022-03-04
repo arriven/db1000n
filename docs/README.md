@@ -205,9 +205,9 @@ screen -ls
 
 побачимо вивід команди:
 
-**There are screens on:**
-      **4688.pts-0.instance-5   (03/04/22 11:12:13)     (Detached)**
-      **2219.pts-0.instance-5   (03/04/22 09:59:36)     (Detached)**
+**There are screens on:**<br/>
+      **4688.pts-0.instance-5   (03/04/22 11:12:13)     (Detached)**<br/>
+      **2219.pts-0.instance-5   (03/04/22 09:59:36)     (Detached)**<br/>
 **2 Sockets in /run/screen**
 
 
