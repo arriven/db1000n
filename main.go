@@ -570,6 +570,7 @@ func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
 		l.Info("Attack is successful! Russian warship, go fuck yourself!\n")
 		l.Info("The app is generating approximately %v bytes per second\n", bytesPerSecond)
+		reportStatistics(int64(bytesPerSecond))
 	} else {
 		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
 	}
@@ -619,6 +620,7 @@ func updateConfig(configPath, backupConfig string) (config *Config, err error) {
 }
 
 func main() {
+
 	var configPath string
 	var backupConfig string
 	var refreshTimeout time.Duration
@@ -636,7 +638,9 @@ func main() {
 		flag.CommandLine.Usage()
 		return
 	}
+
 	l := logs.New(logLevel)
+
 	clientID := uuid.New().String()
 	go func() {
 		for {
