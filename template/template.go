@@ -1,4 +1,4 @@
-package main
+package template
 
 import (
 	"encoding/base64"
@@ -53,7 +53,7 @@ func randomUUID() string {
 	return uuid.New().String()
 }
 
-func parseStringTemplate(input string) string {
+func Execute(input string) string {
 	funcMap := template.FuncMap{
 		"random_uuid":     randomUUID,
 		"random_int_n":    rand.Intn,
