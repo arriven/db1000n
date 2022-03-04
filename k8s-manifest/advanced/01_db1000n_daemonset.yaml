@@ -19,8 +19,8 @@ spec:
         image: oneodinscrow/db1000n-light
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "128m"
           limits:
             memory: "2048Mi"
             cpu: "2"
