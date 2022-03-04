@@ -6,8 +6,9 @@ Developed by Bohdan Ivashko (https://github.com/Arriven)
 
 Спочатку треба зареєструватися та створити виділений сервер в cloud.google.com або іншому сервісі.
 cloud.google.com дають при старті 300$ для використання серверів - цього повинно хватати надовго.
-Робимо все по інструкції як вказано тут https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26
-тільки в пункті 6 вибираємо e2-medium тому що e2-micro не тягне. 
+Робимо все по інструкції як вказано тут:
+> https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26
+тільки в пункті 6 вибираємо **e2-medium** тому що **e2-micro** не тягне. 
 
 доходимо до пункту 8.
 далі робимо слідуюче:
