@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: db1000n
+  namespace: db1000n
+  labels:
+    app: db1000n
+spec:
+  selector:
+    matchLabels:
+      name: db1000n
+  template:
+    metadata:
+      labels:
+        name: db1000n
+    spec:
+      containers:
+      - name: db1000n
+        image: oneodinscrow/db1000n-light
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2048Mi"
+            cpu: "2"
+      nodeSelector:
+        db1000n: "true"
+      terminationGracePeriodSeconds: 30
