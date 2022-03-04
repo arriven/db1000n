@@ -183,6 +183,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Timeout         *time.Duration `json:"timeout"`
 		MaxIdleConns    *int           `json:"max_idle_connections"`
 		ProxyURLs       string         `json:"proxy_urls"`
+		Async           bool           `json:"async"`
 	}
 	type httpJobConfig struct {
 		BasicJobConfig
@@ -296,19 +297,28 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		startedAt := time.Now().Unix()
 		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
 
-		resp, err := client.Do(req)
-		if err != nil {
-			l.Debug("error sending request %v: %v", req, err)
-			continue
+		sendRequest := func() {
+			resp, err := client.Do(req)
+			if err != nil {
+				l.Debug("error sending request %v: %v", req, err)
+				return
+			}
+
+			finishedAt := time.Now().Unix()
+			resp.Body.Close() // No need for response
+			if resp.StatusCode >= 400 {
+				l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
+			} else {
+				l.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
+			}
 		}
 
-		finishedAt := time.Now().Unix()
-		resp.Body.Close() // No need for response
-		if resp.StatusCode >= 400 {
-			l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
+		if clientConfig.Async {
+			go sendRequest()
 		} else {
-			l.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
+			sendRequest()
 		}
+
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 	return nil
