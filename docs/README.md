@@ -59,12 +59,10 @@ proxy=0 # replace with 1 if you want to connect to VPN server through a proxy
 proxyIP=''
 proxyPort=8080
 proxyType='socks' # socks or http
-
 # don't change this:
 counter=0
 VPNproxyString=''
 cURLproxyString=''
-
 if [ $proxy -eq 1 ];then
     echo 'We will use a proxy'
     if [ -z "$proxyIP" ]; then
@@ -98,7 +96,6 @@ while read -r line ; do
     array[$counter]="$line"
     counter=$counter+1
 done < <(grep -E ",$country" $vpnList)
-
 CreateVPNConfig () {
     if [ -z "${array[0]}" ]; then
         echo 'No VPN servers found from the selected country.'
