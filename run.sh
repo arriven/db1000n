@@ -2,7 +2,7 @@ PROJECT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 readonly PROJECT_DIR
 readonly OPENVPN_DIR="$PROJECT_DIR/openvpn"
 
-# Build the docker image and tag it with the name "ddos"
+# Build the docker image and tag it
 docker build -t db1000n "$PROJECT_DIR"
 docker run \
     --rm \
