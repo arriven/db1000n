@@ -152,13 +152,13 @@ $ kubectl scale deployment/db1000n --replicas=10 -n db1000n
 
 ## Advanced run with DaemonSets
 
-Get and label nodes were you need to run db1000n. It should be nodes at least with 2CPU and 2GB of RAM, CPU resources in priority for db1000n:
+Get and label nodes where you need to run db1000n. It should be nodes at least with 2CPU and 2GB of RAM, CPU resources in priority for db1000n:
 
 ```bash
 $ kubectl get nodes
 ```
 
-Select nodes where you want to run db100n from output and label it:
+Select nodes where you want to run db1000n from the output and label it:
 
 ```bash
 $ kubectl label nodes ${YOUR_UNIQUE_NODE_NAME} db1000n=true
@@ -176,7 +176,7 @@ Create DaemonSet with db1000n:
 $ kubectl create -f ./
 ```
 
-How it work? DaemonSet will create db1000n on the each node which was labeled as db1000n=true, only one pod per node. Where it can be useful? In large clusters types what can be autosacled horizontaly, for example GKE standard k8s cluster.  
+How does it work? DaemonSet will create db1000n on each node which was labeled as db1000n=true, only one pod per node. Where it can be useful? In large cluster types what can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes
 
 ## Configuration
 
