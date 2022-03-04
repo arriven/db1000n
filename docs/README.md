@@ -8,14 +8,20 @@ Developed by Bohdan Ivashko (https://github.com/Arriven)
 cloud.google.com дають при старті 300$ для використання серверів - цього повинно хватати надовго.
 Робимо все по інструкції як вказано тут:
 
-``` https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26 ```
+```
+https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26 
+
+```
 тільки в пункті 6 вибираємо **e2-medium** тому що **e2-micro** не тягне. 
 
 доходимо до пункту 8.
 далі робимо слідуюче:
 
 спочатку оновлюємо систему
-```sudo apt-get update```
+```
+sudo apt-get update
+
+```
 потім встановлюємо программи (виконуємо команди по одній)
 sudo apt-get install screen
 sudo apt-get install openvpn    попросить підтвердження встановлення. нажимаємо y та enter
