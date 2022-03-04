@@ -63,7 +63,9 @@ You need to keep your computer active, use VPN and make sure that the applicatio
 Our experts coordinate our attacks remotely without disturbing and interrupting you.
 Thanks for your help!
 
-Developed by Bohdan Ivashko (https://github.com/Arriven)
+## For devs
+
+Developed by Arriven (https://github.com/Arriven)
 
 This is a simple distributed load generation client written in go. It is able to fetch simple json config from a local or remote location. The config describes which load generation jobs should be launched in parallel. I do not intend to copy or replace it but rather provide a simple open source option. Feel free to use it in your load tests (wink-wink)
 
