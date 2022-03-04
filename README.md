@@ -1,8 +1,21 @@
 # Death by 1000 needles
 
-Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
+Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Thanks.
 
-# HOWTO: Manual for newbies / Інструкція для новачків [ENGISH and UKRAINIAN]
+# How to choose VPN
+
+## Free by request or promo code
+* https://clearvpn.com/ with the promo code `SAVEUKRAINE` or just click https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE you would 
+  get 1 year of subscription
+* NordVPN: You need to fill out form https://nordvpn.org/emergency-vpn/
+* https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
+
+## Free
+* https://protonvpn.com/
+* https://www.f-secure.com/
+* https://www.urban-vpn.com/
+
+# HOWTO: Manual for newbies / Інструкція для новачків [ENGLISH and UKRAINIAN]
 
 ## [Українська версія] Інструкція
 
@@ -24,9 +37,24 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 <em>Може бути застереження - “Компьютер не може підтвердити походження файлу”. Ігноруємо його, запускаємо все одно</em>
 
-### Установка і запуск - через docker
+### Альтернативно: Установка і запуск - через docker
 
 `docker run ghcr.io/arriven/db1000n`
+
+у випадку запуску на сервері можете використовувати цю команду:
+```
+docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
+```
+
+де:
+
+`--restart=always` - перезапуск після помилки абощо
+
+`--name=desinform_stop` - присвоєння імені контейнеру
+
+`--detach` - запуск в окремому процесі
+
+` --pull=always` - оновлення образу перед запуском
 
 ### Що робити далі
 
@@ -37,7 +65,7 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 ### Use VPN!!!
 
-Switch to Russia if possible. Don’t use Ukraine as a VPN location! But any other country or VPN location is okay. Stay safe!
+Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other country or VPN location is okay. Stay safe!
 
 ### For dummies
 
@@ -53,9 +81,24 @@ Switch to Russia if possible. Don’t use Ukraine as a VPN location! But any oth
 
 <em>You can get warnings from your computer about the file - ignore them. Our software is open source. It can be checked and compiled by you yourself.</em>
 
-### Docker usage
+### Alternative: Docker usage
 
 `docker run ghcr.io/arriven/db1000n`
+
+or use this command in case of running on servers:
+```
+docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
+```
+
+where:
+
+`--restart=always` - restart after exit
+
+`--name=desinform_stop` - assign a name to the container
+
+`--detach` - run in separate process
+
+` --pull=always` - pull image before running
 
 ### What’s next
 
@@ -73,7 +116,6 @@ The software is provided as is under no guarantee.
 I will update both the repo and this readme as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
 
 Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood and slightly patched. I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules. Will figure it out better later (sorry to the owner).
-
 ## How to install
 
 ### binary install
