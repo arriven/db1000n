@@ -11,8 +11,12 @@ case "$OSTYPE" in
   *)        echo "unknown: $OSTYPE"; exit 1 ;;
 esac
 
+if [ -z ${OSARCH+x} ];
+then
+  OSARCH=$(uname -m);
+fi
+
 INSTALL_ARCH="unknown"
-OSARCH=$(uname -m)
 case "$OSARCH" in
   x86_64*)  INSTALL_ARCH="amd64" ;;
   i386*)    INSTALL_ARCH="386" ;; 
