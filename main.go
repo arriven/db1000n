@@ -534,6 +534,8 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 }
 
 func fetchConfig(configPath string) (*Config, error) {
+	defer panicHandler()
+
 	var configBytes []byte
 	var err error
 	if configURL, err := url.ParseRequestURI(configPath); err == nil {
@@ -565,6 +567,8 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
+	defer panicHandler()
+
 	bytesPerSecond := metrics.Default.Read(name)
 	if bytesPerSecond > 0 {
 		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
