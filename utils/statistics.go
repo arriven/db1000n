@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	v1 "github.com/mjpitz/go-ga/client/v1"
@@ -8,7 +8,7 @@ import (
 var previousTraffic int64 = 0
 var client = v1.NewClient("UA-222030361-1", "customUserAgent")
 
-func reportStatistics(traffic int64, clientId string) error {
+func ReportStatistics(traffic int64, clientId string) error {
 	delta := traffic - previousTraffic
 	previousTraffic = traffic
 	return trackEvent(delta, clientId)
