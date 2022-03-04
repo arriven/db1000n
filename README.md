@@ -98,10 +98,16 @@ make sure you've set all available resources to docker
 https://docs.docker.com/desktop/windows/#resources
 https://docs.docker.com/desktop/mac/#resources
 
-run d1000n
+if you don't want to use VPN from within docker container, set `--env "VPN_ENABLED=` in `run.sh`
+
+if you want to to use VPN from within docker container:
+
+- place your `.ovpn` or `.conf` files into `openvpn/` directory
+- set `--env "VPN_ENABLED=true` in `run.sh`
+- update `--env "OPENVPN_USERNAME="` and `--env "OPENVPN_PASSWORD="` in `run.sh` with your credentials
 
 ```bash
-docker run --pull always ghcr.io/arriven/db1000n:latest
+./run.sh
 ```
 
 ### kubernetes install
