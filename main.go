@@ -571,7 +571,7 @@ func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
 		l.Info("Attack is successful! Russian warship, go fuck yourself!\n")
 		l.Info("The app is generating approximately %v bytes per second\n", bytesPerSecond)
-		reportStatistics(int64(bytesPerSecond))
+		reportStatistics(int64(bytesPerSecond), clientID)
 	} else {
 		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
 	}
