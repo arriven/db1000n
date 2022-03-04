@@ -1,8 +1,8 @@
 # Death by 1000 needles
 
-Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
+Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Thanks.
 
-# HOWTO: Manual for newbies / Інструкція для новачків [ENGISH and UKRAINIAN]
+# HOWTO: Manual for newbies / Інструкція для новачків [ENGLISH and UKRAINIAN]
 
 ## [Українська версія] Інструкція
 
@@ -37,7 +37,7 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 ### Use VPN!!!
 
-Switch to Russia if possible. Don’t use Ukraine as a VPN location! But any other country or VPN location is okay. Stay safe!
+Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other country or VPN location is okay. Stay safe!
 
 ### For dummies
 
