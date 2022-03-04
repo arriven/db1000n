@@ -1,5 +1,7 @@
 # Death by 1000 needles
 
+Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
+
 ## Manual for newbies / Інструкція для новачків
 
 https://docs.google.com/document/d/1onvSrNu1FnNKDHD0Mtwf0KoOSuZJOClHqHOs5cu20Mc/edit#
