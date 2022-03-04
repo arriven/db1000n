@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: db1000n
-        image: oneodinscrow/db1000n-light
+        image: ghcr.io/arriven/db1000n
         resources:
           requests:
             memory: "128Mi"
