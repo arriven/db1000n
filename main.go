@@ -26,12 +26,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"math/rand"
 	"net"
@@ -104,79 +102,6 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 	return c.iter <= c.Count
 }
 
-func getProxylist() (urls []string) {
-	resp, err := http.Get(getProxylistURL())
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&urls)
-	if err != nil {
-		return nil
-	}
-	return urls
-}
-
-func getProxylistURL() string {
-	return "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json"
-}
-
-func getURLContent(url string) (string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	buf, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(buf), nil
-}
-
-func randomUUID() string {
-	return uuid.New().String()
-}
-
-func parseByteTemplate(input []byte) []byte {
-	return []byte(parseStringTemplate(string(input)))
-}
-
-func parseStringTemplate(input string) string {
-	funcMap := template.FuncMap{
-		"random_uuid":     randomUUID,
-		"random_int_n":    rand.Intn,
-		"random_int":      rand.Int,
-		"random_payload":  packetgen.RandomPayload,
-		"random_ip":       packetgen.RandomIP,
-		"random_port":     packetgen.RandomPort,
-		"random_mac_addr": packetgen.RandomMacAddr,
-		"local_ip":        packetgen.LocalIP,
-		"local_mac_addr":  packetgen.LocalMacAddres,
-		"base64_encode":   base64.StdEncoding.EncodeToString,
-		"base64_decode":   base64.StdEncoding.DecodeString,
-		"json_encode":     json.Marshal,
-		"json_decode":     json.Unmarshal,
-		"get_url":         getURLContent,
-		"proxylist_url":   getProxylistURL,
-		"get_proxylist":   getProxylist,
-	}
-	// TODO: consider adding ability to populate custom data
-	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
-	if err != nil {
-		logs.Default.Warning("error parsing template: %v", err)
-		return input
-	}
-	var output strings.Builder
-	err = tmpl.Execute(&output, nil)
-	if err != nil {
-		logs.Default.Warning("error executing template: %v", err)
-		return input
-	}
-
-	return output.String()
-}
-
 func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	defer panicHandler()
 	type HTTPClientConfig struct {
@@ -196,14 +121,13 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	}
 
 	var jobConfig httpJobConfig
-	err := json.Unmarshal(args, &jobConfig)
-	if err != nil {
+	if err := json.Unmarshal(args, &jobConfig); err != nil {
 		l.Error("error parsing json: %v", err)
 		return err
 	}
+
 	var clientConfig HTTPClientConfig
-	err = json.Unmarshal(parseByteTemplate(jobConfig.Client), &clientConfig)
-	if err != nil {
+	if err := json.Unmarshal([]byte(parseStringTemplate(string(jobConfig.Client))), &clientConfig); err != nil {
 		l.Debug("error parsing json: %v", err)
 	}
 
@@ -272,7 +196,8 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	defer ticker.Stop()
 
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path), bytes.NewReader(parseByteTemplate(jobConfig.Body)))
+		req, err := http.NewRequest(parseStringTemplate(jobConfig.Method), parseStringTemplate(jobConfig.Path),
+			bytes.NewReader([]byte(parseStringTemplate(string(jobConfig.Body)))))
 		if err != nil {
 			l.Debug("error creating request: %v", err)
 			continue
@@ -357,7 +282,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 			continue
 		}
 
-		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		_, err = conn.Write([]byte(parseStringTemplate(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
@@ -395,7 +320,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 	}
 
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write(parseByteTemplate(jobConfig.Body))
+		_, err = conn.Write([]byte(parseStringTemplate(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
@@ -511,7 +436,7 @@ func packetgenJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		default:
 		}
 
-		packetConfigBytes := parseByteTemplate(jobConfig.Packet)
+		packetConfigBytes := []byte(parseStringTemplate(string(jobConfig.Packet)))
 		l.Debug("[packetgen] parsed packet config template:\n%s", string(packetConfigBytes))
 		var packetConfig packetgen.PacketConfig
 		err := json.Unmarshal(packetConfigBytes, &packetConfig)
@@ -539,32 +464,31 @@ func fetchConfig(configPath string) (*Config, error) {
 	defer panicHandler()
 
 	var configBytes []byte
-	var err error
 	if configURL, err := url.ParseRequestURI(configPath); err == nil {
 		resp, err := http.Get(configURL.String())
 		if err != nil {
 			return nil, err
 		}
+
 		defer resp.Body.Close()
+
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
+			return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
+		}
+
+		if configBytes, err = io.ReadAll(resp.Body); err != nil {
 			return nil, err
 		}
-		configBytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		configBytes, err = os.ReadFile(configPath)
-		if err != nil {
-			return nil, err
-		}
+	} else if configBytes, err = os.ReadFile(configPath); err != nil {
+		return nil, err
 	}
+
 	var config Config
-	err = json.Unmarshal(configBytes, &config)
-	if err != nil {
+	if err := json.Unmarshal(configBytes, &config); err != nil {
 		fmt.Printf("error parsing json config: %v\n", err)
 		return nil, err
 	}
+
 	return &config, nil
 }
 
@@ -626,7 +550,6 @@ func updateConfig(configPath, backupConfig string) (config *Config, err error) {
 }
 
 func main() {
-
 	var configPath string
 	var backupConfig string
 	var refreshTimeout time.Duration
@@ -634,7 +557,7 @@ func main() {
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "path to a backup config file in case primary one is unavailable")
+	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -646,41 +569,43 @@ func main() {
 	}
 
 	l := logs.New(logLevel)
-
 	clientID := uuid.New().String()
-	go func() {
-		for {
-			time.Sleep(refreshTimeout)
-			dumpMetrics(l, metricsPath, "traffic", clientID)
-		}
-	}()
+
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
 	}()
+
 	for {
 		config, err := updateConfig(configPath, backupConfig)
 		if err != nil {
 			l.Warning("fetching json config: %v\n", err)
 			continue
 		}
+
 		if cancel != nil {
 			cancel()
 		}
+
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
 		for _, jobDesc := range config.Jobs {
+			job, ok := jobs[jobDesc.Type]
+			if !ok {
+				l.Warning("no such job - %s", jobDesc.Type)
+				continue
+			}
+
 			if jobDesc.Count < 1 {
 				jobDesc.Count = 1
 			}
-			if job, ok := jobs[jobDesc.Type]; ok {
-				for i := 0; i < jobDesc.Count; i++ {
-					go job(ctx, l, jobDesc.Args)
-				}
-			} else {
-				l.Warning("no such job - %s", jobDesc.Type)
+
+			for i := 0; i < jobDesc.Count; i++ {
+				go job(ctx, l, jobDesc.Args)
 			}
 		}
+
 		time.Sleep(refreshTimeout)
+		dumpMetrics(l, metricsPath, "traffic", clientID)
 	}
 }
