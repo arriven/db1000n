@@ -2,6 +2,19 @@
 
 Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
 
+# How to choose VPN
+
+## Free by request or promo code
+* https://clearvpn.com/ with the promo code `SAVEUKRAINE` or just click https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE you would 
+  get 1 year of subscription
+* NordVPN: You need to fill out form https://nordvpn.org/emergency-vpn/
+* https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
+
+## Free
+* https://protonvpn.com/
+* https://www.f-secure.com/
+* https://www.urban-vpn.com/
+
 # HOWTO: Manual for newbies / Інструкція для новачків [ENGISH and UKRAINIAN]
 
 ## [Українська версія] Інструкція
