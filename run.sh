@@ -3,7 +3,7 @@ readonly PROJECT_DIR
 readonly OPENVPN_DIR="$PROJECT_DIR/openvpn"
 
 # Build the docker image and tag it
-docker build -t db1000n "$PROJECT_DIR"
+docker build -t db1000n-openvpn --target openvpn "$PROJECT_DIR"
 docker run \
     --rm \
     --cap-add=NET_ADMIN \
@@ -12,4 +12,4 @@ docker run \
     --env "OPENVPN_USERNAME=" \
     --env "OPENVPN_PASSWORD=" \
     --env "VPN_ENABLED=true" \
-    db1000n
+    db1000n-openvpn

@@ -87,7 +87,7 @@ go install github.com/Arriven/db1000n@latest
 ~/go/bin/db1000n
 ```
 
-### docker install
+### docker install with openvpn
 
 how to install docker?
 
