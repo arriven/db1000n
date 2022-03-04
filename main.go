@@ -50,6 +50,7 @@ import (
 	"github.com/Arriven/db1000n/packetgen"
 	"github.com/Arriven/db1000n/slowloris"
 	"github.com/Arriven/db1000n/synfloodraw"
+	"github.com/Arriven/db1000n/utils"
 )
 
 // JobArgs comment for linter
@@ -574,7 +575,7 @@ func dumpMetrics(l *logs.Logger, path, name, clientID string) {
 		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
 		l.Info("Attack is successful! Russian warship, go fuck yourself!\n")
 		l.Info("The app is generating approximately %v bytes per second\n", bytesPerSecond)
-		reportStatistics(int64(bytesPerSecond), clientID)
+		utils.ReportStatistics(int64(bytesPerSecond), clientID)
 	} else {
 		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
 	}
@@ -632,7 +633,7 @@ func main() {
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&backupConfig, "b", defaultConfig, "path to a backup config file in case primary one is unavailable")
+	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "path to a backup config file in case primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")

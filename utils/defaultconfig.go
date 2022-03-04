@@ -1,6 +1,6 @@
-package main
+package utils
 
-var defaultConfig = `{
+var DefaultConfig = `{
 	"jobs": [
 	  {
 		"type": "http",
