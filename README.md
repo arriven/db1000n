@@ -37,7 +37,7 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 <em>Може бути застереження - “Компьютер не може підтвердити походження файлу”. Ігноруємо його, запускаємо все одно</em>
 
-### Установка і запуск - через docker
+### Альтернативно: Установка і запуск - через docker
 
 `docker run ghcr.io/arriven/db1000n`
 
@@ -81,7 +81,7 @@ Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other
 
 <em>You can get warnings from your computer about the file - ignore them. Our software is open source. It can be checked and compiled by you yourself.</em>
 
-### Docker usage
+### Alternative: Docker usage
 
 `docker run ghcr.io/arriven/db1000n`
 
@@ -105,6 +105,8 @@ where:
 You need to keep your computer active, use VPN and make sure that the application is up and running.
 Our experts coordinate our attacks remotely without disturbing and interrupting you.
 Thanks for your help!
+
+## For devs
 
 Developed by Arriven (https://github.com/Arriven)
 
