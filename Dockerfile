@@ -7,7 +7,7 @@ RUN go mod download && go mod verify
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o main .
 
-FROM alpine:3.11.3
+FROM alpine:3.11.3 as openvpn
 
 RUN apk add --update supervisor openvpn curl && rm  -rf /tmp/* /var/cache/apk/*
 
@@ -24,3 +24,10 @@ WORKDIR /usr/src/app
 COPY --from=builder /build/main .
 
 ENTRYPOINT ["supervisord", "--configuration", "/etc/supervisord.conf"]
+
+FROM alpine:3.11.3
+
+WORKDIR /usr/src/app
+COPY --from=builder /build/main .
+
+CMD ["./main"]
