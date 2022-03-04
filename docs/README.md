@@ -8,24 +8,39 @@ Developed by Bohdan Ivashko (https://github.com/Arriven)
 cloud.google.com дають при старті 300$ для використання серверів - цього повинно хватати надовго.
 Робимо все по інструкції як вказано тут:
 
-** https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26 **
+ **https://telegra.ph/%D0%86nstrukc%D1%96ya-yak-DDositi-sajti-za-dopomogoyu-server%D1%96v-02-26** 
 
 тільки в пункті 6 вибираємо **e2-medium** тому що **e2-micro** не тягне. 
 
 доходимо до пункту 8.
 далі робимо слідуюче:
 
-спочатку оновлюємо систему
+###спочатку оновлюємо систему
+
+для копіювання і вставлення команд в командному рядку працюють комбінації клавіш **ctrl**+**C** **ctrl**+**V**
+
 ```
 sudo apt-get update
 ```
 потім встановлюємо программи (виконуємо команди по одній)
+```
 sudo apt-get install screen
-sudo apt-get install openvpn    попросить підтвердження встановлення. нажимаємо y та enter
+```
+```
+sudo apt-get install openvpn
+```
+попросить підтвердження встановлення. нажимаємо **y** та **enter**
 
-создаємо конфіг для впн
-nano autovpn3.sh         відкриється редактор, копіюємо і вставляємо туди текст нижче ctrl+C ctrl+V
 
+
+###создаємо конфіг для впн
+```
+nano autovpn3.sh
+```         
+
+відкриється редактор, копіюємо і вставляємо туди текст нижче. **ctrl**+**C** **ctrl**+**V**
+
+```
 #!/bin/bash
  
 # autovpn3, coded by MiAl, 
@@ -110,6 +125,7 @@ while true
         sudo openvpn --config /tmp/openvpn3 $VPNproxyString
         read -p "Try another VPN server? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit
     done
+```	
 	
 	
 для вихода нажимаємо ctrl+X далі для збереження нажимаємо Y та enter
