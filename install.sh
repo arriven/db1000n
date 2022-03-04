@@ -16,23 +16,27 @@ OSARCH=$(uname -m)
 case "$OSARCH" in
   x86_64*)  INSTALL_ARCH="amd64" ;;
   i386*)    INSTALL_ARCH="386" ;; 
-  arm*)     INSTALL_ARCH="arm" ;;
+  arm*)     INSTALL_ARCH="arm64" ;;
   *)        echo "unknown: $OSARCH"; exit 1 ;;
 esac
 
 INSTALL_VERSION="${INSTALL_OS}-${INSTALL_ARCH}"
 
-curl https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*' | xargs wget
+curl https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*' | xargs curl -L -O
 
 INSTALL_TAG=$(curl --silent "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
 ARCHIVE="db1000n-${INSTALL_TAG}-${INSTALL_VERSION}.tar.gz"
 
-cat ${ARCHIVE} | md5sum | awk '{ print $1 }' > md5sum.txt
-
-if ! cmp --silent "${ARCHIVE}.md5" "md5sum.txt"; then
-  echo "md5sum for ${ARCHIVE} failed. Please check the md5sum. File may possibly be corrupted."
-  exit 1
+if ! command -v md5sum &> /dev/null
+then
+    echo "Warning: md5sum is not be found. Could not check arhive integrity. Please be cautious when launching the executable."
+else
+    cat ${ARCHIVE} | md5sum | awk '{ print $1 }' > md5sum.txt
+      if ! cmp --silent "${ARCHIVE}.md5" "md5sum.txt"; then
+      echo "md5sum for ${ARCHIVE} failed. Please check the md5sum. File may possibly be corrupted."
+      exit 1
+    fi
 fi
 
 tar xvf ${ARCHIVE}
