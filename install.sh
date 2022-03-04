@@ -22,7 +22,7 @@ esac
 
 INSTALL_VERSION="${INSTALL_OS}-${INSTALL_ARCH}"
 
-curl https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*' | xargs curl -L -O
+curl https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*' | xargs -n 1 curl -L -O
 
 INSTALL_TAG=$(curl --silent "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
