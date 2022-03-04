@@ -28,6 +28,21 @@ Please check existing issues (both open and closed) before creating new ones. It
 
 `docker run ghcr.io/arriven/db1000n`
 
+у випадку запуску на сервері можете використовувати цю команду:
+```
+docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
+```
+
+де:
+
+`--restart=always` - перезапуск після помилки абощо
+
+`--name=desinform_stop` - присвоєння імені контейнеру
+
+`--detach` - запуск в окремому процесі
+
+` --pull=always` - оновлення образу перед запуском
+
 ### Що робити далі
 
 Вам потрібно лише тримати увімкненим VPN, свій ком’ютер і цю програму на ньому.
@@ -57,6 +72,21 @@ Switch to Russia if possible. Don’t use Ukraine as VPN location! But any other
 
 `docker run ghcr.io/arriven/db1000n`
 
+or use this command in case of running on servers:
+```
+docker run --restart=always --name=db1000n --detach --pull=always ghcr.io/arriven/db1000n:latest
+```
+
+where:
+
+`--restart=always` - restart after exit
+
+`--name=desinform_stop` - assign a name to the container
+
+`--detach` - run in separate process
+
+` --pull=always` - pull image before running
+
 ### What’s next
 
 You need to keep your computer active, use VPN and make sure that the application is up and running.
@@ -71,7 +101,6 @@ The software is provided as is under no guarantee.
 I will update both the repo and this readme as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
 
 Synflood implementation is taken from https://github.com/bilalcaliskan/syn-flood and slightly patched. I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules. Will figure it out better later (sorry to the owner).
-
 ## How to install
 
 ### binary install
