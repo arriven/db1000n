@@ -8,14 +8,14 @@ import (
 var previousTraffic int64 = 0
 var client = v1.NewClient("UA-222030361-1", "customUserAgent")
 
-func reportStatistics(traffic int64) error {
+func reportStatistics(traffic int64, clientId string) error {
 	delta := traffic - previousTraffic
 	previousTraffic = traffic
-	return trackEvent(delta)
+	return trackEvent(delta, clientId)
 }
 
-func trackEvent(traffic int64) error {
-	users := gatypes.Users{ClientID: "test111"}
+func trackEvent(traffic int64, clientId string) error {
+	users := gatypes.Users{ClientID: clientId}
 	ping := &gatypes.Payload{
 		HitType:                           "event",
 		NonInteractionHit:                 true,
