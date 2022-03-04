@@ -187,7 +187,6 @@ func main() {
 					l.Error("You currently have Ukrainian IP adress. You need to enable VPN.")
 					// TODO add correct URL
 					//openBrowser("https://example.com/", l)
-					return
 				} else {
 					l.Info("Current country: %s", ipInfo.Country)
 				}
