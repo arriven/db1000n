@@ -194,15 +194,15 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Headers map[string]string
 		Client  json.RawMessage
 	}
+
 	var jobConfig httpJobConfig
-	err := json.Unmarshal(args, &jobConfig)
-	if err != nil {
+	if err := json.Unmarshal(args, &jobConfig); err != nil {
 		l.Error("error parsing json: %v", err)
 		return err
 	}
+
 	var clientConfig HTTPClientConfig
-	err = json.Unmarshal(parseByteTemplate(jobConfig.Client), &clientConfig)
-	if err != nil {
+	if err := json.Unmarshal(parseByteTemplate(jobConfig.Client), &clientConfig); err != nil {
 		l.Debug("error parsing json: %v", err)
 	}
 
@@ -538,32 +538,31 @@ func fetchConfig(configPath string) (*Config, error) {
 	defer panicHandler()
 
 	var configBytes []byte
-	var err error
 	if configURL, err := url.ParseRequestURI(configPath); err == nil {
 		resp, err := http.Get(configURL.String())
 		if err != nil {
 			return nil, err
 		}
+
 		defer resp.Body.Close()
+
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
+			return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
+		}
+
+		if configBytes, err = io.ReadAll(resp.Body); err != nil {
 			return nil, err
 		}
-		configBytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		configBytes, err = os.ReadFile(configPath)
-		if err != nil {
-			return nil, err
-		}
+	} else if configBytes, err = os.ReadFile(configPath); err != nil {
+		return nil, err
 	}
+
 	var config Config
-	err = json.Unmarshal(configBytes, &config)
-	if err != nil {
+	if err := json.Unmarshal(configBytes, &config); err != nil {
 		fmt.Printf("error parsing json config: %v\n", err)
 		return nil, err
 	}
+
 	return &config, nil
 }
 
@@ -625,7 +624,6 @@ func updateConfig(configPath, backupConfig string) (config *Config, err error) {
 }
 
 func main() {
-
 	var configPath string
 	var backupConfig string
 	var refreshTimeout time.Duration
@@ -633,7 +631,7 @@ func main() {
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "path to a backup config file in case primary one is unavailable")
+	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -645,41 +643,43 @@ func main() {
 	}
 
 	l := logs.New(logLevel)
-
 	clientID := uuid.New().String()
-	go func() {
-		for {
-			time.Sleep(refreshTimeout)
-			dumpMetrics(l, metricsPath, "traffic", clientID)
-		}
-	}()
+
 	var cancel context.CancelFunc
 	defer func() {
 		cancel()
 	}()
+
 	for {
 		config, err := updateConfig(configPath, backupConfig)
 		if err != nil {
 			l.Warning("fetching json config: %v\n", err)
 			continue
 		}
+
 		if cancel != nil {
 			cancel()
 		}
+
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
 		for _, jobDesc := range config.Jobs {
+			job, ok := jobs[jobDesc.Type]
+			if !ok {
+				l.Warning("no such job - %s", jobDesc.Type)
+				continue
+			}
+
 			if jobDesc.Count < 1 {
 				jobDesc.Count = 1
 			}
-			if job, ok := jobs[jobDesc.Type]; ok {
-				for i := 0; i < jobDesc.Count; i++ {
-					go job(ctx, l, jobDesc.Args)
-				}
-			} else {
-				l.Warning("no such job - %s", jobDesc.Type)
+
+			for i := 0; i < jobDesc.Count; i++ {
+				go job(ctx, l, jobDesc.Args)
 			}
 		}
+
 		time.Sleep(refreshTimeout)
+		dumpMetrics(l, metricsPath, "traffic", clientID)
 	}
 }
