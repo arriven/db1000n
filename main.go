@@ -194,6 +194,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args JobArgs) error {
 		Headers map[string]string
 		Client  json.RawMessage
 	}
+
 	var jobConfig httpJobConfig
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {
