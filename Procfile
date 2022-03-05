@@ -1,1 +1,1 @@
-web: bin/db1000n
+worker: bin/db1000n
