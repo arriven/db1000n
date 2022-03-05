@@ -37,4 +37,11 @@ rem Download latest windows x64 build
 rem We don't currently check if it's already downloaded, so it redownload latest version each run
 powershell -ExecutionPolicy Bypass -File %temp%\GetDB1000N.ps1 %temp%
 rem Assume that archive contained executable file named db1000n.exe and try to run it
-%temp%/db1000n.exe
+:StartApp
+rem Starts the app and if it returns 0 exit code it does "goto End", breaking loop
+%temp%/db1000n.exe && goto End
+rem Otherwise, if exit code is non zero, report and restart
+echo DB1000N crahed with exit code %errorlevel%, restarting
+goto StartApp
+:End
+exit /b 0
