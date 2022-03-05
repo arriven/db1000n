@@ -1,6 +1,6 @@
 # Configuration
 
-## Commandline reference
+## Command Line reference
 
 ```text
 Usage of /tmp/go-build781992389/b001/exe/main:
@@ -23,7 +23,7 @@ The config is expected to be in json format and has following configuration valu
 
 - `jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
 - `jobs[*]` - `[object]` single job definition as json object
-- `jobs[*].type` - `[string]` type of the job (determines whhich attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`, or `packetgen`
+- `jobs[*].type` - `[string]` type of the job (determines which attack function to launch). Can be `http`, `tcp`, `udp`, `syn-flood`, or `packetgen`
 - `jobs[*].count` - `[number]` the amount of instances of the job to be launched, automatically set to 1 if no or invalid value is specified
 - `jobs[*].args` - `[object]` arguments to pass to the job. Depends on `jobs[*].type`
 
@@ -56,7 +56,7 @@ The config is expected to be in json format and has following configuration valu
 - `payload_length` - `[number]` refer to original syn-flood package docs
 - `flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
 
-Warning: `packetgen` requires root privilleges to run
+Warning: `packetgen` requires root privileges to run
 
 `packetgen` args:
 
@@ -79,7 +79,7 @@ Warning: `packetgen` requires root privilleges to run
 - `tcp.ack` - `[number]`
 - `tcp.window` - `[number]`
 - `tcp.urgent` - `[number]`
-- `tcp.flags` - `[object]` flags for tcp (every flag has it's respective name)
+- `tcp.flags` - `[object]` flags for tcp (every flag has its respective name)
 
 Warning: `slow-loris` from testconfig.json is not yet finished and may overload the app due to not handling config refreshes
 

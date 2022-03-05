@@ -2,7 +2,7 @@
 
 _Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards_
 
-_Ви можете читатю цю сторінку українською: [README-ua.md](README-ua.md)_
+_Ви можете читати цю сторінку українською: [README-ua.md](README-ua.md)_
 
 ## Quickstart guide
 
