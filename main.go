@@ -141,9 +141,9 @@ type IPInfo struct {
 func openBrowser(url string, l *logs.Logger) {
 	switch runtime.GOOS {
 	case "windows":
-		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	case "darwin":
-		exec.Command("open", url).Start()
+		_ = exec.Command("open", url).Start()
 	}
 	l.Info("Please open %s", url)
 }
@@ -174,6 +174,7 @@ func main() {
 	if err != nil {
 		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
 	} else {
+                defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
