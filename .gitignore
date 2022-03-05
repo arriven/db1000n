@@ -23,7 +23,6 @@ config.json
 
 # terraform
 **/.terraform*
-**/terraform.tfvars
 **/terraform.tfstate*
 
 .history
