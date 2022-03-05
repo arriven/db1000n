@@ -43,7 +43,7 @@ then
   MD5_SUFFIX="-q"
 else
   MD5_BINARY="md5sum"
-  MD5_SUFFIX=""
+  MD5_SUFFIX="-t"
 fi
 
 echo "Checking md5 hash..."
