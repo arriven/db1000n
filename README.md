@@ -9,6 +9,8 @@ Please check existing issues (both open and closed) before creating new ones. It
   get 1 year of subscription
 * NordVPN: You need to fill out form https://nordvpn.org/emergency-vpn/
 * https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
+* https://www.hotspotshield.com/blog/privacy-security-for-ukraine
+* https://www.vpnunlimited.com/stop-russian-aggression
 
 ## Free
 * https://protonvpn.com/
