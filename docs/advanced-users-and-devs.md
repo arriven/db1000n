@@ -7,7 +7,7 @@
 This is a simple distributed load generation client written in go.
 It is able to fetch simple json config from a local or remote location.
 The config describes which load generation jobs should be launched in parallel.
-I do not intend to copy or replace it but rather provide a simple open source option.
+There are other tools doing that. I do not intend to copy or replace them but rather provide a simple open source alternative so that users have more options
 Feel free to use it in your load tests (wink-wink).
 
 The software is provided as is under no guarantee.
