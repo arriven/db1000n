@@ -67,7 +67,7 @@ services:
 
   # this Docker container will use VPN 01
   db1000n_01:
-    image: db1000n
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       - ovpn_01
@@ -75,7 +75,7 @@ services:
 
   # this Docker container will use VPN 02
   db1000n_02:
-    image: db1000n
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       - ovpn_02
@@ -83,7 +83,7 @@ services:
 
   # this Docker container will use VPN 03
   db1000n_03:
-    image: db1000n
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       - ovpn_03
