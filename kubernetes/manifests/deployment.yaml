@@ -1,29 +1,34 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: db1000n
+
+---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: db1000n
   namespace: db1000n
   labels:
     app: db1000n
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      name: db1000n
+      app: db1000n
   template:
     metadata:
       labels:
-        name: db1000n
+        app: db1000n
     spec:
       containers:
       - name: db1000n
         image: ghcr.io/arriven/db1000n
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "128m"
+            memory: "512Mi"
+            cpu: "500m"
           limits:
             memory: "2048Mi"
             cpu: "2"
-      nodeSelector:
-        db1000n: "true"
-      terminationGracePeriodSeconds: 30
