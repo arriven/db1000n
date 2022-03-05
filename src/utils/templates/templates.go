@@ -35,8 +35,7 @@ func getProxylistByUrl(url string) (urls []string) {
 		return nil
 	}
 	defer resp.Body.Close()
-	err = json.NewDecoder(resp.Body).Decode(&urls)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&urls); err != nil {
 		return nil
 	}
 	return urls
