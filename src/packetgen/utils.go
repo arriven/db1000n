@@ -29,7 +29,7 @@ import (
 	"net"
 	"regexp"
 
-	"github.com/Arriven/db1000n/logs"
+	"github.com/Arriven/db1000n/src/logs"
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length

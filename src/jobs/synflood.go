@@ -1,15 +1,16 @@
-package job
+package jobs
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/synfloodraw"
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/synfloodraw"
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 func synFloodJob(ctx context.Context, l *logs.Logger, args Args) error {
-	defer panicHandler()
+	defer utils.PanicHandler()
 	type synFloodJobConfig struct {
 		BasicJobConfig
 		Host          string

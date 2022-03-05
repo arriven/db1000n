@@ -1,4 +1,4 @@
-package job
+package jobs
 
 import (
 	"bytes"
@@ -12,15 +12,17 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/metrics"
-	"github.com/Arriven/db1000n/template"
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
+
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
-	defer panicHandler()
+	defer utils.PanicHandler()
 
 	type HTTPClientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
@@ -45,7 +47,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 	}
 
 	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(template.Execute(string(jobConfig.Client))), &clientConfig); err != nil {
+	if err := json.Unmarshal([]byte(templates.Execute(string(jobConfig.Client))), &clientConfig); err != nil {
 		l.Debug("error parsing json: %v", err)
 	}
 
@@ -114,8 +116,8 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 	defer ticker.Stop()
 
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(template.Execute(jobConfig.Method), template.Execute(jobConfig.Path),
-			bytes.NewReader([]byte(template.Execute(string(jobConfig.Body)))))
+		req, err := http.NewRequest(templates.Execute(jobConfig.Method), templates.Execute(jobConfig.Path),
+			bytes.NewReader([]byte(templates.Execute(string(jobConfig.Body)))))
 		if err != nil {
 			l.Debug("error creating request: %v", err)
 			continue
@@ -132,7 +134,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		for key, value := range jobConfig.Headers {
 			trafficMonitor.Add(len(key))
 			trafficMonitor.Add(len(value))
-			req.Header.Add(template.Execute(key), template.Execute(value))
+			req.Header.Add(templates.Execute(key), templates.Execute(value))
 		}
 		trafficMonitor.Add(len(jobConfig.Method))
 		trafficMonitor.Add(len(jobConfig.Path))

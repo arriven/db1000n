@@ -1,4 +1,4 @@
-package template
+package templates
 
 import (
 	"encoding/base64"
@@ -9,9 +9,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/packetgen"
 	"github.com/google/uuid"
+
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/packetgen"
 )
 
 func getProxylistURL() string {
