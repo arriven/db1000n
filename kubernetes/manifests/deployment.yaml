@@ -23,12 +23,13 @@ spec:
         app: db1000n
     spec:
       containers:
-      - name: db1000n
-        image: ghcr.io/arriven/db1000n
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "2048Mi"
-            cpu: "2"
+        - name: db1000n
+          image: ghcr.io/arriven/db1000n:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2048Mi"
+              cpu: "2"
