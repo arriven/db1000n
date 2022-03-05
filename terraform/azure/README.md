@@ -3,6 +3,7 @@
 ## Prerequisites
 
 - Install terraform
+- Register a new Zauzre account by providing a valid credit card and get 200$ free credits.
 - [Prepare evironment for Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
     - [The easiest option for auth is AzureCLI](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli)
 
