@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
       - name: db1000n
-        image: ghcr.io/arriven/db1000n
+        image: ghcr.io/arriven/db1000n:latest
+        imagePullPolicy: Always
         resources:
           requests:
             memory: "512Mi"
