@@ -14,7 +14,8 @@ variable "region" {
 
 variable "repo" {
   type    = string
-  default = "https://github.com/Arriven/db1000n"
+  //default = "https://github.com/Arriven/db1000n"
+  default = "https://github.com/Amet13/db1000n-1"
 }
 
 variable "app_version" {
