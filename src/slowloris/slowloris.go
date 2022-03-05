@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/logs"
+	"github.com/Arriven/db1000n/src/logs"
 )
 
 type Config struct {

@@ -1,4 +1,4 @@
-package job
+package jobs
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/slowloris"
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/slowloris"
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 func slowLorisJob(ctx context.Context, l *logs.Logger, args Args) error {
-	defer panicHandler()
+	defer utils.PanicHandler()
 	var jobConfig *slowloris.Config
 	err := json.Unmarshal(args, &jobConfig)
 	if err != nil {

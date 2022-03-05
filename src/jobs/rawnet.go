@@ -1,4 +1,4 @@
-package job
+package jobs
 
 import (
 	"context"
@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/metrics"
-	"github.com/Arriven/db1000n/template"
 	"github.com/google/uuid"
+
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // RawNetJobConfig comment for linter
@@ -21,7 +23,7 @@ type RawNetJobConfig struct {
 }
 
 func tcpJob(ctx context.Context, l *logs.Logger, args Args) error {
-	defer panicHandler()
+	defer utils.PanicHandler()
 	type tcpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -31,7 +33,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(template.Execute(jobConfig.Address)))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.Execute(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
@@ -45,7 +47,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args Args) error {
 			continue
 		}
 
-		_, err = conn.Write([]byte(template.Execute(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(templates.Execute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()
@@ -60,7 +62,7 @@ func tcpJob(ctx context.Context, l *logs.Logger, args Args) error {
 }
 
 func udpJob(ctx context.Context, l *logs.Logger, args Args) error {
-	defer panicHandler()
+	defer utils.PanicHandler()
 	type udpJobConfig struct {
 		RawNetJobConfig
 	}
@@ -70,7 +72,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		return err
 	}
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(template.Execute(jobConfig.Address)))
+	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(templates.Execute(jobConfig.Address)))
 	if err != nil {
 		return err
 	}
@@ -83,7 +85,7 @@ func udpJob(ctx context.Context, l *logs.Logger, args Args) error {
 	}
 
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write([]byte(template.Execute(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(templates.Execute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		finishedAt := time.Now().Unix()

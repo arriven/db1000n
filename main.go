@@ -40,19 +40,19 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Arriven/db1000n/job"
-	"github.com/Arriven/db1000n/logs"
-	"github.com/Arriven/db1000n/metrics"
-	"github.com/Arriven/db1000n/utils"
+	"github.com/Arriven/db1000n/src/jobs"
+	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // Config for all jobs to run
 type Config struct {
-	Jobs []job.Config
+	Jobs []jobs.Config
 }
 
 func fetchConfig(configPath string) (*Config, error) {
-	defer panicHandler()
+	defer utils.PanicHandler()
 
 	var configBytes []byte
 	if configURL, err := url.ParseRequestURI(configPath); err == nil {
@@ -84,7 +84,7 @@ func fetchConfig(configPath string) (*Config, error) {
 }
 
 func dumpMetrics(l *logs.Logger, path, name, clientID string) {
-	defer panicHandler()
+	defer utils.PanicHandler()
 
 	bytesPerSecond := metrics.Default.Read(name)
 	if bytesPerSecond > 0 {
@@ -169,22 +169,24 @@ func main() {
 
 	l := logs.New(logLevel)
 	clientID := uuid.New().String()
-	
+
+	l.Info("started client with id %v", clientID)
+
 	resp, err := http.Get("https://api.myip.com/")
 	if err != nil {
 		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
 	} else {
-                defer resp.Body.Close()
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
 		} else {
 			ipInfo := IPInfo{}
 			err = json.Unmarshal(body, &ipInfo)
-			if err != nil{
+			if err != nil {
 				l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
 			} else {
-				if (ipInfo.Country == "Ukraine") {
+				if ipInfo.Country == "Ukraine" {
 					l.Error("You currently have Ukrainian IP adress. You need to enable VPN.")
 					// TODO add correct URL
 					//openBrowser("https://example.com/", l)
@@ -215,7 +217,7 @@ func main() {
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
 		for _, jobDesc := range config.Jobs {
-			job, ok := job.Get(jobDesc.Type)
+			job, ok := jobs.Get(jobDesc.Type)
 			if !ok {
 				l.Warning("no such job - %s", jobDesc.Type)
 				continue
@@ -232,11 +234,5 @@ func main() {
 
 		time.Sleep(refreshTimeout)
 		dumpMetrics(l, metricsPath, "traffic", clientID)
-	}
-}
-
-func panicHandler() {
-	if err := recover(); err != nil {
-		logs.Default.Warning("caught panic: %v", err)
 	}
 }

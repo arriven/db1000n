@@ -1,15 +1,16 @@
-package job
+package jobs
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/Arriven/db1000n/logs"
+	"github.com/Arriven/db1000n/src/logs"
 )
 
 // Args comment for linter
 type Args = json.RawMessage
 
+// Job comment for linter
 type Job = func(context.Context, *logs.Logger, Args) error
 
 // Config comment for linter
@@ -56,10 +57,4 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 	c.iter++
 
 	return c.iter <= c.Count
-}
-
-func panicHandler() {
-	if err := recover(); err != nil {
-		logs.Default.Warning("caught panic: %v\n some of the attacks may be unsupported on your system", err)
-	}
 }
