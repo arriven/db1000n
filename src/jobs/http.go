@@ -159,11 +159,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 			}
 		}
 
-		if clientConfig.Async {
-			go sendRequest()
-		} else {
-			sendRequest()
-		}
+        go sendRequest()
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
