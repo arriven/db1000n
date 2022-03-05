@@ -1,8 +1,8 @@
 # Death by 1000 needles (UA)
 
-*Будь ласка перевіряйте вже відкриті Issues (як відчинені, так і зачинені) перед тим як створювати нові. Це дуже зекономить час на відповіді та допоможе зконцентруватися на більш критичних речах. Дякую*
+_Будь ласка перевіряйте вже відкриті Issues (як відчинені, так і зачинені) перед тим як створювати нові. Це дуже зекономить час на відповіді та допоможе зконцентруватися на більш критичних речах. Дякую_
 
-*This README in English: [README.md](README.md)*
+_This README in English: [README.md](README.md)_
 
 ## Гайд по швидкому старту
 
@@ -31,7 +31,7 @@
 
 ### Безкоштовно за запитом чи з промокодом
 
-- https://clearvpn.com/ з промокодом  `SAVEUKRAINE` або перейдіть за лінкою https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE ви отримаєте 1 рік підписки
+- https://clearvpn.com/ з промокодом `SAVEUKRAINE` або перейдіть за лінкою https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE ви отримаєте 1 рік підписки
 - NordVPN: заповніть цю форму https://nordvpn.org/emergency-vpn/
 - https://windscribe.com/ за промокодом `ПИЗДЕЦ` ви отримаєте 30GB
 - https://www.hotspotshield.com/blog/privacy-security-for-ukraine
@@ -69,3 +69,11 @@ docker run ghcr.io/arriven/db1000n
 Намагайтесь тримати комп'ютер в активному стані, використовуйте VPN та слідкуйте за тим що програма працює.
 Наші експерти координують атаки без вашої активної участі.
 Дякуємо вам за допомогу!
+
+## Контакти
+
+- [Група в телеграмі](https://t.me/ddos_separ)
+- [Резерв](https://t.me/+z_-Tk4zT4IxmNGQy)
+- [Чат](https://t.me/+9GPKhDPGHPAzZjdi)
+- [Інстаграм](https://instagram.com/ddos_attack_separ)
+- Бот для зворотнього зв'язку: @ddosseparbot

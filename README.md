@@ -1,8 +1,8 @@
 # Death by 1000 needles
 
-*Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards*
+_Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards_
 
-*Ви можете читатю цю сторінку українською: [README-ua.md](README-ua.md)*
+_Ви можете читатю цю сторінку українською: [README-ua.md](README-ua.md)_
 
 ## Quickstart guide
 
@@ -69,3 +69,11 @@ See [docs/advanced-users-and-devs.md](docs/advanced-users-and-devs.md)
 You need to keep your computer active, use VPN and make sure that the application is up and running.
 Our experts coordinate our attacks remotely without disturbing and interrupting you.
 Thanks for your help!
+
+## Contacts
+
+- [Main telegram group](https://t.me/ddos_separ)
+- [Reserv](https://t.me/+z_-Tk4zT4IxmNGQy)
+- [Chat](https://t.me/+9GPKhDPGHPAzZjdi)
+- [Follow and share](https://instagram.com/ddos_attack_separ)
+- Contact bot: @ddosseparbot
