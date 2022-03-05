@@ -1,21 +1,22 @@
-# Deployment
+# AWS deployment
 
 ## Requirements
 
-    - AWS account
-    - terraform installed
+- AWS account
+- `terraform` installed
 
 ## Deploy
 
-to deploy run
+To deploy run:
 
 ```terraform
 terraform apply -var-file="ireland.tfvars"
 ```
 
-you can create new tfvars files for different regions and accounts  
-to swich between regions you can sue `terraform workspace` command
-for example:
+You can create new `*.tfvars` files for different regions and accounts.
+To swich between regions you can use `terraform workspace` command.
+
+For example:
 
 ```terraform
 terraform init
@@ -25,7 +26,9 @@ terraform workspace new us
 terraform apply -var-file="useast.tfvars"
 ```
 
-to destroy infrastructure you can use next commands
+## Destroy
+
+To destroy infrastructure use commands:
 
 ```terraform
 terraform workspace select eu

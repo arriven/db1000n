@@ -1,4 +1,4 @@
-// Default AWS provider vars
+# Default AWS provider vars
 variable "region" {
   type        = string
   description = "AWS Region"
@@ -31,7 +31,7 @@ variable "min_size" {
 }
 
 
-// Mixed instances policy part
+# Mixed instances policy part
 variable "desired_capacity" {
   type        = number
   description = "number of instances to run"

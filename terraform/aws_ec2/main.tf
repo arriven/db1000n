@@ -70,15 +70,13 @@ resource "aws_iam_role_policy" "web_iam_role_policy" {
 EOF
 }
 
-
-
 resource "aws_security_group" "instance_connect" {
   vpc_id      = aws_vpc.main.id
   name_prefix = "instance_connect"
   description = "allow ssh"
 
   ingress {
-    cidr_blocks      = ["0.0.0.0/0",]
+    cidr_blocks      = ["0.0.0.0/0", ]
     description      = ""
     from_port        = 22
     ipv6_cidr_blocks = []
@@ -95,6 +93,7 @@ resource "aws_security_group" "instance_connect" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 resource "aws_internet_gateway" "test-env-gw" {
   vpc_id = aws_vpc.main.id
 }
@@ -106,16 +105,18 @@ resource "aws_route_table" "route-table-test-env" {
     gateway_id = aws_internet_gateway.test-env-gw.id
   }
 }
+
 resource "aws_route_table_association" "subnet-association" {
   subnet_id      = aws_subnet.main.id
   route_table_id = aws_route_table.route-table-test-env.id
 }
+
 resource "aws_launch_template" "example" {
   name                                 = var.name
   image_id                             = var.ami_id
   instance_initiated_shutdown_behavior = "terminate"
   instance_type                        = var.instance_type
-  user_data                            = base64encode(<<EOF
+  user_data = base64encode(<<EOF
 #!/bin/bash -xe
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     yum update -y
@@ -145,19 +146,19 @@ EOF
   vpc_security_group_ids = [aws_security_group.instance_connect.id]
   tag_specifications {
     resource_type = "instance"
-    tags          = {
+    tags = {
       Name = "db1000n-server"
     }
   }
   tag_specifications {
     resource_type = "volume"
-    tags          = {
+    tags = {
       Name = "db1000n-server"
     }
   }
   tag_specifications {
     resource_type = "network-interface"
-    tags          = {
+    tags = {
       Name = "db1000n-server"
     }
   }
