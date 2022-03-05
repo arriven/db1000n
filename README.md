@@ -313,3 +313,10 @@ Almost every leaf `[string]` or `[object]` parameter can be templated with go te
 - `base64_decode`
 
 Please refer to official go documentation and code for these for now
+
+# Contacts
+- Main telegram group: https://t.me/ddos_separ
+- Reserv: https://t.me/+z_-Tk4zT4IxmNGQy
+- Chat: https://t.me/+9GPKhDPGHPAzZjdi
+- Follow and share: https://instagram.com/ddos_attack_separ
+- Contact bot: @ddosseparbot
