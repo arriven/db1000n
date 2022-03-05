@@ -37,4 +37,8 @@ rem Download latest windows x64 build
 rem We don't currently check if it's already downloaded, so it redownload latest version each run
 powershell -ExecutionPolicy Bypass -File %temp%\GetDB1000N.ps1 %temp%
 rem Assume that archive contained executable file named db1000n.exe and try to run it
-%temp%/db1000n.exe
+echo Download complete. Execution
+:start
+start /w %temp%/db1000n.exe
+echo App crashed. Restarting.
+goto start
