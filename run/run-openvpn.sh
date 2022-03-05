@@ -9,16 +9,24 @@ if [ ! -c /dev/net/tun ]; then
 fi
 
 readonly OVPNCONF_DIR="/etc/openvpn_host"
-readonly OPENVPN_AUTH_USER_PASS="$(mktemp)_credentials.conf"
-echo -e "$OPENVPN_USERNAME\n$OPENVPN_PASSWORD" > "$OPENVPN_AUTH_USER_PASS"
-chmod 400 $OPENVPN_AUTH_USER_PASS
 
 # Move the config over to a tmp file and inject the credentials in
 OPENVPN_CONF="$(mktemp).ovpn"
 readonly OPENVPN_CONF
-grep -Ev "(^(up|down)\s|auth-user-pass)" \
-  "$(ls $OVPNCONF_DIR/*.conf $OVPNCONF_DIR/*.ovpn | shuf -n 1)" > "$OPENVPN_CONF"
-echo "auth-user-pass $OPENVPN_AUTH_USER_PASS" >> "$OPENVPN_CONF"
+
+if [[ -n "$OPENVPN_USERNAME" ]] || [[ -n "$OPENVPN_PASSWORD" ]]
+then
+	readonly OPENVPN_AUTH_USER_PASS="$(mktemp)_credentials.conf"
+	echo -e "$OPENVPN_USERNAME\n$OPENVPN_PASSWORD" > "$OPENVPN_AUTH_USER_PASS"
+	chmod 400 $OPENVPN_AUTH_USER_PASS
+
+	grep -Ev "(^(up|down)\s|auth-user-pass)" \
+	  "$(ls $OVPNCONF_DIR/*.conf $OVPNCONF_DIR/*.ovpn | shuf -n 1)" > "$OPENVPN_CONF"
+	echo "auth-user-pass $OPENVPN_AUTH_USER_PASS" >> "$OPENVPN_CONF"
+else
+	grep -Ev "(^(up|down)\s)" \
+	  "$(ls $OVPNCONF_DIR/*.conf $OVPNCONF_DIR/*.ovpn | shuf -n 1)" > "$OPENVPN_CONF"
+fi
 
 if [[ -n "$VPN_ENABLED" ]]
 then

@@ -149,12 +149,28 @@ if you don't want to use VPN from within docker container, set `--env "VPN_ENABL
 if you want to to use VPN from within docker container:
 
 - place your `.ovpn` or `.conf` files into `openvpn/` directory
+- if there's more than one `.ovpn` or `.conf` file, random configuration will be picked
 - set `--env "VPN_ENABLED=true` in `run.sh`
 - update `--env "OPENVPN_USERNAME="` and `--env "OPENVPN_PASSWORD="` in `run.sh` with your credentials
 
 ```bash
 ./run.sh
 ```
+
+if you want to use different VPN providers (meaning different `OPENVPN_USERNAME` and `OPENVPN_PASSWORD` credentials), do the following:
+
+- set `--env "VPN_ENABLED=true` in `run.sh`
+- remove `--env "OPENVPN_USERNAME="` and `--env "OPENVPN_PASSWORD="` from `run.sh`
+- place your `openvpn-provider-1.conf` into `openvpn/` directory
+- find the line in your `openvpn-provider-1.conf` where it says `auth-user-pass` and replace with `auth-user-pass provider1.txt`
+- create a text file in `openvpn/provider1.txt` with two lines:
+
+```
+<your provider 1 username>
+<your provider 1 password>
+```
+
+- repeat steps above for multiple providers
 
 ### kubernetes install
 
