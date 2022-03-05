@@ -1,4 +1,4 @@
-package utils
+package config
 
 var DefaultConfig = `{
 	"jobs": [

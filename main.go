@@ -23,113 +23,17 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/logs"
-	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
 )
-
-// Config for all jobs to run
-type Config struct {
-	Jobs []jobs.Config
-}
-
-func fetchConfig(configPath string) (*Config, error) {
-	defer utils.PanicHandler()
-
-	var configBytes []byte
-	if configURL, err := url.ParseRequestURI(configPath); err == nil {
-		resp, err := http.Get(configURL.String())
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
-		}
-
-		if configBytes, err = io.ReadAll(resp.Body); err != nil {
-			return nil, err
-		}
-	} else if configBytes, err = os.ReadFile(configPath); err != nil {
-		return nil, err
-	}
-
-	var config Config
-	if err := json.Unmarshal(configBytes, &config); err != nil {
-		fmt.Printf("error parsing json config: %v\n", err)
-		return nil, err
-	}
-
-	return &config, nil
-}
-
-func dumpMetrics(l *logs.Logger, path, name, clientID string) {
-	defer utils.PanicHandler()
-
-	bytesPerSecond := metrics.Default.Read(name)
-	if bytesPerSecond > 0 {
-		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
-		l.Info("Attack is successful! Russian warship, go fuck yourself!\n")
-		l.Info("The app is generating approximately %v bytes per second\n", bytesPerSecond)
-		utils.ReportStatistics(int64(bytesPerSecond), clientID)
-	} else {
-		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
-	}
-	if path == "" {
-		return
-	}
-	type metricsDump struct {
-		BytesPerSecond int `json:"bytes_per_second"`
-	}
-	dump := &metricsDump{
-		BytesPerSecond: bytesPerSecond,
-	}
-	dumpBytes, err := json.Marshal(dump)
-	if err != nil {
-		l.Warning("failed marshaling metrics: %v", err)
-		return
-	}
-	// TODO: use proper ip
-	url := fmt.Sprintf("%s?id=%s", path, clientID)
-	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
-	if err != nil {
-		l.Warning("failed sending metrics: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
-	}
-}
-
-func updateConfig(configPath, backupConfig string) (config *Config, err error) {
-	configPaths := strings.Split(configPath, ",")
-	for _, path := range configPaths {
-		config, err = fetchConfig(path)
-		if err == nil {
-			return config, nil
-		}
-	}
-	err = json.Unmarshal([]byte(backupConfig), &config)
-	return config, err
-}
 
 func main() {
 	var configPath string
@@ -139,7 +43,7 @@ func main() {
 	var help bool
 	var metricsPath string
 	flag.StringVar(&configPath, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&backupConfig, "b", utils.DefaultConfig, "raw backup config in case the primary one is unavailable")
+	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -149,6 +53,8 @@ func main() {
 		flag.CommandLine.Usage()
 		return
 	}
+
+	logs.Default = logs.New(logLevel)
 
 	l := logs.New(logLevel)
 	clientID := uuid.New().String()
@@ -163,7 +69,7 @@ func main() {
 	}()
 
 	for {
-		config, err := updateConfig(configPath, backupConfig)
+		config, err := config.UpdateConfig(configPath, backupConfig)
 		if err != nil {
 			l.Warning("fetching json config: %v\n", err)
 			continue
@@ -192,6 +98,6 @@ func main() {
 		}
 
 		time.Sleep(refreshTimeout)
-		dumpMetrics(l, metricsPath, "traffic", clientID)
+		utils.DumpMetrics(l, metricsPath, "traffic", clientID)
 	}
 }
