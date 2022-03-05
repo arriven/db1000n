@@ -29,6 +29,7 @@ func Get(t string) (Job, bool) {
 		"syn-flood":  synFloodJob,
 		"slow-loris": slowLorisJob,
 		"packetgen":  packetgenJob,
+		"dns-flood":  dnsFloodJob,
 	}[t]
 
 	return res, ok
