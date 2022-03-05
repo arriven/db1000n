@@ -15,7 +15,7 @@
 
 ### For dummies
 
-1. Download and application for your platform:
+1. Download an application for your platform:
    - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
    - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-arm64.tar.gz)
    - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-amd64.tar.gz)
