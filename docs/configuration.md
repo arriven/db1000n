@@ -98,3 +98,9 @@ Almost every leaf `[string]` or `[object]` parameter can be templated with go te
 - `base64_decode`
 
 Please refer to official go documentation and code for these for now
+
+`dns-flood` args:
+
+- `root_domain` - `[string]` Root domain which should be resolved to Nameservers. Example: ria.ru 
+- `target_domains` - `list of [string]` List of legitimate domains. example `["ria.ru", "www.ria.ru"]`
+- `random_subdomains` - `[bool]` Add random subdomain to requests.
