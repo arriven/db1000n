@@ -2,20 +2,20 @@
 
 ## For developers
 
-Developed by Arriven: (https://github.com/Arriven)
+*Developed by Arriven: (https://github.com/Arriven)*
 
 This is a simple distributed load generation client written in go.
 It is able to fetch simple json config from a local or remote location.
 The config describes which load generation jobs should be launched in parallel.
 I do not intend to copy or replace it but rather provide a simple open source option.
-Feel free to use it in your load tests (wink-wink)
+Feel free to use it in your load tests (wink-wink).
 
 The software is provided as is under no guarantee.
-I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine)
+I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine),
 
 Synflood implementation is taken from [bilalcaliskan/syn-flood](https://github.com/bilalcaliskan/syn-flood) and slightly patched.
 I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules.
-Will figure it out better later (sorry to the owner).
+Will figure it out better later (sorry to the owner)
 
 ## Go installation
 
@@ -45,7 +45,7 @@ You can then run it via this command:
 
 How to install docker: https://docs.docker.com/get-docker/
 
-- Make sure you've set all available resources to docker:
+Make sure you've set all available resources to docker:
 
 - https://docs.docker.com/desktop/windows/#resources
 - https://docs.docker.com/desktop/mac/#resources
@@ -80,8 +80,8 @@ If you want to use different VPN providers (meaning different `OPENVPN_USERNAME`
 
 ## Kubernetes
 
-See [kubernetes/](kubernetes/) for possible ways to deploy into it.
+See [kubernetes/](kubernetes/) for possible ways to deploy into it
 
 ## Public Clouds
 
-See [terraform/](terraform/) for possible ways to deploy into them.
+See [terraform/](terraform/) for possible ways to deploy into them
