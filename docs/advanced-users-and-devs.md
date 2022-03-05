@@ -11,7 +11,7 @@ There are other tools doing that. I do not intend to copy or replace them but ra
 Feel free to use it in your load tests (wink-wink).
 
 The software is provided as is under no guarantee.
-I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day into russian invasion into Ukraine),
+I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day of Russian invasion into Ukraine).
 
 Synflood implementation is taken from [bilalcaliskan/syn-flood](https://github.com/bilalcaliskan/syn-flood) and slightly patched.
 I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules.
@@ -28,13 +28,13 @@ go install github.com/Arriven/db1000n@latest
 
 ## Shell installation
 
-Run install script directly into the shell (useful for install through ssh):
+Run install script directly into the shell (useful for installation through SSH):
 
 ```bash
 curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh | sh
 ```
 
-The command above will detect the os and architecture, dowload the archive, validate it, and extract `db1000n` executable into the working directory.
+The command above will detect the OS and architecture, download the archive, validate it, and extract `db1000n` executable into the working directory.
 You can then run it via this command:
 
 ```bash
@@ -52,7 +52,7 @@ Make sure you've set all available resources to docker:
 
 If you don't want to use VPN from within docker container, set `--env "VPN_ENABLED=false"` in `run.sh`
 
-If you want to to use VPN from within docker container:
+If you want to use VPN from within docker container:
 
 - Place your `.ovpn` or `.conf` files into `openvpn/` directory
 - If there's more than one `.ovpn` or `.conf` file, random configuration will be picked
@@ -80,8 +80,8 @@ If you want to use different VPN providers (meaning different `OPENVPN_USERNAME`
 
 ## Kubernetes
 
-See [kubernetes/](kubernetes/) for possible ways to deploy into it
+See [../kubernetes/](../kubernetes/) for possible ways to deploy into it
 
 ## Public Clouds
 
-See [terraform/](terraform/) for possible ways to deploy into them
+See [../terraform/](../terraform/) for possible ways to deploy into them
