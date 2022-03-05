@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +18,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Arriven/db1000n/src/jobs"
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -39,20 +39,21 @@ type Runner struct {
 
 	currentRawConfig []byte // currently applied config
 
-	log *logs.Logger
+	debug bool
 
 	stop chan interface{}
 }
 
 // New runner according to the config
-func New(cfg *Config, l *logs.Logger) (*Runner, error) {
+func New(cfg *Config, debug bool) (*Runner, error) {
 	return &Runner{
 		configPaths:    strings.Split(cfg.ConfigPaths, ","),
 		backupConfig:   cfg.BackupConfig,
 		refreshTimeout: cfg.RefreshTimeout,
 		metricsPath:    cfg.MetricsPath,
 
-		log:  l,
+		debug: debug,
+
 		stop: make(chan interface{}),
 	}, nil
 }
@@ -70,20 +71,20 @@ func (r *Runner) Run() {
 	)
 
 	for !stop {
-		newRawConfig, err := fetchConfig(r.configPaths, r.log)
+		newRawConfig, err := fetchConfig(r.configPaths)
 		if err != nil {
 			newRawConfig = r.backupConfig
 		}
 
 		if !bytes.Equal(r.currentRawConfig, newRawConfig) { // Only restart jobs if the new config differs from the current one
-			r.log.Info("New config received, applying")
+			log.Println("New config received, applying")
 
 			var config struct {
 				Jobs []jobs.Config
 			}
 
 			if err := json.Unmarshal(newRawConfig, &config); err != nil {
-				r.log.Warning("Failed to unmarshal job configs: %v", err)
+				log.Printf("Failed to unmarshal job configs: %v", err)
 			} else {
 				if cancel != nil {
 					cancel()
@@ -94,7 +95,7 @@ func (r *Runner) Run() {
 				for i := range config.Jobs {
 					job, ok := jobs.Get(config.Jobs[i].Type)
 					if !ok {
-						r.log.Warning("No such job %q", config.Jobs[i].Type)
+						log.Printf("Unknown job %q", config.Jobs[i].Type)
 
 						continue
 					}
@@ -107,7 +108,7 @@ func (r *Runner) Run() {
 						wg.Add(1)
 
 						go func(i int) {
-							job(ctx, r.log, config.Jobs[i].Args)
+							job(ctx, config.Jobs[i].Args, r.debug)
 							wg.Done()
 						}(i)
 					}
@@ -115,7 +116,7 @@ func (r *Runner) Run() {
 
 				r.currentRawConfig = newRawConfig
 
-				r.log.Info("Jobs (re)started")
+				log.Println("Jobs (re)started")
 			}
 		}
 
@@ -128,7 +129,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.log, r.metricsPath, "traffic", clientID)
+		dumpMetrics(r.metricsPath, "traffic", clientID)
 	}
 
 	if cancel != nil {
@@ -141,15 +142,15 @@ func (r *Runner) Run() {
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
 
-func fetchConfig(paths []string, l *logs.Logger) ([]byte, error) {
+func fetchConfig(paths []string) ([]byte, error) {
 	for i := range paths {
 		res, err := fetchSingleConfig(paths[i])
 		if err != nil {
-			l.Warning("Failed to fetch config from %q: %v", paths[i], err)
+			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
 			continue
 		}
 
-		l.Info("Loading config from %q", paths[i])
+		log.Printf("Loading config from %q", paths[i])
 
 		return res, nil
 	}
@@ -187,45 +188,47 @@ func fetchSingleConfig(path string) ([]byte, error) {
 	return res, nil
 }
 
-func dumpMetrics(l *logs.Logger, path, name, clientID string) {
+func dumpMetrics(path, name, clientID string) {
 	defer func() {
 		if err := recover(); err != nil {
-			logs.Default.Warning("caught panic: %v", err)
+			log.Printf("caught panic: %v", err)
 		}
 	}()
 
 	bytesPerSecond := metrics.Default.Read(name)
 	if bytesPerSecond > 0 {
-		l.Info("Атака проводиться успішно! Руський воєнний корабль іди нахуй!\n")
-		l.Info("Attack is successful! Russian warship, go fuck yourself!\n")
-		l.Info("The app is generating approximately %v bytes per second\n", bytesPerSecond)
+		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		log.Println("Attack is successful! Russian warship, go fuck yourself!")
+		log.Printf("The app is generating approximately %v bytes per second", bytesPerSecond)
 		utils.ReportStatistics(int64(bytesPerSecond), clientID)
 	} else {
-		l.Warning("The app doesn't seem to generate any traffic, please contact your admin")
+		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
 	}
+
 	if path == "" {
 		return
 	}
-	type metricsDump struct {
+
+	dumpBytes, err := json.Marshal(&struct {
 		BytesPerSecond int `json:"bytes_per_second"`
-	}
-	dump := &metricsDump{
+	}{
 		BytesPerSecond: bytesPerSecond,
-	}
-	dumpBytes, err := json.Marshal(dump)
+	})
 	if err != nil {
-		l.Warning("failed marshaling metrics: %v", err)
+		log.Printf("Failed marshaling metrics: %v", err)
 		return
 	}
+
 	// TODO: use proper ip
-	url := fmt.Sprintf("%s?id=%s", path, clientID)
-	resp, err := http.Post(url, "application/json", bytes.NewReader(dumpBytes))
+	resp, err := http.Post(fmt.Sprintf("%s?id=%s", path, clientID), "application/json", bytes.NewReader(dumpBytes))
 	if err != nil {
-		l.Warning("failed sending metrics: %v", err)
+		log.Printf("Failed sending metrics: %v", err)
 		return
 	}
+
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		l.Warning("bad response when sending metrics. code %v", resp.StatusCode)
+		log.Printf("Failed sending metrics, bad response code %v", resp.StatusCode)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/packetgen"
 )
 
@@ -77,13 +77,13 @@ func Execute(input string) string {
 	// TODO: consider adding ability to populate custom data
 	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
 	if err != nil {
-		logs.Default.Warning("error parsing template: %v", err)
+		log.Printf("Error parsing template: %v", err)
 		return input
 	}
 
 	var output strings.Builder
 	if err = tmpl.Execute(&output, nil); err != nil {
-		logs.Default.Warning("error executing template: %v", err)
+		log.Printf("Error executing template: %v", err)
 		return input
 	}
 
