@@ -1,7 +1,23 @@
-For advanced users, full docs TBD
+# GCP + ExpressVPN deployment
 
-1. Subscribe on https://www.expressvpn.com
-2. Get activation code
-3. Fill TF variables
-4. Apply
+## Requirements
 
+- GCP account
+- Subscription on https://www.expressvpn.com (get the activation code)
+- `terraform` installed
+
+## Deploy
+
+To deploy run:
+
+```terraform
+terraform apply
+```
+
+## Destroy
+
+To destroy infrastructure use commands:
+
+```terraform
+terraform destroy
+```

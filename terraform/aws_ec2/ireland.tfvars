@@ -1,4 +1,4 @@
-// Set-up main info
+# Make changes in this file
 region           = "eu-west-1"
 ami_id           = "ami-0bf84c42e04519c85"
 name             = "ir_db1000n"

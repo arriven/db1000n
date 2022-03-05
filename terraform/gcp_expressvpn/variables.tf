@@ -12,10 +12,10 @@ variable "vpn_location" {
 
 variable "machine_type" {
   description = "GCP machine type"
-  default = "n1-standard-1"
+  default     = "n1-standard-1"
 }
 
 variable "machine_location" {
   description = "machine location"
-  default = "us-central1-a"
+  default     = "us-central1-a"
 }
