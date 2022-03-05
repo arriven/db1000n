@@ -4,11 +4,6 @@ variable "region" {
   description = "AWS Region"
 }
 
-variable "ami_id" {
-  type        = string
-  description = "AWS AMI"
-}
-
 variable "name" {
   type        = string
   description = "name of deployment"
