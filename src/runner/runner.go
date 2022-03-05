@@ -143,7 +143,7 @@ func (r *Runner) Stop() { close(r.stop) }
 
 func fetchConfig(paths []string, l *logs.Logger) ([]byte, error) {
 	for i := range paths {
-		res, err := fetchConfigOnePath(paths[i])
+		res, err := fetchSingleConfig(paths[i])
 		if err != nil {
 			l.Warning("Failed to fetch config from %q: %v", paths[i], err)
 			continue
@@ -157,7 +157,7 @@ func fetchConfig(paths []string, l *logs.Logger) ([]byte, error) {
 	return nil, errors.New("config fetch failed")
 }
 
-func fetchConfigOnePath(path string) ([]byte, error) {
+func fetchSingleConfig(path string) ([]byte, error) {
 	configURL, err := url.ParseRequestURI(path)
 	if err != nil {
 		res, err := os.ReadFile(path)
