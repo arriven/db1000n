@@ -29,12 +29,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 
@@ -134,20 +131,6 @@ func updateConfig(configPath, backupConfig string) (config *Config, err error) {
 	return config, err
 }
 
-type IPInfo struct {
-	Country string `json:"country"`
-}
-
-func openBrowser(url string, l *logs.Logger) {
-	switch runtime.GOOS {
-	case "windows":
-		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		_ = exec.Command("open", url).Start()
-	}
-	l.Info("Please open %s", url)
-}
-
 func main() {
 	var configPath string
 	var backupConfig string
@@ -172,31 +155,7 @@ func main() {
 
 	l.Info("started client with id %v", clientID)
 
-	resp, err := http.Get("https://api.myip.com/")
-	if err != nil {
-		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
-	} else {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
-		} else {
-			ipInfo := IPInfo{}
-			err = json.Unmarshal(body, &ipInfo)
-			if err != nil {
-				l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP adress.")
-			} else {
-				if ipInfo.Country == "Ukraine" {
-					l.Error("You currently have Ukrainian IP adress. You need to enable VPN.")
-					// TODO add correct URL
-					//openBrowser("https://example.com/", l)
-				} else {
-					l.Info("Current country: %s", ipInfo.Country)
-				}
-			}
-
-		}
-	}
+	go utils.CheckCountry(l)
 
 	var cancel context.CancelFunc
 	defer func() {
