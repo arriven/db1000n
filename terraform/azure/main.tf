@@ -1,4 +1,3 @@
-
 provider "azurerm" {
   features {}
 }
@@ -9,7 +8,7 @@ resource "azurerm_resource_group" "main" {
 }
 
 module "bomblet" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "northeurope"
@@ -18,7 +17,7 @@ module "bomblet" {
 }
 
 module "bomblet_we" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "westeurope"
@@ -27,7 +26,7 @@ module "bomblet_we" {
 }
 
 module "bomblet_cc" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "canadacentral"
@@ -36,7 +35,7 @@ module "bomblet_cc" {
 }
 
 module "bomblet_uae" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "uaenorth"
@@ -45,7 +44,7 @@ module "bomblet_uae" {
 }
 
 module "bomblet_cu" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "centralus"
@@ -54,7 +53,7 @@ module "bomblet_cu" {
 }
 
 module "bomblet_ea" {
-  source              = "./bomblet"
+  source = "./bomblet"
 
   bomblet_count       = var.bomblet_count
   region              = "eastasia"

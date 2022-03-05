@@ -23,6 +23,5 @@ variable "attack_memory" {
 }
 
 variable "attack_environment_variables" {
-  default = {
-    }
+  default = {}
 }

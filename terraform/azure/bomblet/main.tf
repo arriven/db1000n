@@ -1,7 +1,3 @@
-locals {
-
-}
-
 resource "azurerm_container_group" "main" {
   count               = var.bomblet_count
   name                = format("%s-%s", "${var.prefix}-${var.region}", format("%02d", count.index + 1))
