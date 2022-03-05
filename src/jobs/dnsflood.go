@@ -3,7 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
-	"github.com/Arriven/db1000n/dnsflood"
+	"github.com/Arriven/db1000n/src/dnsflood"
 	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/utils"
 )

