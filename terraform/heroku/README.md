@@ -18,6 +18,8 @@ terraform plan -var "email=${EMAIL}" -var "api_key=${API_KEY}"
 terraform apply -var "email=${EMAIL}" -var "api_key=${API_KEY}"
 ```
 
+Go to [apps list](https://dashboard.heroku.com/apps) and ensure that application successfully deployed.
+
 You can check logs for application with Heroku CLI: https://devcenter.heroku.com/articles/logging#view-logs
 
 

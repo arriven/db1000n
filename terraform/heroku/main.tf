@@ -26,7 +26,7 @@ resource "heroku_build" "build" {
 
 resource "heroku_formation" "formation" {
   app_id     = heroku_app.app.id
-  type       = "web"
+  type       = "worker"
   quantity   = var.instance_count
   size       = var.instance_type
   depends_on = [heroku_build.build]
