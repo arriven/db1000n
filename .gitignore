@@ -26,3 +26,7 @@ config.json
 **/terraform.tfstate*
 
 .history
+*.tar.gz
+db1000n
+*.md5
+md5sum.txt
