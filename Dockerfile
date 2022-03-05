@@ -12,11 +12,15 @@ FROM alpine:3.11.3 as openvpn
 RUN apk add --update supervisor openvpn curl && rm  -rf /tmp/* /var/cache/apk/*
 
 ADD supervisord/supervisord.conf /etc/
-ADD supervisord/supervisord-openvpn.conf /etc/supervisor/conf.d/
-ADD supervisord/supervisord-db1000n.conf /etc/supervisor/conf.d/
-ADD run/openvpn-up.sh run/run-openvpn.sh run/db1000n.sh /usr/local/bin/
+ADD supervisord/supervisord-openvpn.conf \
+    supervisord/supervisord-db1000n.conf /etc/supervisor/conf.d/
+ADD run/openvpn-up.sh \
+    run/run-openvpn.sh \
+    run/db1000n.sh /usr/local/bin/
 
-RUN chmod +x /usr/local/bin/openvpn-up.sh /usr/local/bin/run-openvpn.sh /usr/local/bin/db1000n.sh
+RUN chmod +x /usr/local/bin/openvpn-up.sh \
+    /usr/local/bin/run-openvpn.sh \
+    /usr/local/bin/db1000n.sh
 
 WORKDIR /usr/src/app
 COPY --from=builder /build/main .
