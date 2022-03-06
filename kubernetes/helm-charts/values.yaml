@@ -1,12 +1,13 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/arriven/db1000n
+  repository: ghcr.io/arriven/db1000n-advanced
   pullPolicy: Always
   # Available images: https://github.com/Arriven/db1000n/pkgs/container/db1000n
   tag: latest
 
-resources: {}
+resources:
+  {}
   # limits:
   #   cpu: 2
   #   memory: 2Gi

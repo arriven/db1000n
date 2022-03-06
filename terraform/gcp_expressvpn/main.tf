@@ -91,7 +91,7 @@ echo "IP HERE-> $(curl -v ifconfig.me)"
 cat <<EOF >> ./run.sh
 #! /bin/bash
 docker stop $(docker ps -a -q)
-docker run --rm ghcr.io/arriven/db1000n:latest
+docker run --rm ghcr.io/arriven/db1000n-advanced:latest
 EOF
 chmod +x ./run.sh
 

@@ -5,11 +5,11 @@ OpenVPN client can be deployed inside the same network as db1000n is in.
 One of the easy ways to set it up is through the docker compose:
 
 `docker-compose.yml`:
+
 ```yaml
 version: "3"
 
 services:
-
   # creates OpenVPN Docker container to first provider, endpoint #1
   ovpn_01:
     image: ghcr.io/wfg/openvpn-client
@@ -75,7 +75,7 @@ services:
 
   # this Docker container will use VPN 01
   db1000n_01:
-    image: ghcr.io/arriven/db1000n
+    image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
       - ovpn_01
@@ -83,7 +83,7 @@ services:
 
   # this Docker container will use VPN 02
   db1000n_02:
-    image: ghcr.io/arriven/db1000n
+    image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
       - ovpn_02
@@ -91,7 +91,7 @@ services:
 
   # this Docker container will use VPN 03
   db1000n_03:
-    image: ghcr.io/arriven/db1000n
+    image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
       - ovpn_03
@@ -105,12 +105,14 @@ secrets:
 ```
 
 `openvpn/provider01.txt`:
+
 ```
 <your username for OpenVPN provider 01>
 <your password for OpenVPN provider 01>
 ```
 
 `openvpn/provider02.txt`:
+
 ```
 <your username for OpenVPN provider 02>
 <your password for OpenVPN provider 02>

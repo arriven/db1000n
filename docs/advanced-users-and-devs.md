@@ -2,7 +2,7 @@
 
 ## For developers
 
-*Developed by Arriven: (https://github.com/Arriven)*
+_Developed by Arriven: (https://github.com/Arriven)_
 
 This is a simple distributed load generation client written in go.
 It is able to fetch simple json config from a local or remote location.
@@ -49,6 +49,11 @@ Make sure you've set all available resources to docker:
 
 - https://docs.docker.com/desktop/windows/#resources
 - https://docs.docker.com/desktop/mac/#resources
+
+Note: there are currently two images pointing to different configs for different usages in this repo:
+
+- `ghcr.io/arriven/db1000n` - default image using primitive configs that make their claim on the amount of traffic generated
+- `ghcr.io/arriven/db1000n-advanced` - image pointing to a more advanced config that has it's goal in generating less traffic that is harder to detect and has more chances to actually get to the target and be processed by it (potentially exploiting known vulnerabilities). Preferable (and default) for usage with cloud providers as it should lower your bills and chances of the provider marking your deployment as 'compromised'
 
 See [docker-vpn](docker-vpn.md) for instructions on setting it up
 
