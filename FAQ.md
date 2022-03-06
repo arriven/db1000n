@@ -37,3 +37,30 @@ TL;DR: [yes](https://github.com/Arriven/db1000n/issues/153)
 
 Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well.
 If you run an app in the cloud please control your billing (if you use Docker, ensure that use advanced image: `ghcr.io/arriven/db1000n-advanced`)
+
+## Can I leave the site for the night?
+
+Yes, you can. I personally leave the browser on overnight and it works fine.
+
+### How can I make sure that the computer does not go to sleep while the site is running?
+
+To do this, you need to install a program which keeps the screen turned off. Instructions for different operating systems below:
+
+- I have Windows
+    
+    Program name: **Caffeinated ([download](https://www.microsoft.com/en-us/p/windows-caffeinated/9pbvhhsn78bl?activetab=pivot:overviewtab))**
+    
+- I have Mac OS
+    
+    Program name: **Amphetamine ([download](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12))**
+    
+
+## How can I make the attack more effective?
+
+When selecting a VPN country, choose "friendly" countries for Russia:
+
+- Russia
+- Bilorussia
+- Kazakhstan
+
+Objective: to attack the enemy from the middle, from their internal address - this type of attack is more important to beat back. Russia can close its sites to the world, but they cannot close their sites to Russia.
