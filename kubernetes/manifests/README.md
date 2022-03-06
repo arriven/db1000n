@@ -1,6 +1,6 @@
 # Kubernetes manifests to install
 
-*If you use Helm, see our [Helm Chart](../helm-charts/)*
+_If you use Helm, see our [Helm Chart](../helm-charts/)_
 
 There are two ways to deploy it with plain manifests:
 

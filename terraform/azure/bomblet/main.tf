@@ -16,4 +16,3 @@ resource "azurerm_container_group" "main" {
     environment_variables = var.attack_environment_variables
   }
 }
-

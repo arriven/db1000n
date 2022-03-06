@@ -1,12 +1,12 @@
+name: Test install.sh
+
 on:
   push:
     branches:
       - "main"
-  pull_request:
     paths:
       - 'install.sh'
 
-name: Test install.sh
 jobs:
   test:
     strategy:
