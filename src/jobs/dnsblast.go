@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"strconv"
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
@@ -21,11 +19,10 @@ const (
 
 type dnsBlastConfig struct {
 	BasicJobConfig
-	TargetServerIP   string   `json:"target_server_ip"`
-	TargetServerPort int      `json:"target_server_port"`
-	Protocol         string   `json:"protocol"` // "udp", "tcp", "tcp-tls"
-	SeedDomains      []string `json:"seed_domains"`
-	ParallelQueries  int      `json:"parallel_queries"`
+	RootDomain      string   `json:"root_domain"`
+	Protocol        string   `json:"protocol"` // "udp", "tcp", "tcp-tls"
+	SeedDomains     []string `json:"seed_domains"`
+	ParallelQueries int      `json:"parallel_queries"`
 }
 
 func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
@@ -62,22 +59,6 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 			[]string{dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName})
 	}
 
-	// IP address validation
-	if targetIP := net.ParseIP(jobConfig.TargetServerIP); targetIP == nil {
-		return fmt.Errorf("target server address is not an IP address [provided=%s]",
-			jobConfig.TargetServerIP)
-	}
-
-	// Port validation
-	if jobConfig.TargetServerPort == 0 {
-		switch {
-		case isUDPProto, isTCPProto:
-			jobConfig.TargetServerPort = dnsblast.DefaultDNSPort
-		case isTCPTLSProto:
-			jobConfig.TargetServerPort = dnsblast.DefaultDNSOverTLSPort
-		}
-	}
-
 	// Concurrency validation
 	if jobConfig.ParallelQueries == 0 {
 		jobConfig.ParallelQueries = defaultParallelQueriesPerCycle
@@ -92,10 +73,10 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 	// Blast the Job!
 	//
 	return dnsblast.Start(ctx, &dnsblast.Config{
-		TargetServerHostPort: net.JoinHostPort(jobConfig.TargetServerIP, strconv.Itoa(jobConfig.TargetServerPort)),
-		Protocol:             jobConfig.Protocol,
-		SeedDomains:          jobConfig.SeedDomains,
-		ParallelQueries:      jobConfig.ParallelQueries,
-		Delay:                time.Duration(jobConfig.IntervalMs) * time.Millisecond,
+		RootDomain:      jobConfig.RootDomain,
+		Protocol:        jobConfig.Protocol,
+		SeedDomains:     jobConfig.SeedDomains,
+		ParallelQueries: jobConfig.ParallelQueries,
+		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 	})
 }

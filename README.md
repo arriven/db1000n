@@ -60,7 +60,7 @@ Unpack the archive and run it
 If you already have installed Docker, just run:
 
 ```bash
-docker run --pull always ghcr.io/arriven/db1000n
+docker run --rm -it --pull always ghcr.io/arriven/db1000n
 ```
 
 ### Advanced users

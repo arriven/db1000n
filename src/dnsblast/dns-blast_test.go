@@ -27,8 +27,8 @@ func TestBlast(t *testing.T) {
 	var (
 		blastContext, cancel = context.WithTimeout(context.Background(), testDuration)
 		config               = &Config{
-			TargetServerHostPort: net.JoinHostPort(testServer, strconv.Itoa(testPort)),
-			Protocol:             testProto,
+			RootDomain: net.JoinHostPort(testServer, strconv.Itoa(testPort)),
+			Protocol:   testProto,
 			SeedDomains: []string{
 				domainA,
 				domainB,
