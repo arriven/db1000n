@@ -2,6 +2,8 @@ on:
   push:
     branches:
       - "main"
+    paths:
+      - 'install.sh'
   pull_request:
 
 name: Test install.sh
