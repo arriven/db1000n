@@ -22,15 +22,16 @@ spec:
         name: db1000n
     spec:
       containers:
-      - name: db1000n
-        image: ghcr.io/arriven/db1000n
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "128m"
-          limits:
-            memory: "2048Mi"
-            cpu: "2"
+        - name: db1000n
+          image: ghcr.io/arriven/db1000n-advanced:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "128m"
+            limits:
+              memory: "2048Mi"
+              cpu: "2"
       nodeSelector:
         db1000n: "true"
       terminationGracePeriodSeconds: 30
