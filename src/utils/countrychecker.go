@@ -21,7 +21,7 @@ func openBrowser(url string) {
 }
 
 // CheckCountry allows to check which country the app is running from
-func CheckCountry() {
+func CheckCountry(countriesToAvoid []string) {
 	type IPInfo struct {
 		Country string `json:"country"`
 	}
@@ -31,25 +31,26 @@ func CheckCountry() {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 		return
 	}
-
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 		return
 	}
-
 	ipInfo := IPInfo{}
-	if err = json.Unmarshal(body, &ipInfo); err != nil {
+	err = json.Unmarshal(body, &ipInfo)
+	if err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 		return
 	}
 
-	if ipInfo.Country == "Ukraine" {
-		log.Println("You currently have Ukrainian IP adsress. You need to enable VPN.")
-		// TODO add correct URL
-		// openBrowser("https://example.com/", l)
-		return
+	for _, country := range countriesToAvoid {
+		if ipInfo.Country == country {
+			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
+			// TODO add correct URL
+			// openBrowser("https://example.com/", l)
+			return
+		}
 	}
 
 	log.Printf("Current country: %s", ipInfo.Country)

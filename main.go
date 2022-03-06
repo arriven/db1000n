@@ -32,6 +32,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/runner"
+	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -62,6 +63,8 @@ func main() {
 	if proxiesURL != "" {
 		templates.SetProxiesUrl(proxiesURL)
 	}
+
+	go utils.CheckCountry([]string{"Ukraine"})
 
 	r, err := runner.New(&runner.Config{
 		ConfigPaths:    configPaths,
