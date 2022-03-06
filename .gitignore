@@ -24,11 +24,11 @@ config.json
 **/.terraform*
 **/terraform.tfstate*
 
+.idea
 # Installation artifacts
 *.tar.gz
 db1000n
 *.md5
 md5sum.txt
 
-# Other
 .history
