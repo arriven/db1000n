@@ -25,6 +25,8 @@ _Ви можете читати цю сторінку українською: [R
 3. Launch the file inside the archive
 4. Done!
 
+**Very important! Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well. If you run an app in the cloud please control your billing**
+
 **You can get warnings from your computer about the file - ignore them (or allow in System Settings). Our software is open source. It can be checked and compiled by you yourself**
 
 ## How to choose VPN
