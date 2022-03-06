@@ -24,6 +24,7 @@ package main
 
 import (
 	"flag"
+	"github.com/Arriven/db1000n/src/utils/templates"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,6 +37,7 @@ import (
 
 func main() {
 	var configPaths string
+	var proxiesURL string
 	var backupConfig string
 	var refreshTimeout time.Duration
 	var logLevel logs.Level
@@ -47,6 +49,7 @@ func main() {
 	flag.IntVar(&logLevel, "l", logs.Info, "logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
+	flag.StringVar(&proxiesURL, "p", "", "url to fetch proxies list")
 	flag.Parse()
 
 	if help {
@@ -57,6 +60,10 @@ func main() {
 	logs.Default = logs.New(logLevel)
 
 	l := logs.New(logLevel)
+
+	if proxiesURL != "" {
+		templates.SetProxiesUrl(proxiesURL)
+	}
 
 	r, err := runner.New(&runner.Config{
 		ConfigPaths:    configPaths,

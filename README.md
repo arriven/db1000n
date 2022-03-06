@@ -36,6 +36,7 @@ _Ви можете читати цю сторінку українською: [R
 - https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
 - https://www.hotspotshield.com/blog/privacy-security-for-ukraine
 - https://www.vpnunlimited.com/stop-russian-aggression
+- F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
 
 ### Free
 
@@ -57,7 +58,7 @@ Unpack the archive and run it.
 If you already have installed Docker, just run:
 
 ```bash
-docker run ghcr.io/arriven/db1000n
+docker run --pull always ghcr.io/arriven/db1000n
 ```
 
 ### Advanced users
