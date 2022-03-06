@@ -17,7 +17,7 @@ Create [Issue](https://github.com/Arriven/db1000n/issues) and community will hel
 ## I'm a developer, how can I help to project?
 
 - Check [Issues](https://github.com/Arriven/db1000n/issues) to help with important tasks
--  Check our codebase and make [PRs](https://github.com/Arriven/db1000n/pulls)
+- Check our codebase and make [PRs](https://github.com/Arriven/db1000n/pulls)
 - Test an app on different platforms and report bugs or feature requests
 
 ## When I run `db1000n` I see that it generates low amount of traffic. Isn't that bad?
