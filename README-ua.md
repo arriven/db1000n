@@ -16,11 +16,11 @@ _This README in English: [README.md](README.md)_
 ### Для новачків
 
 1. Завантажте останню версію програми для вашої платформи:
-   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
-   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-arm64.tar.gz)
-   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-amd64.tar.gz)
-   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
-   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-linux-amd64.tar.gz)
+   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-windows-386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-darwin-arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-darwin-amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-windows-386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-linux-amd64.tar.gz)
 2. Розпакуйте архів
 3. Запустіть файл з архіву
 4. Усе!

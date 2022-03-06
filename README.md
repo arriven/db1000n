@@ -16,11 +16,11 @@ _Ви можете читати цю сторінку українською: [R
 ### For dummies
 
 1. Download an application for your platform:
-   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
-   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-arm64.tar.gz)
-   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-darwin-amd64.tar.gz)
-   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-windows-386.zip)
-   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.12/db1000n-v0.5.12-linux-amd64.tar.gz)
+   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-windows-386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-darwin-arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-darwin-amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-windows-386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.13/db1000n-v0.5.13-linux-amd64.tar.gz)
 2. Unpack the archive
 3. Launch the file inside the archive
 4. Done!
