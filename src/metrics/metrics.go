@@ -73,7 +73,6 @@ func (ms *MetricsStorage) NewWriter(ctx context.Context, name, jobID string) *Me
 				return
 			case <-ticker.C:
 				writer.ms.Write(writer.name, writer.jobID, writer.value)
-				writer.value = 0
 			}
 		}
 	}()
