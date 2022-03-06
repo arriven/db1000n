@@ -13,7 +13,8 @@ Make sure that you installed `helm` package on your local machine and you have c
 ```bash
 cd kubernetes/helm-charts/
 helm upgrade --install \
-    -n db1000n \
+    --create-namespace \
+    --namespace=db1000n \
     -f values.yaml db1000n .
 ```
 
