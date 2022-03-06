@@ -48,7 +48,7 @@ func main() {
 	var metricsPath string
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
-	flag.DurationVar(&refreshTimeout, "r", time.Minute * 30, "refresh timeout for updating the config")
+	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
 	flag.BoolVar(&debug, "d", false, "enable debug level logging")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
