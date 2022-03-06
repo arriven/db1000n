@@ -73,7 +73,13 @@ func (r *Runner) Run() {
 	for !stop {
 		newRawConfig, err := fetchConfig(r.configPaths)
 		if err != nil {
-			newRawConfig = r.backupConfig
+			if r.currentRawConfig != nil {
+				log.Println("Could not load new config, proceeding with last known good config")
+				newRawConfig = r.currentRawConfig
+			} else {
+				log.Println("Could not load new config, proceeding with backupConfig")
+				newRawConfig = r.backupConfig
+			}
 		}
 
 		if !bytes.Equal(r.currentRawConfig, newRawConfig) { // Only restart jobs if the new config differs from the current one

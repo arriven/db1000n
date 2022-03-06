@@ -1,4 +1,9 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
 name: Test
 jobs:
   test:
@@ -18,3 +23,5 @@ jobs:
         run: go build ./...
       - name: Test
         run: go test ./...
+      - name: Installer
+        run: ./install.sh

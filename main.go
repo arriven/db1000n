@@ -32,6 +32,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/runner"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 
 	var configPaths string
+	var proxiesURL string
 	var backupConfig string
 	var refreshTimeout time.Duration
 	var debug, help bool
@@ -49,11 +51,16 @@ func main() {
 	flag.BoolVar(&debug, "d", false, "enable debug level logging")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
+	flag.StringVar(&proxiesURL, "p", "", "url to fetch proxies list")
 	flag.Parse()
 
 	if help {
 		flag.CommandLine.Usage()
 		return
+	}
+
+	if proxiesURL != "" {
+		templates.SetProxiesUrl(proxiesURL)
 	}
 
 	r, err := runner.New(&runner.Config{

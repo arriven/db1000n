@@ -7,67 +7,125 @@ One of the easy ways to set it up is through the docker compose:
 `docker-compose.yml`:
 ```yaml
 version: "3"
+
 services:
 
-  ovpn:
-    image: dperson/openvpn-client
+  # creates OpenVPN Docker container to first provider, endpoint #1
+  ovpn_01:
+    image: ghcr.io/wfg/openvpn-client
     cap_add:
       - NET_ADMIN
     security_opt:
       - label:disable
-    # read_only: true
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z
-      - /path/to/dir/with/certificate:/vpn
-    # NOTE: user/password can be defined:
-    # 1. In .ovpn configuration file. In this case put it inside
-    #    /path/to/dir/with/certificate (see above)
-    # 2. In the `command` directive (see below).
-    #    If you are using .ovpn file, then comment out three lines below
-    command:
-      - "-v"
-      - "host;user;password"
+      - ./openvpn/:/data/vpn:z
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      KILL_SWITCH: "on"
+      HTTP_PROXY: "off"
+      VPN_AUTH_SECRET: provider01_secret
+      VPN_CONFIG_FILE: provider01.endpoint01.conf
+    secrets:
+      - provider01_secret
 
-  db1000n:
+  # creates OpenVPN Docker container to first provider, endpoint #2
+  ovpn_02:
+    image: ghcr.io/wfg/openvpn-client
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - label:disable
+    restart: unless-stopped
+    volumes:
+      - /dev/net:/dev/net:z
+      - ./openvpn/:/data/vpn:z
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      KILL_SWITCH: "on"
+      HTTP_PROXY: "off"
+      VPN_AUTH_SECRET: provider01_secret
+      VPN_CONFIG_FILE: provider01.endpoint02.conf
+    secrets:
+      - provider01_secret
+
+  # creates OpenVPN Docker container to second provider, endpoint #1
+  ovpn_03:
+    image: ghcr.io/wfg/openvpn-client
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - label:disable
+    restart: unless-stopped
+    volumes:
+      - /dev/net:/dev/net:z
+      - ./openvpn/:/data/vpn:z
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      KILL_SWITCH: "on"
+      HTTP_PROXY: "off"
+      VPN_AUTH_SECRET: provider02_secret
+      VPN_CONFIG_FILE: provider02.endpoint01.conf
+    secrets:
+      - provider02_secret
+
+  # this Docker container will use VPN 01
+  db1000n_01:
     image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
-      - ovpn
-    network_mode: "service:ovpn"
+      - ovpn_01
+    network_mode: "service:ovpn_01"
+
+  # this Docker container will use VPN 02
+  db1000n_02:
+    image: ghcr.io/arriven/db1000n
+    restart: unless-stopped
+    depends_on:
+      - ovpn_02
+    network_mode: "service:ovpn_02"
+
+  # this Docker container will use VPN 03
+  db1000n_03:
+    image: ghcr.io/arriven/db1000n
+    restart: unless-stopped
+    depends_on:
+      - ovpn_03
+    network_mode: "service:ovpn_03"
+
+secrets:
+  provider01_secret:
+    file: ./openvpn/provider01.txt
+  provider02_secret:
+    file: ./openvpn/provider02.txt
 ```
 
+`openvpn/provider01.txt`:
+```
+<your username for OpenVPN provider 01>
+<your password for OpenVPN provider 01>
+```
 
-## Run:
+`openvpn/provider02.txt`:
+```
+<your username for OpenVPN provider 02>
+<your password for OpenVPN provider 02>
+```
+
+Also place your `provider01.endpoint01.conf`, `provider01.endpoint02.conf` and `provider02.endpoint01.conf` files into `openvpn/` directory.
+
+## Start:
 
 ```sh
-docker compose up -d
+docker-compose up -d
 ```
 
+## Stop:
 
-You can also run multiple db1000n instances with different VPN
-configurations (i.e. multiple countries):
-
-```yaml
-version: "3"
-services:
-  ovpn1:
-    image: dperson/openvpn-client
-    # ...
-    volumes:
-      - /certificate1:/vpn
-  db1000n1:
-    image: ghcr.io/arriven/db1000n
-    # ...
-    network_mode: "service:ovpn1"
-  ovpn2:
-    image: dperson/openvpn-client
-    # ...
-    volumes:
-      - /certificate2:/vpn
-  db1000n1:
-    image: ghcr.io/arriven/db1000n
-    # ...
-    network_mode: "service:ovpn2"
-  # more services...
+```sh
+docker-compose down
 ```
