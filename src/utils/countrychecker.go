@@ -21,7 +21,7 @@ func openBrowser(url string, l *logs.Logger) {
 }
 
 // CheckCountry allows to check which country the app is running from
-func CheckCountry(l *logs.Logger) {
+func CheckCountry(l *logs.Logger, countriesToAvoid []string) {
 	type IPInfo struct {
 		Country string `json:"country"`
 	}
@@ -29,26 +29,28 @@ func CheckCountry(l *logs.Logger) {
 	resp, err := http.Get("https://api.myip.com/")
 	if err != nil {
 		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-	} else {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-		} else {
-			ipInfo := IPInfo{}
-			err = json.Unmarshal(body, &ipInfo)
-			if err != nil {
-				l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-			} else {
-				if ipInfo.Country == "Ukraine" {
-					l.Error("You currently have Ukrainian IP adsress. You need to enable VPN.")
-					// TODO add correct URL
-					//openBrowser("https://example.com/", l)
-				} else {
-					l.Info("Current country: %s", ipInfo.Country)
-				}
-			}
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+		return
+	}
+	ipInfo := IPInfo{}
+	err = json.Unmarshal(body, &ipInfo)
+	if err != nil {
+		l.Warning("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+		return
+	}
 
+	for _, country := range countriesToAvoid {
+		if ipInfo.Country == country {
+			l.Warning("Current country: %s. You might need to enable VPN.", ipInfo.Country)
+			// TODO add correct URL
+			//openBrowser("https://example.com/", l)
+			return
 		}
 	}
+	l.Info("Current country: %s", ipInfo.Country)
 }

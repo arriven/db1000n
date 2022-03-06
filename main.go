@@ -24,11 +24,13 @@ package main
 
 import (
 	"flag"
-	"github.com/Arriven/db1000n/src/utils/templates"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 
 	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/logs"
@@ -59,20 +61,20 @@ func main() {
 
 	logs.Default = logs.New(logLevel)
 
-	l := logs.New(logLevel)
-
 	if proxiesURL != "" {
 		templates.SetProxiesUrl(proxiesURL)
 	}
+
+	go utils.CheckCountry(logs.Default, []string{"Ukraine"})
 
 	r, err := runner.New(&runner.Config{
 		ConfigPaths:    configPaths,
 		BackupConfig:   []byte(backupConfig),
 		RefreshTimeout: refreshTimeout,
 		MetricsPath:    metricsPath,
-	}, l)
+	}, logs.Default)
 	if err != nil {
-		l.Error("Error initializing runner: %v", err)
+		logs.Default.Error("Error initializing runner: %v", err)
 	}
 
 	go func() {
@@ -80,7 +82,7 @@ func main() {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM)
 		<-sigs
-		l.Info("Terminating")
+		logs.Default.Info("Terminating")
 		r.Stop()
 	}()
 
