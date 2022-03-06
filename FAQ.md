@@ -36,4 +36,4 @@ The main reason it works that way is because there are two main types of ddos:
 TL;DR: [yes](https://github.com/Arriven/db1000n/issues/153)
 
 Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well.
-If you run an app in the cloud please control your billing
+If you run an app in the cloud please control your billing (if you use Docker, ensure that use advanced image: `ghcr.io/arriven/db1000n-advanced`)

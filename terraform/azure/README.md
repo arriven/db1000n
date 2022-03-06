@@ -11,54 +11,56 @@
 
 The composition creates container instances in 6 different regions for a broader attack. If you want to make a different setup, just alter modules in the `main.tf`.
 
-- Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm:
-    - bomblet_count=10   - can be used for custom number of containers per region.
+Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm:
+- `bomblet_count=10` - can be used for custom number of containers per region
 
-- ```terrafrom init``` - to restore all dependencies.
+`terrafrom init` - to restore all dependencies.
 
-- ```terraform apply -auto-approve``` - to provision the attack farm. 
-
+`terraform apply -auto-approve` - to provision the attack farm.
 
 ## Collecting logs from the containers
 
-The container instances are provisioned without public IP addresses to make the setup more cost effective. If you deploy more than one container per region, play with the -01 suffix to get logs from the correct instance.
+The container instances are provisioned without public IP addresses to make the setup more cost effective.
+If you deploy more than one container per region, play with the `-01` suffix to get logs from the correct instance.
 
-- Logs from North Europe region
+- Logs from North Europe region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-northeurope-01 --container-name main
 ```
 
-- Logs from West Europe region
+- Logs from West Europe region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-westeurope-01 --container-name main
 ```
 
-- Logs from Canada Central region 
+- Logs from Canada Central region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-canadacentral-01 --container-name main
 ```
 
-- Logs from UAE North region
+- Logs from UAE North region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-uaenorth-01 --container-name main
 ```
 
-- Logs from Central US region
+- Logs from Central US region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-centralus-01 --container-name main
 ```
 
-- Logs from East Asia region
+- Logs from East Asia region:
 
-```
+```bash
 az container logs --resource-group attack-rg --name attack-eastasia-01 --container-name main
 ```
 
 ## Cleanup
 
-```terraform destroy```
+```bash
+terraform destroy
+```
