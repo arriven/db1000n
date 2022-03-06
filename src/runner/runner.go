@@ -69,10 +69,16 @@ func (r *Runner) Run() {
 		wg     sync.WaitGroup
 	)
 
+	newRawConfig, err := fetchConfig(r.configPaths, r.log)
+	if err != nil {
+		newRawConfig = r.backupConfig
+	}
+
 	for !stop {
-		newRawConfig, err := fetchConfig(r.configPaths, r.log)
+		newRawConfig, err = fetchConfig(r.configPaths, r.log)
 		if err != nil {
-			newRawConfig = r.backupConfig
+			newRawConfig = r.currentRawConfig
+			r.log.Warning("Could not load new config, proceeding with last known good config")
 		}
 
 		if !bytes.Equal(r.currentRawConfig, newRawConfig) { // Only restart jobs if the new config differs from the current one
