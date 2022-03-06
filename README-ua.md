@@ -25,6 +25,8 @@ _This README in English: [README.md](README.md)_
 3. Запустіть файл з архіву
 4. Усе!
 
+**Дуже важливо! Хмарні провайдери можуть стягувати значні кошти не тільки за обчислювальні ресурси, але й за трафік. Якщо ви запускаєте програму в такого провайдера, будь ласка слідкуйте за своїм білінгом**
+
 **Якщо ви бачите попередження з вашого комп'ютеру - ігноруйте їх (або дозвольте використання в налаштуваннях системи). Наше програмне забезпечення є відкритим, ви можете самі перевірити його код**
 
 ## Як обрати VPN
@@ -36,6 +38,7 @@ _This README in English: [README.md](README.md)_
 - https://windscribe.com/ за промокодом `ПИЗДЕЦ` ви отримаєте 30GB
 - https://www.hotspotshield.com/blog/privacy-security-for-ukraine
 - https://www.vpnunlimited.com/stop-russian-aggression
+- F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
 
 ### Безкоштовно
 

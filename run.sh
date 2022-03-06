@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
 PROJECT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 readonly PROJECT_DIR
 readonly OPENVPN_DIR="$PROJECT_DIR/openvpn"

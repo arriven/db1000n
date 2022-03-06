@@ -25,6 +25,8 @@ _Ви можете читати цю сторінку українською: [R
 3. Launch the file inside the archive
 4. Done!
 
+**Very important! Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well. If you run an app in the cloud please control your billing**
+
 **You can get warnings from your computer about the file - ignore them (or allow in System Settings). Our software is open source. It can be checked and compiled by you yourself**
 
 ## How to choose VPN
@@ -36,6 +38,7 @@ _Ви можете читати цю сторінку українською: [R
 - https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
 - https://www.hotspotshield.com/blog/privacy-security-for-ukraine
 - https://www.vpnunlimited.com/stop-russian-aggression
+- F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
 
 ### Free
 
@@ -57,7 +60,7 @@ Unpack the archive and run it.
 If you already have installed Docker, just run:
 
 ```bash
-docker run ghcr.io/arriven/db1000n
+docker run --pull always ghcr.io/arriven/db1000n
 ```
 
 ### Advanced users

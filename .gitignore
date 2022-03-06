@@ -15,15 +15,20 @@
 # vendor/
 
 main
-
 config.json
 
-# macos
+# macOS
 .DS_Store
 
-# terraform
+# Terraform
 **/.terraform*
 **/terraform.tfstate*
 
 .idea
+# Installation artifacts
+*.tar.gz
+db1000n
+*.md5
+md5sum.txt
+
 .history
