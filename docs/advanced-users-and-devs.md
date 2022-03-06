@@ -50,33 +50,7 @@ Make sure you've set all available resources to docker:
 - https://docs.docker.com/desktop/windows/#resources
 - https://docs.docker.com/desktop/mac/#resources
 
-If you don't want to use VPN from within docker container, set `--env "VPN_ENABLED=false"` in `run.sh`
-
-If you want to use VPN from within docker container:
-
-- Place your `.ovpn` or `.conf` files into `openvpn/` directory
-- If there's more than one `.ovpn` or `.conf` file, random configuration will be picked
-- Set `--env "VPN_ENABLED=true"` in `run.sh`
-- Update `--env "OPENVPN_USERNAME="` and `--env "OPENVPN_PASSWORD="` in `run.sh` with your credentials
-
-```bash
-./run.sh
-```
-
-If you want to use different VPN providers (meaning different `OPENVPN_USERNAME` and `OPENVPN_PASSWORD` credentials), do the following:
-
-- Set `--env "VPN_ENABLED=true"` in `run.sh`
-- Remove `--env "OPENVPN_USERNAME="` and `--env "OPENVPN_PASSWORD="` from `run.sh`
-- Place your `openvpn-provider-1.conf` into `openvpn/` directory
-- Find the line in your `openvpn-provider-1.conf` where it says `auth-user-pass` and replace with `auth-user-pass provider1.txt`
-- Create a text file in `openvpn/provider1.txt` with two lines:
-
-```
-<your provider 1 username>
-<your provider 1 password>
-```
-
-- Repeat steps above for multiple providers
+See [docker-vpn](docker-vpn.md) for instructions on setting it up
 
 ## Kubernetes
 
