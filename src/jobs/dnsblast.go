@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
@@ -29,7 +28,7 @@ type dnsBlastConfig struct {
 	ParallelQueries  int      `json:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, l *logs.Logger, args Args) error {
+func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	jobConfig := new(dnsBlastConfig)
@@ -92,7 +91,7 @@ func dnsBlastJob(ctx context.Context, l *logs.Logger, args Args) error {
 	//
 	// Blast the Job!
 	//
-	return dnsblast.Start(ctx, l, &dnsblast.Config{
+	return dnsblast.Start(ctx, &dnsblast.Config{
 		TargetServerHostPort: net.JoinHostPort(jobConfig.TargetServerIP, strconv.Itoa(jobConfig.TargetServerPort)),
 		Protocol:             jobConfig.Protocol,
 		SeedDomains:          jobConfig.SeedDomains,

@@ -3,15 +3,13 @@ package jobs
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/Arriven/db1000n/src/logs"
 )
 
 // Args comment for linter
 type Args = json.RawMessage
 
 // Job comment for linter
-type Job = func(context.Context, *logs.Logger, Args) error
+type Job = func(ctx context.Context, args Args, debug bool) error
 
 // Config comment for linter
 type Config struct {

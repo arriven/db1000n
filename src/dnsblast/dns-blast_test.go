@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/Arriven/db1000n/src/logs"
 )
 
 func TestBlast(t *testing.T) {
@@ -28,7 +26,6 @@ func TestBlast(t *testing.T) {
 
 	var (
 		blastContext, cancel = context.WithTimeout(context.Background(), testDuration)
-		logger               = logs.New(logs.Debug)
 		config               = &Config{
 			TargetServerHostPort: net.JoinHostPort(testServer, strconv.Itoa(testPort)),
 			Protocol:             testProto,
@@ -43,7 +40,7 @@ func TestBlast(t *testing.T) {
 	)
 	defer cancel()
 
-	err := Start(blastContext, logger, config)
+	err := Start(blastContext, config)
 	if err != nil {
 		t.Errorf("failed to start the blaster: %s", err)
 		return
