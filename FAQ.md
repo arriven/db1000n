@@ -22,7 +22,7 @@ Create [Issue](https://github.com/Arriven/db1000n/issues) and community will hel
 
 ## When I run `db1000n` I see that it generates low amount of traffic. Isn't that bad?
 
-TL;DR: it's okay.
+TL;DR: it's okay
 
 The app is configurable to generate set amount of traffic (controlled by the number of targets, their type, and attack interval for each of them).
 The main reason it works that way is because there are two main types of ddos:
@@ -35,4 +35,5 @@ The main reason it works that way is because there are two main types of ddos:
 
 TL;DR: [yes](https://github.com/Arriven/db1000n/issues/153)
 
-Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well. If you run an app in the cloud please control your billing
+Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well.
+If you run an app in the cloud please control your billing
