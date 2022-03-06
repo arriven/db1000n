@@ -40,6 +40,7 @@ func getProxylistByUrl(url string) (urls []string) {
 	}
 	return urls
 }
+
 func getURLContent(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -60,8 +61,10 @@ func randomUUID() string {
 	return uuid.New().String()
 }
 
-func Execute(input string) string {
-	funcMap := template.FuncMap{
+// Parse a template
+func Parse(input string) (*template.Template, error) {
+	// TODO: consider adding ability to populate custom data
+	return template.New("tpl").Funcs(template.FuncMap{
 		"random_uuid":          randomUUID,
 		"random_int_n":         rand.Intn,
 		"random_int":           rand.Int,
@@ -79,18 +82,30 @@ func Execute(input string) string {
 		"proxylist_url":        getProxylistURL,
 		"get_proxylist":        getProxylist,
 		"get_proxylist_by_url": getProxylistByUrl,
+	}).Parse(strings.Replace(input, "\\", "", -1))
+}
+
+// Execute template, returns empty string in case of errors
+func Execute(tpl *template.Template) string {
+	var res strings.Builder
+	if err := tpl.Execute(&res, nil); err != nil {
+		log.Printf("Error executing template: %v", err)
+		return ""
 	}
 
-	// TODO: consider adding ability to populate custom data
-	input = strings.Replace(input, "\\", "", -1)
-	tmpl, err := template.New("test").Funcs(funcMap).Parse(input)
+	return res.String()
+}
+
+// ParseAndExecute template, returns input string in case of errors. Expensive operation.
+func ParseAndExecute(input string) string {
+	tpl, err := Parse(input)
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
 		return input
 	}
 
 	var output strings.Builder
-	if err = tmpl.Execute(&output, nil); err != nil {
+	if err = tpl.Execute(&output, nil); err != nil {
 		log.Printf("Error executing template: %v", err)
 		return input
 	}
