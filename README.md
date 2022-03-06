@@ -8,9 +8,9 @@ _Ви можете читати цю сторінку українською: [R
 
 ### Use VPN (if you are in Ukraine)!
 
-- Switch to Russia if possible.
+- Switch to Russia if possible
 - Don't use Ukraine as a VPN location!
-- But any other country or VPN location is okay.
+- But any other country or VPN location is okay
 - Stay safe!
 
 ### For dummies
@@ -53,7 +53,7 @@ There are different ways to install and run `db1000n`
 ### Binary file
 
 Download the [latest release](https://github.com/Arriven/db1000n/releases/latest) for your arch/OS.
-Unpack the archive and run it.
+Unpack the archive and run it
 
 ### Docker run
 
@@ -72,6 +72,10 @@ See [docs/advanced-users-and-devs.md](docs/advanced-users-and-devs.md)
 You need to keep your computer active, use VPN and make sure that the application is up and running.
 Our experts coordinate our attacks remotely without disturbing and interrupting you.
 Thanks for your help!
+
+## I still have questions
+
+You will find some answers on our [FAQ.md](FAQ.md)
 
 ## Contacts
 
