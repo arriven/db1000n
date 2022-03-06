@@ -11,6 +11,15 @@ provider "aws" {
   region = var.region
 }
 
+data "aws_ami" "latest_amazon_linux" {
+  owners      = ["amazon"]
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-kernel-*-hvm-*-x86_64-gp2"]
+  }
+}
+
 # Create an IAM role for the Web Servers.
 resource "aws_iam_role" "web_iam_role" {
   name               = "${var.name}_role"
@@ -113,7 +122,7 @@ resource "aws_route_table_association" "subnet-association" {
 
 resource "aws_launch_template" "example" {
   name                                 = var.name
-  image_id                             = var.ami_id
+  image_id                             = data.aws_ami.latest_amazon_linux.id
   instance_initiated_shutdown_behavior = "terminate"
   instance_type                        = var.instance_type
   user_data = base64encode(<<EOF
