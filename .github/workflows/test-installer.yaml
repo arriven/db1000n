@@ -2,9 +2,9 @@ on:
   push:
     branches:
       - "main"
+  pull_request:
     paths:
       - 'install.sh'
-  pull_request:
 
 name: Test install.sh
 jobs:
