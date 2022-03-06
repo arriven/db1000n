@@ -6,11 +6,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
+	"text/template"
 	"time"
 
 	"github.com/corpix/uarand"
@@ -48,8 +50,8 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(templates.Execute(string(jobConfig.Client))), &clientConfig); err != nil && debug {
-		log.Printf("Failed to parse job client json: %v", err)
+	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(jobConfig.Client))), &clientConfig); err != nil && debug {
+		log.Printf("Failed to parse job client json, ignoring: %v", err)
 	}
 
 	timeout := time.Second * 90
@@ -98,10 +100,8 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 
 				return u, nil
 			}
-		} else {
-			if debug {
-				log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
-			}
+		} else if debug {
+			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
 		}
 	}
 
@@ -121,13 +121,21 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 		Timeout: timeout,
 	}
 
+	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
+		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
+	if err != nil {
+		return err
+	}
+
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
 	for jobConfig.Next(ctx) {
-		req, err := http.NewRequest(templates.Execute(jobConfig.Method), templates.Execute(jobConfig.Path),
-			bytes.NewReader([]byte(templates.Execute(string(jobConfig.Body)))))
+		method, path, body := templates.Execute(methodTpl), templates.Execute(pathTpl), templates.Execute(bodyTpl)
+		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
+
+		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
 		if err != nil {
 			if debug {
 				log.Printf("error creating request: %v", err)
@@ -142,51 +150,81 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 		default:
 		}
 
-		// Add random user agent
+		// Add random user agent and configured headers
 		req.Header.Set("user-agent", uarand.GetRandom())
-		for key, value := range jobConfig.Headers {
-			trafficMonitor.Add(len(key))
-			trafficMonitor.Add(len(value))
-			req.Header.Add(templates.Execute(key), templates.Execute(value))
-		}
-
-		trafficMonitor.Add(len(jobConfig.Method))
-		trafficMonitor.Add(len(jobConfig.Path))
-		trafficMonitor.Add(len(jobConfig.Body))
-
-		if debug {
-			log.Printf("%s %s started at %d", jobConfig.Method, jobConfig.Path, time.Now().Unix())
-		}
-
-		sendRequest := func() {
-			resp, err := client.Do(req)
-			if err != nil {
-				if debug {
-					log.Printf("Error sending request %v: %v", req, err)
-				}
-
-				return
-			}
-
-			resp.Body.Close() // No need for response
-
-			if debug {
-				if resp.StatusCode >= http.StatusBadRequest {
-					log.Printf("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, time.Now().Unix(), resp.StatusCode)
-				} else {
-					log.Printf("%s %s finished at %d", jobConfig.Method, jobConfig.Path, time.Now().Unix())
-				}
-			}
+		for keyTpl, valueTpl := range headerTpls {
+			key, value := templates.Execute(keyTpl), templates.Execute(valueTpl)
+			req.Header.Add(key, value)
+			dataSize += len(key) + len(value)
 		}
 
 		if clientConfig.Async {
-			go sendRequest()
+			go sendRequest(client, req, debug)
 		} else {
-			sendRequest()
+			sendRequest(client, req, debug)
 		}
+
+		trafficMonitor.Add(dataSize)
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 
 	return nil
+}
+
+func sendRequest(client *http.Client, req *http.Request, debug bool) {
+	if debug {
+		log.Printf("%s %s started at %d", req.Method, req.RequestURI, time.Now().Unix())
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		if debug {
+			log.Printf("Error sending request %v: %v", req, err)
+		}
+
+		return
+	}
+
+	resp.Body.Close() // No need for response
+
+	if debug {
+		if resp.StatusCode >= http.StatusBadRequest {
+			log.Printf("%s %s failed at %d with code %d", req.Method, req.RequestURI, time.Now().Unix(), resp.StatusCode)
+		} else {
+			log.Printf("%s %s finished at %d", req.Method, req.RequestURI, time.Now().Unix())
+		}
+	}
+}
+
+func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
+	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls map[*template.Template]*template.Template, err error) {
+	if methodTpl, err = templates.Parse(method); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing method template: %v", err)
+	}
+
+	if pathTpl, err = templates.Parse(path); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing path template: %v", err)
+	}
+
+	if bodyTpl, err = templates.Parse(body); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing body template: %v", err)
+	}
+
+	headerTpls = make(map[*template.Template]*template.Template, len(headers))
+	for key, value := range headers {
+		keyTpl, err := templates.Parse(key)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
+		}
+
+		valueTpl, err := templates.Parse(value)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
+		}
+
+		headerTpls[keyTpl] = valueTpl
+	}
+
+	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
