@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: db1000n
-          image: ghcr.io/arriven/db1000n:latest
+          image: ghcr.io/arriven/db1000n-advanced:latest
           imagePullPolicy: Always
           resources:
             requests:

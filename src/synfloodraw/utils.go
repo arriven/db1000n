@@ -55,13 +55,9 @@ func getMacAddrs() [][]byte {
 
 // isDNS returns a boolean which indicates host parameter is a DNS record or not
 func isDNS(host string) bool {
-	var (
-		res bool
-		err error
-	)
-
-	if res, err = regexp.MatchString(DnsRegex, host); err != nil {
-		log.Fatalf("a fatal error occured while matching provided --host with DNS regex: %s", err.Error())
+	res, err := regexp.MatchString(DnsRegex, host)
+	if err != nil {
+		log.Printf("Error matching provided --host with DNS regex: %v", err)
 	}
 
 	return res
@@ -69,13 +65,9 @@ func isDNS(host string) bool {
 
 // isIP returns a boolean which indicates host parameter is an IP address or not
 func isIP(host string) bool {
-	var (
-		res bool
-		err error
-	)
-
-	if res, err = regexp.MatchString(IpRegex, host); err != nil {
-		log.Fatalf("a fatal error occured while matching provided --host with IP regex: %s", err.Error())
+	res, err := regexp.MatchString(IpRegex, host)
+	if err != nil {
+		log.Printf("Error matching provided --host with IP regex: %v", err)
 	}
 
 	return res
@@ -84,17 +76,13 @@ func isIP(host string) bool {
 // resolveHost function gets a string and returns the ip address while deciding it is an ip address already or DNS record
 func resolveHost(host string) (string, error) {
 	if !isIP(host) && isDNS(host) {
-		log.Printf("%s is a DNS record, making DNS lookup\n", host)
 		ipRecords, err := net.DefaultResolver.LookupIP(context.Background(), "ip4", host)
 		if err != nil {
-			log.Printf("an error occured on dns lookup: %s\n", err.Error())
+			log.Printf("Error looking up DNS: %v", err)
 			return "", err
 		}
 
-		log.Printf("dns lookup succeeded, found %s for %s\n", ipRecords[0].String(), host)
 		host = ipRecords[0].String()
-	} else {
-		log.Printf("%s is already an IP address, skipping DNS resolution\n", host)
 	}
 
 	return host, nil

@@ -3,11 +3,11 @@ package dnsblast
 import (
 	"context"
 	"crypto/tls"
+	"log"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/utils"
 
 	"github.com/miekg/dns"
@@ -31,16 +31,15 @@ type Config struct {
 }
 
 type DNSBlaster struct {
-	Logger       *logs.Logger
 	Config       *Config
 	DHHGenerator *DistinctHeavyHitterGenerator
 	DNSClient    *dns.Client
 }
 
-func Start(ctx context.Context, logger *logs.Logger, config *Config) error {
+func Start(ctx context.Context, config *Config) error {
 	defer utils.PanicHandler()
 
-	logger.Info("[DNS BLAST] igniting the blaster, parameters to start: "+
+	log.Printf("[DNS BLAST] igniting the blaster, parameters to start: "+
 		"[server=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]",
 		config.TargetServerHostPort,
 		config.Protocol,
@@ -55,7 +54,6 @@ func Start(ctx context.Context, logger *logs.Logger, config *Config) error {
 	}
 
 	blaster := &DNSBlaster{
-		Logger:       logger,
 		Config:       config,
 		DHHGenerator: dhhGenerator,
 		DNSClient:    newDefaultDNSClient(config.Protocol),
@@ -87,7 +85,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context) {
 blastLoop:
 	for reusableQuery.QName = range rcv.DHHGenerator.Next() {
 		if keepAliveCounter == keepAliveReminder {
-			rcv.Logger.Info("[DNS BLAST] Still blasting to [server=%s], OK!", reusableQuery.HostAndPort)
+			log.Printf("[DNS BLAST] Still blasting to [server=%s], OK!", reusableQuery.HostAndPort)
 			keepAliveCounter = 0
 		} else {
 			keepAliveCounter += 1
@@ -95,7 +93,7 @@ blastLoop:
 
 		select {
 		case <-ctx.Done():
-			rcv.Logger.Info("[DNS BLAST] DNS stress is canceled, OK!")
+			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
 			break blastLoop
 		default:
 			// Keep going
@@ -113,7 +111,7 @@ blastLoop:
 
 		select {
 		case <-ctx.Done():
-			rcv.Logger.Info("[DNS BLAST] DNS stress is canceled, OK!")
+			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
 			break blastLoop
 		case <-nextLoopTicker.C:
 			continue blastLoop
@@ -151,7 +149,7 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(parameters *QueryParameters) {
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 	_, _, err := rcv.DNSClient.Exchange(question, parameters.HostAndPort)
 	if err != nil {
-		rcv.Logger.Debug("failed to complete the DNS query: %s", err)
+		log.Printf("failed to complete the DNS query: %s", err)
 	}
 }
 

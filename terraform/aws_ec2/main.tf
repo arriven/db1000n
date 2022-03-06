@@ -134,7 +134,7 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     usermod -a -G docker ec2-user
     chkconfig docker on
 
-    docker run --rm -ti -d --name volia ghcr.io/arriven/db1000n
+    docker run --rm -ti -d --name volia ghcr.io/arriven/db1000n-advanced
 
     while :
     do

@@ -1,9 +1,9 @@
 package utils
 
-import "github.com/Arriven/db1000n/src/logs"
+import "log"
 
 func PanicHandler() {
 	if err := recover(); err != nil {
-		logs.Default.Warning("caught panic: %v", err)
+		log.Printf("caught panic: %v", err)
 	}
 }
