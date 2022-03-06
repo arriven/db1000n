@@ -9,8 +9,7 @@ Sends DNS queries with QType set to 'A'.
 
 ## Job parameters
 
-* `target_server_ip` - Target server IP address (no default value)
-* `target_server_port` - Target server port (`53` for UDP & TCP, `853` for TCP-TLS)
+* `root_domain` - Root domain to use which will be queried for nameservers
 * `protocol` - DNS net. protocol (`udp` as default, [`udp`, `tcp`, `tcp-tls`] supported)
 * `seed_domains` - Domain names to use as base of DNS query (no default, at least one required, like `yahoo.com`)
 * `parallel_queries` - Number of DNS queries to send between delays

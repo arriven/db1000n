@@ -23,11 +23,11 @@ const (
 )
 
 type Config struct {
-	TargetServerHostPort string
-	Protocol             string        // "udp", "tcp", "tcp-tls"
-	SeedDomains          []string      // Used to generate domain names using the Distinct Heavy Hitter algorithm
-	Delay                time.Duration // The delay between two packets to send
-	ParallelQueries      int
+	RootDomain      string
+	Protocol        string        // "udp", "tcp", "tcp-tls"
+	SeedDomains     []string      // Used to generate domain names using the Distinct Heavy Hitter algorithm
+	Delay           time.Duration // The delay between two packets to send
+	ParallelQueries int
 }
 
 type DNSBlaster struct {
@@ -41,7 +41,7 @@ func Start(ctx context.Context, config *Config) error {
 
 	log.Printf("[DNS BLAST] igniting the blaster, parameters to start: "+
 		"[server=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]",
-		config.TargetServerHostPort,
+		config.RootDomain,
 		config.Protocol,
 		config.SeedDomains,
 		config.Delay,
@@ -59,18 +59,37 @@ func Start(ctx context.Context, config *Config) error {
 		DNSClient:    newDefaultDNSClient(config.Protocol),
 	}
 
-	go blaster.ExecuteStressTest(ctx)
+	nameservers, _ := getNameservers(config.RootDomain, config.Protocol)
+	for _, nameserver := range nameservers {
+		go blaster.ExecuteStressTest(nameserver, ctx)
+	}
 
 	return nil
 }
 
-func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context) {
+func getNameservers(rootDomain string, protocol string) (res []string, err error) {
+	port := ":53"
+	if protocol == "tcp-tls" {
+		port = ":853"
+	}
+
+	nameservers, err := net.LookupNS(rootDomain)
+	if err != nil {
+		return nil, err
+	}
+	for _, nameserver := range nameservers {
+		res = append(res, nameserver.Host+port)
+	}
+	return res, nil
+}
+
+func (rcv *DNSBlaster) ExecuteStressTest(nameserver string, ctx context.Context) {
 	defer utils.PanicHandler()
 
 	var (
 		awaitGroup    sync.WaitGroup
 		reusableQuery = &QueryParameters{
-			HostAndPort: rcv.Config.TargetServerHostPort,
+			HostAndPort: nameserver,
 			QName:       "", // Will be generated on each cycle
 			QType:       dns.TypeA,
 		}
