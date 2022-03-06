@@ -12,7 +12,7 @@ To deploy run:
 
 ```terraform
 export DO_TOKEN=<place-api-token-here>
-terraforim init
+terraform init
 terraform plan -var "do_token=${DO_TOKEN}"
 terraform apply -var "do_token=${DO_TOKEN}"
 ```

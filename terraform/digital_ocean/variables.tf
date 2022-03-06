@@ -1,5 +1,6 @@
 variable "do_token" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "repo" {
