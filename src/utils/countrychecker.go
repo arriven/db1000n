@@ -52,5 +52,5 @@ func CheckCountry() {
 		return
 	}
 
-	log.Println("Current country: %s", ipInfo.Country)
+	log.Printf("Current country: %s", ipInfo.Country)
 }
