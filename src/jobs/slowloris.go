@@ -46,12 +46,12 @@ func slowLorisJob(ctx context.Context, args Args, debug bool) error {
 	shouldStop := make(chan bool)
 	go func() {
 		<-ctx.Done()
-		shouldStop <- true
+		close(shouldStop)
 	}()
 
 	if debug {
 		log.Printf("sending slow loris with params: %v", jobConfig)
 	}
 
-	return slowloris.Start(jobConfig)
+	return slowloris.Start(shouldStop, jobConfig)
 }

