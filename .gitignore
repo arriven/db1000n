@@ -25,4 +25,5 @@ config.json
 **/.terraform*
 **/terraform.tfstate*
 
+.idea
 .history
