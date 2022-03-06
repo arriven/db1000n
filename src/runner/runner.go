@@ -201,40 +201,13 @@ func dumpMetrics(path, name, clientID string) {
 		}
 	}()
 
-	bytesPerSecond := metrics.Default.Read(name)
-	if bytesPerSecond > 0 {
+	bytesGenerated := metrics.Default.Read(name)
+	utils.ReportStatistics(int64(bytesGenerated), clientID)
+	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app is generating approximately %v bytes per second", bytesPerSecond)
-		utils.ReportStatistics(int64(bytesPerSecond), clientID)
+		log.Printf("The app has generated approximately %v bytes of traffic", bytesGenerated)
 	} else {
 		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
-	}
-
-	if path == "" {
-		return
-	}
-
-	dumpBytes, err := json.Marshal(&struct {
-		BytesPerSecond int `json:"bytes_per_second"`
-	}{
-		BytesPerSecond: bytesPerSecond,
-	})
-	if err != nil {
-		log.Printf("Failed marshaling metrics: %v", err)
-		return
-	}
-
-	// TODO: use proper ip
-	resp, err := http.Post(fmt.Sprintf("%s?id=%s", path, clientID), "application/json", bytes.NewReader(dumpBytes))
-	if err != nil {
-		log.Printf("Failed sending metrics: %v", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		log.Printf("Failed sending metrics, bad response code %v", resp.StatusCode)
 	}
 }
