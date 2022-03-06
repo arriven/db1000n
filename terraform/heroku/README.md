@@ -1,4 +1,4 @@
-# Digital Ocean deployment
+# Heroku deployment
 
 ## Requirements
 
