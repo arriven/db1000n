@@ -50,14 +50,12 @@
       }
     },
     {
-      "type": "dnsblast",
+      "type": "dns-blast",
       "args": {
         "target_server_ip": "10.8.0.1",
         "target_server_port": 53,
         "protocol": "udp",
-        "seed_domains": [
-          "yahoo.com"
-        ],
+        "seed_domains": ["yahoo.com"],
         "parallel_queries": 3,
         "interval_ms": 100
       }
