@@ -38,7 +38,6 @@ _Ви можете читати цю сторінку українською: [R
 - https://www.vpnunlimited.com/stop-russian-aggression
 - F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
 
-
 ### Free
 
 - https://protonvpn.com/
