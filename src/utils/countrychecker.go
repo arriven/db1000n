@@ -47,7 +47,7 @@ func CheckCountry(countriesToAvoid []string) {
 	for _, country := range countriesToAvoid {
 		if ipInfo.Country == country {
 			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
-			openBrowser("https://arriven.github.io/db1000n/system-pages/vpn", l)
+			openBrowser("https://arriven.github.io/db1000n/system-pages/vpn")
 			return
 		}
 	}
