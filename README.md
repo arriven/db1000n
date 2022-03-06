@@ -36,6 +36,8 @@ _Ви можете читати цю сторінку українською: [R
 - https://windscribe.com/ with promo code `ПИЗДЕЦ` you would get 30gb
 - https://www.hotspotshield.com/blog/privacy-security-for-ukraine
 - https://www.vpnunlimited.com/stop-russian-aggression
+- F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
+
 
 ### Free
 
