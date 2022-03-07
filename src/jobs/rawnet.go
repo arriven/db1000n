@@ -35,7 +35,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address)))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 			continue
 		}
 
-		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body), nil)))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		if debug {
@@ -83,7 +83,7 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address)))
+	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body))))
+		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body), nil)))
 		trafficMonitor.Add(len(jobConfig.Body))
 
 		if debug {
