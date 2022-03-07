@@ -32,8 +32,8 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	host := templates.ParseAndExecute(jobConfig.Host)
-	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port))
+	host := templates.ParseAndExecute(jobConfig.Host, nil)
+	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
 		log.Printf("Error parsing port: %v", err)
 		return err
@@ -51,7 +51,7 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		default:
 		}
 
-		packetConfigBytes := []byte(templates.ParseAndExecute(string(jobConfig.Packet)))
+		packetConfigBytes := []byte(templates.ParseAndExecute(string(jobConfig.Packet), nil))
 		if debug {
 			log.Printf("Parsed packet config template:\n%s", string(packetConfigBytes))
 		}

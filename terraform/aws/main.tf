@@ -30,7 +30,7 @@ resource "aws_iam_role" "web_iam_role" {
     {
       "Action": "sts:AssumeRole",
       "Principal": {
-        "Service": ["ec2.amazonaws.com", "ssm.amazonaws.com" ]
+        "Service": ["ssm.amazonaws.com", "ec2.amazonaws.com"]
       },
       "Effect": "Allow",
       "Sid": ""
@@ -125,6 +125,9 @@ resource "aws_launch_template" "example" {
   image_id                             = data.aws_ami.latest_amazon_linux.id
   instance_initiated_shutdown_behavior = "terminate"
   instance_type                        = var.instance_type
+  instance_market_options {
+    market_type = "spot"
+  }
   user_data = base64encode(<<EOF
 #!/bin/bash -xe
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1

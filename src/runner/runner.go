@@ -20,6 +20,7 @@ import (
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // Config for the job runner
@@ -64,7 +65,7 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run() {
-	clientID := uuid.New().String()
+	clientID := uuid.New()
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 
 	var (
@@ -106,6 +107,10 @@ func (r *Runner) Run() {
 				}
 
 				for i := range config.Jobs {
+					if len(config.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(config.Jobs[i].Filter, clientID.ID())) != "true" {
+						log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+						continue
+					}
 					job, ok := jobs.Get(config.Jobs[i].Type)
 					if !ok {
 						log.Printf("Unknown job %q", config.Jobs[i].Type)
@@ -142,7 +147,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.metricsPath, "traffic", clientID)
+		dumpMetrics(r.metricsPath, "traffic", clientID.String())
 	}
 
 	if cancel != nil {

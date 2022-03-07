@@ -2,6 +2,7 @@
   "jobs": [
     {
       "type": "http",
+      "filter": "{{ eq (mod . 2) 0 }}",
       "args": {
         "method": "GET",
         "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
