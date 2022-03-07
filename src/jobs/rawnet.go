@@ -57,7 +57,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 			if debug {
 				log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			}
-
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 			continue
 		}
 
@@ -65,16 +65,22 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 		_, err = conn.Write(body)
 		trafficMonitor.Add(len(body))
 
-		if debug {
-			if err != nil {
-				log.Printf("%s failed at %d: %v", jobConfig.Address, time.Now().Unix(), err)
-			} else {
+		if err != nil {
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+			if debug {
+				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+			}
+
+		} else {
+			if debug {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
 			}
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 		}
-
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
+
+	time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+
 
 	return nil
 }
@@ -106,6 +112,7 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 		if debug {
 			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
 		}
+		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return err
 	}
@@ -119,15 +126,17 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 		body := []byte(templates.Execute(bodyTpl, nil))
 		_, err = conn.Write(body)
 		trafficMonitor.Add(len(body))
-
-		if debug {
-			if err != nil {
-				log.Printf("%s failed at %d: %v", jobConfig.Address, time.Now().Unix(), err)
-			} else {
+		if err != nil {
+			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
+			if debug {
+				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+			}
+		} else {
+			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusSuccess)
+			if debug {
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
 			}
 		}
-
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 

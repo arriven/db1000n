@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/Arriven/db1000n/src/metrics"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,6 +45,7 @@ func Start(ctx context.Context, config *Config) error {
 
 	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
+		metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
 		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %s",
 			config.RootDomain, err)
 	}
@@ -64,6 +67,7 @@ func Start(ctx context.Context, config *Config) error {
 			defer utils.PanicHandler()
 
 			if err := blaster.ExecuteStressTest(ctx, nameserver, parameters); err != nil {
+				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
 				log.Printf("[DNS BLAST] stress test finished with error "+
 					"[nameserver=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]: %s",
 					nameserver, parameters.Protocol, parameters.SeedDomains, parameters.Delay, parameters.ParallelQueries, err)
@@ -102,9 +106,9 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 		nextLoopTicker    = time.NewTicker(parameters.Delay)
 	)
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
-
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(parameters.SeedDomains)
 	if err != nil {
+		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
 		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %s", err)
 	}
 
@@ -191,11 +195,12 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters) {
 	question := new(dns.Msg).
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
-
+	seedDomain := getSeedDomain(parameters.QName)
 	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
 		log.Printf("[DNS BLAST] failed to dial remote host [host=%s] to do the DNS query: %s",
 			parameters.HostAndPort, err)
+		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
 		return
 	}
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
@@ -206,9 +211,11 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, pa
 
 	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
 	if err != nil {
+		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
 		log.Printf("[DNS BLAST] failed to complete the DNS query: %s", err)
 		return
 	}
+	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess)
 }
 
 const (
@@ -253,4 +260,11 @@ func getNameservers(rootDomain string, protocol string) (res []string, err error
 	}
 
 	return res, nil
+}
+
+// getSeedDomain cut last subdomain part and root domain "." (dot). From <value>="test.example.com." returns "example.com"
+func getSeedDomain(value string) string {
+	index := strings.Index(value, ".")
+	// -1 to remove "." (dot) at end
+	return value[index+1 : len(value)-1]
 }
