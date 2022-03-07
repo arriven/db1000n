@@ -32,7 +32,7 @@ go install github.com/Arriven/db1000n@latest
 Run install script directly into the shell (useful for installation through SSH):
 
 ```bash
-curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh | sh
+source <(curl https://raw.githubusercontent.com/Arriven/db1000n/main/install.sh)
 ```
 
 The command above will detect the OS and architecture, download the archive, validate it, and extract `db1000n` executable into the working directory.
