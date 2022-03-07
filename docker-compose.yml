@@ -1,9 +1,9 @@
 version: "3"
 
 services:
-  # creates OpenVPN Docker container to first provider, endpoint #1
+  # creates OpenVPN Docker container to first provider that randomly picks .conf file
   ovpn_01:
-    image: ghcr.io/wfg/openvpn-client
+    image: ghcr.io/wfg/openvpn-client:2.1.0
     cap_add:
       - NET_ADMIN
     security_opt:
@@ -18,13 +18,13 @@ services:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
       VPN_AUTH_SECRET: provider01_secret
-      VPN_CONFIG_FILE: provider01.endpoint01.conf
+      VPN_CONFIG_PATTERN: provider01*.conf # this will match provider01_country01.conf, provider01_country02.conf etc
     secrets:
       - provider01_secret
 
-  # creates OpenVPN Docker container to first provider, endpoint #2
+  # creates OpenVPN Docker container to first provider with specific .conf file
   ovpn_02:
-    image: ghcr.io/wfg/openvpn-client
+    image: ghcr.io/wfg/openvpn-client:2.1.0
     cap_add:
       - NET_ADMIN
     security_opt:
@@ -39,13 +39,13 @@ services:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
       VPN_AUTH_SECRET: provider01_secret
-      VPN_CONFIG_FILE: provider01.endpoint02.conf
+      VPN_CONFIG_FILE: provider01.endpoint02.conf # will use only this .conf file
     secrets:
       - provider01_secret
 
-  # creates OpenVPN Docker container to second provider, endpoint #1
+  # creates OpenVPN Docker container to second provider with specific .conf file
   ovpn_03:
-    image: ghcr.io/wfg/openvpn-client
+    image: ghcr.io/wfg/openvpn-client:2.1.0
     cap_add:
       - NET_ADMIN
     security_opt:
@@ -60,7 +60,7 @@ services:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
       VPN_AUTH_SECRET: provider02_secret
-      VPN_CONFIG_FILE: provider02.endpoint01.conf
+      VPN_CONFIG_FILE: provider02.endpoint01.conf # will use only this .conf file
     secrets:
       - provider02_secret
 
