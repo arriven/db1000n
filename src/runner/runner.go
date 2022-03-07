@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
