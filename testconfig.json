@@ -41,15 +41,6 @@
       }
     },
     {
-      "type": "syn-flood",
-      "args": {
-        "host": "localhost",
-        "port": 80,
-        "payload_len": 1000,
-        "flood_type": "random"
-      }
-    },
-    {
       "type": "dns-blast",
       "args": {
         "root_domain": "example.com",

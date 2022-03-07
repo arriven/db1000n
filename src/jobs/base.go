@@ -24,7 +24,6 @@ func Get(t string) (Job, bool) {
 		"http":       httpJob,
 		"tcp":        tcpJob,
 		"udp":        udpJob,
-		"syn-flood":  synFloodJob,
 		"slow-loris": slowLorisJob,
 		"packetgen":  packetgenJob,
 		"dns-blast":  dnsBlastJob,
