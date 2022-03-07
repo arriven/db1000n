@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -39,6 +40,11 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
+	packetTpl, err := templates.Parse(string(jobConfig.Packet))
+	if err != nil {
+		return fmt.Errorf("error parsing packet config template %q: %v", string(jobConfig.Packet), err)
+	}
+
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -51,25 +57,15 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		default:
 		}
 
-		packetConfigBytes := []byte(templates.ParseAndExecute(string(jobConfig.Packet), nil))
+		packetConfigBytes := []byte(templates.Execute(packetTpl, nil))
 		if debug {
-			log.Printf("Parsed packet config template:\n%s", string(packetConfigBytes))
+			log.Printf("[packetgen] Rendered packet config template:\n%s", string(packetConfigBytes))
 		}
 
 		var packetConfig packetgen.PacketConfig
 		if err := json.Unmarshal(packetConfigBytes, &packetConfig); err != nil {
 			log.Printf("Error parsing json: %v", err)
 			return err
-		}
-
-		packetConfigBytes, err = json.Marshal(packetConfig)
-		if err != nil {
-			log.Printf("Error marshaling back to json: %v", err)
-			return err
-		}
-
-		if debug {
-			log.Printf("[packetgen] parsed packet config:\n%v", string(packetConfigBytes))
 		}
 
 		len, err := packetgen.SendPacket(packetConfig, host, port)
