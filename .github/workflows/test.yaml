@@ -5,6 +5,11 @@ on:
     branches:
       - "main"
   pull_request:
+    paths:
+      - "src/**"
+      - "main.go"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   test:
