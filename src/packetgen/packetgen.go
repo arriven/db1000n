@@ -114,7 +114,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
 		return 0, err
 	}
-	return len(c.Payload), nil
+	return len(payloadBuf.Bytes()), nil
 }
 
 type IPPacketConfig struct {
