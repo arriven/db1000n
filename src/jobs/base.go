@@ -13,9 +13,10 @@ type Job = func(ctx context.Context, args Args, debug bool) error
 
 // Config comment for linter
 type Config struct {
-	Type  string
-	Count int
-	Args  Args
+	Type   string
+	Count  int
+	Filter string
+	Args   Args
 }
 
 // Get job by type name

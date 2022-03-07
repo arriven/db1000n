@@ -50,7 +50,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(jobConfig.Client))), &clientConfig); err != nil && debug {
+	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(jobConfig.Client), nil)), &clientConfig); err != nil && debug {
 		log.Printf("Failed to parse job client json, ignoring: %v", err)
 	}
 
@@ -132,7 +132,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	defer ticker.Stop()
 
 	for jobConfig.Next(ctx) {
-		method, path, body := templates.Execute(methodTpl), templates.Execute(pathTpl), templates.Execute(bodyTpl)
+		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
 		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
 
 		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
@@ -153,7 +153,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 		// Add random user agent and configured headers
 		req.Header.Set("user-agent", uarand.GetRandom())
 		for keyTpl, valueTpl := range headerTpls {
-			key, value := templates.Execute(keyTpl), templates.Execute(valueTpl)
+			key, value := templates.Execute(keyTpl, nil), templates.Execute(valueTpl, nil)
 			req.Header.Add(key, value)
 			dataSize += len(key) + len(value)
 		}

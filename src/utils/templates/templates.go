@@ -61,6 +61,10 @@ func randomUUID() string {
 	return uuid.New().String()
 }
 
+func mod(lhs, rhs uint32) uint32 {
+	return lhs % rhs
+}
+
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
@@ -82,13 +86,14 @@ func Parse(input string) (*template.Template, error) {
 		"proxylist_url":        getProxylistURL,
 		"get_proxylist":        getProxylist,
 		"get_proxylist_by_url": getProxylistByUrl,
+		"mod":                  mod,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
 
 // Execute template, returns empty string in case of errors
-func Execute(tpl *template.Template) string {
+func Execute(tpl *template.Template, data interface{}) string {
 	var res strings.Builder
-	if err := tpl.Execute(&res, nil); err != nil {
+	if err := tpl.Execute(&res, data); err != nil {
 		log.Printf("Error executing template: %v", err)
 		return ""
 	}
@@ -97,7 +102,7 @@ func Execute(tpl *template.Template) string {
 }
 
 // ParseAndExecute template, returns input string in case of errors. Expensive operation.
-func ParseAndExecute(input string) string {
+func ParseAndExecute(input string, data interface{}) string {
 	tpl, err := Parse(input)
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
@@ -105,7 +110,7 @@ func ParseAndExecute(input string) string {
 	}
 
 	var output strings.Builder
-	if err = tpl.Execute(&output, nil); err != nil {
+	if err = tpl.Execute(&output, data); err != nil {
 		log.Printf("Error executing template: %v", err)
 		return input
 	}
