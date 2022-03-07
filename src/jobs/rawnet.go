@@ -57,18 +57,22 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
 
-		if debug {
-			if err != nil {
+		if err != nil {
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
-				metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
-			} else {
-				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
-				metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 			}
-		}
 
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+		} else {
+			if debug {
+				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
+			}
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
+		}
 	}
+
+	time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+
 	return nil
 }
 
@@ -107,17 +111,17 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 	for jobConfig.Next(ctx) {
 		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body))))
 		trafficMonitor.Add(len(jobConfig.Body))
-
-		if debug {
-			if err != nil {
+		if err != nil {
+			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
+			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
-				metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
-			} else {
+			}
+		} else {
+			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusSuccess)
+			if debug {
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
-				metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusSuccess)
 			}
 		}
-
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 

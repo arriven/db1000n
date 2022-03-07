@@ -59,7 +59,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	if c.UDP != nil {
 		udpPacket = buildUdpPacket(*c.UDP)
 		protocolLabelValue = "udp"
-		hostPort = string(ipPacket.DstIP) + ":" + strconv.FormatInt(int64(udpPacket.DstPort), 10)
+		hostPort = ipPacket.DstIP.String() + ":" + strconv.FormatInt(int64(udpPacket.DstPort), 10)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			metrics.IncPacketgen(
 				destinationHost,
@@ -70,7 +70,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		}
 	} else if c.TCP != nil {
 		tcpPacket = buildTcpPacket(*c.TCP)
-		hostPort = string(ipPacket.DstIP) + ":" + strconv.FormatInt(int64(tcpPacket.DstPort), 10)
+		hostPort = ipPacket.DstIP.String() + ":" + strconv.FormatInt(int64(tcpPacket.DstPort), 10)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			metrics.IncPacketgen(
 				destinationHost,

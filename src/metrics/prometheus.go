@@ -86,22 +86,22 @@ var (
 		prometheus.CounterOpts{
 			Name: "http_request_total",
 			Help: "Number of http queries",
-		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusSuccess})
+		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel})
 	packetgenCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "packetgen_total",
 			Help: "Number of packet generation transfers",
-		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusSuccess})
+		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel})
 	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "slowloris_total",
 			Help: "Number of sent raw tcp/udp packets",
-		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusSuccess})
+		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel})
 	rawnetCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "rawnet_total",
 			Help: "Number of sent raw tcp/udp packets",
-		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusSuccess})
+		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel})
 )
 
 func registerMetrics() {
@@ -175,7 +175,7 @@ func pushMetrics(ctx context.Context, gateways []string) {
 		log.Println("Invalid value for <PROMETHEUS_PUSH_PERIOD> env variable. Read docs: https://pkg.go.dev/time#ParseDuration")
 	}
 	ticker := time.NewTicker(tickerPeriod)
-	pusher := push.New(gateway, jobName)
+	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer)
 	for {
 		select {
 		case <-ctx.Done():
@@ -203,7 +203,7 @@ func IncHTTP(host, method, status string) {
 	httpCounter.With(prometheus.Labels{
 		HTTPMethodLabel:          method,
 		HTTPDestinationHostLabel: host,
-		StatusSuccess:            status,
+		StatusLabel:              status,
 	}).Inc()
 }
 
@@ -213,7 +213,7 @@ func IncPacketgen(host, host_port, protocol, status string) {
 		PacketgenHostLabel:        host,
 		PacketgenDstHostPortLabel: host_port,
 		PacketgenProtocolLabel:    protocol,
-		StatusSuccess:             status,
+		StatusLabel:               status,
 	}).Inc()
 }
 
@@ -222,7 +222,7 @@ func IncSlowLoris(address, protocol, status string) {
 	slowlorisCounter.With(prometheus.Labels{
 		SlowlorisAddressLabel:  address,
 		SlowlorisProtocolLabel: protocol,
-		StatusSuccess:          status,
+		StatusLabel:            status,
 	}).Inc()
 }
 
@@ -231,7 +231,7 @@ func IncRawnetTCP(address, status string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "tcp",
-		StatusSuccess:       status,
+		StatusLabel:         status,
 	}).Inc()
 }
 
@@ -240,6 +240,6 @@ func IncRawnetUDP(address, status string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "udp",
-		StatusSuccess:       status,
+		StatusLabel:         status,
 	}).Inc()
 }
