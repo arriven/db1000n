@@ -58,6 +58,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 
 		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
 		if err != nil {
+			metrics.IncHTTP(jobConfig.Path, jobConfig.Method, metrics.StatusFail)
 			if debug {
 				log.Printf("Error creating request: %v", err)
 			}
@@ -180,12 +181,14 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
 		if debug {
 			log.Printf("Error sending request %v: %v", req, err)
 		}
 
 		return
 	}
+	metrics.IncHTTP(req.Host, req.Method, metrics.StatusSuccess)
 
 	resp.Body.Close() // No need for response
 
