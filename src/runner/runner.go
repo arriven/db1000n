@@ -1,16 +1,8 @@
 package runner
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +11,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
@@ -76,66 +69,45 @@ func (r *Runner) Run() {
 	)
 
 	for !stop {
-		newRawConfig, err := fetchConfig(r.configPaths)
-		if err != nil {
-			if r.currentRawConfig != nil {
-				log.Println("Could not load new config, proceeding with last known good config")
-				newRawConfig = r.currentRawConfig
-			} else {
-				log.Println("Could not load new config, proceeding with backupConfig")
-				newRawConfig = r.backupConfig
-			}
-		}
-
-		if !bytes.Equal(r.currentRawConfig, newRawConfig) { // Only restart jobs if the new config differs from the current one
-			log.Println("New config received, applying")
-
-			var config struct {
-				Jobs []jobs.Config
+		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig); cfg != nil {
+			if cancel != nil {
+				cancel()
 			}
 
-			if err := json.Unmarshal(newRawConfig, &config); err != nil {
-				log.Printf("Failed to unmarshal job configs: %v", err)
-			} else {
-				if cancel != nil {
-					cancel()
-				}
-
-				ctx, cancel = context.WithCancel(context.Background())
-				if r.config.PrometheusOn {
-					go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
-				}
-
-				for i := range config.Jobs {
-					if len(config.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(config.Jobs[i].Filter, clientID.ID())) != "true" {
-						log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
-						continue
-					}
-					job, ok := jobs.Get(config.Jobs[i].Type)
-					if !ok {
-						log.Printf("Unknown job %q", config.Jobs[i].Type)
-
-						continue
-					}
-
-					if config.Jobs[i].Count < 1 {
-						config.Jobs[i].Count = 1
-					}
-
-					for j := 0; j < config.Jobs[i].Count; j++ {
-						wg.Add(1)
-
-						go func(i int) {
-							job(ctx, config.Jobs[i].Args, r.debug)
-							wg.Done()
-						}(i)
-					}
-				}
-
-				r.currentRawConfig = newRawConfig
-
-				log.Println("Jobs (re)started")
+			ctx, cancel = context.WithCancel(context.Background())
+			if r.config.PrometheusOn {
+				go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
 			}
+
+			for i := range cfg.Jobs {
+				if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
+					log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+					continue
+				}
+				job, ok := jobs.Get(cfg.Jobs[i].Type)
+				if !ok {
+					log.Printf("Unknown job %q", cfg.Jobs[i].Type)
+
+					continue
+				}
+
+				if cfg.Jobs[i].Count < 1 {
+					cfg.Jobs[i].Count = 1
+				}
+
+				for j := 0; j < cfg.Jobs[i].Count; j++ {
+					wg.Add(1)
+
+					go func(i int) {
+						job(ctx, cfg.Jobs[i].Args, r.debug)
+						wg.Done()
+					}(i)
+				}
+			}
+
+			r.currentRawConfig = raw
+
+			log.Println("Jobs (re)started")
 		}
 
 		// Wait for refresh timer or stop signal
@@ -159,52 +131,6 @@ func (r *Runner) Run() {
 
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
-
-func fetchConfig(paths []string) ([]byte, error) {
-	for i := range paths {
-		res, err := fetchSingleConfig(paths[i])
-		if err != nil {
-			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
-			continue
-		}
-
-		log.Printf("Loading config from %q", paths[i])
-
-		return res, nil
-	}
-
-	return nil, errors.New("config fetch failed")
-}
-
-func fetchSingleConfig(path string) ([]byte, error) {
-	configURL, err := url.ParseRequestURI(path)
-	if err != nil {
-		res, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-
-		return res, nil
-	}
-
-	resp, err := http.Get(configURL.String())
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
-	}
-
-	res, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
 
 func dumpMetrics(path, name, clientID string) {
 	defer func() {
