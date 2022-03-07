@@ -63,9 +63,16 @@ const (
 	PacketgenProtocolLabel    = `protocol`
 )
 
+// Slowloris related values and labels
 const (
-	RawNetAddressLabel  = `address`
-	RawNetProtocolLabel = `protocol`
+	SlowlorisAddressLabel  = `address`
+	SlowlorisProtocolLabel = `protocol`
+)
+
+// Rawnet related values and labels
+const (
+	RawnetAddressLabel  = `address`
+	RawnetProtocolLabel = `protocol`
 )
 
 // registered metrics
@@ -85,18 +92,24 @@ var (
 			Name: "packetgen_total",
 			Help: "Number of packet generation transfers",
 		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusSuccess})
-	rawNetCounter = prometheus.NewCounterVec(
+	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "tcp_sent_packet_total",
+			Name: "slowloris_total",
 			Help: "Number of sent raw tcp/udp packets",
-		}, []string{RawNetAddressLabel, RawNetProtocolLabel, StatusSuccess})
+		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusSuccess})
+	rawnetCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "rawnet_total",
+			Help: "Number of sent raw tcp/udp packets",
+		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusSuccess})
 )
 
 func registerMetrics() {
 	prometheus.MustRegister(dnsBlastCounter)
 	prometheus.MustRegister(httpCounter)
 	prometheus.MustRegister(packetgenCounter)
-	prometheus.MustRegister(rawNetCounter)
+	prometheus.MustRegister(slowlorisCounter)
+	prometheus.MustRegister(rawnetCounter)
 }
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
@@ -194,7 +207,7 @@ func IncHTTP(host, method, status string) {
 	}).Inc()
 }
 
-// Packetgen increments counter of sent raw packets
+// IncPacketgen increments counter of sent raw packets
 func IncPacketgen(host, host_port, protocol, status string) {
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
@@ -204,11 +217,29 @@ func IncPacketgen(host, host_port, protocol, status string) {
 	}).Inc()
 }
 
-// IncRawNet increments counter of sent raw tcp\udp packets
-func IncRawNet(address, protocol, status string) {
-	rawNetCounter.With(prometheus.Labels{
-		RawNetAddressLabel:  address,
-		RawNetProtocolLabel: protocol,
+// IncSlowLoris increments counter of sent raw ethernet+ip+tcp/udp packets
+func IncSlowLoris(address, protocol, status string) {
+	slowlorisCounter.With(prometheus.Labels{
+		SlowlorisAddressLabel:  address,
+		SlowlorisProtocolLabel: protocol,
+		StatusSuccess:          status,
+	}).Inc()
+}
+
+// IncRawnetTCP increments counter of sent raw tcp packets
+func IncRawnetTCP(address, status string) {
+	rawnetCounter.With(prometheus.Labels{
+		RawnetAddressLabel:  address,
+		RawnetProtocolLabel: "tcp",
+		StatusSuccess:       status,
+	}).Inc()
+}
+
+// IncRawnetUDP increments counter of sent raw tcp packets
+func IncRawnetUDP(address, status string) {
+	rawnetCounter.With(prometheus.Labels{
+		RawnetAddressLabel:  address,
+		RawnetProtocolLabel: "udp",
 		StatusSuccess:       status,
 	}).Inc()
 }

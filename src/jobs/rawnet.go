@@ -50,7 +50,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 			if debug {
 				log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			}
-
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 			continue
 		}
 
@@ -60,8 +60,10 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 		if debug {
 			if err != nil {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+				metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 			} else {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
+				metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 			}
 		}
 
@@ -97,6 +99,7 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 		if debug {
 			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
 		}
+		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return err
 	}
@@ -108,8 +111,10 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 		if debug {
 			if err != nil {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+				metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 			} else {
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
+				metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusSuccess)
 			}
 		}
 
