@@ -30,7 +30,7 @@ resource "aws_iam_role" "web_iam_role" {
     {
       "Action": "sts:AssumeRole",
       "Principal": {
-        "Service": ["ec2.amazonaws.com", "ssm.amazonaws.com" ]
+        "Service": ["ssm.amazonaws.com", "ec2.amazonaws.com"]
       },
       "Effect": "Allow",
       "Sid": ""
