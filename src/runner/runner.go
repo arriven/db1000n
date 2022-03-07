@@ -24,14 +24,17 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths    string        // Comma-separated config location URLs
-	BackupConfig   []byte        // Raw backup config
-	RefreshTimeout time.Duration // How often to refresh config
-	MetricsPath    string        // Where to dump metrics to
+	ConfigPaths        string        // Comma-separated config location URLs
+	BackupConfig       []byte        // Raw backup config
+	RefreshTimeout     time.Duration // How often to refresh config
+	MetricsPath        string        // Where to dump metrics to
+	PrometheusOn       bool
+	PrometheusGateways string
 }
 
 // Runner executes jobs according to the (fetched from remote) configuration
 type Runner struct {
+	config         *Config
 	configPaths    []string
 	backupConfig   []byte
 	refreshTimeout time.Duration
@@ -47,6 +50,7 @@ type Runner struct {
 // New runner according to the config
 func New(cfg *Config, debug bool) (*Runner, error) {
 	return &Runner{
+		config:         cfg,
 		configPaths:    strings.Split(cfg.ConfigPaths, ","),
 		backupConfig:   cfg.BackupConfig,
 		refreshTimeout: cfg.RefreshTimeout,
@@ -97,6 +101,9 @@ func (r *Runner) Run() {
 				}
 
 				ctx, cancel = context.WithCancel(context.Background())
+				if r.config.PrometheusOn {
+					go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
+				}
 
 				for i := range config.Jobs {
 					job, ok := jobs.Get(config.Jobs[i].Type)

@@ -24,6 +24,7 @@ package main
 
 import (
 	"flag"
+	"github.com/Arriven/db1000n/src/metrics"
 	"log"
 	"os"
 	"os/signal"
@@ -46,6 +47,8 @@ func main() {
 	var refreshTimeout time.Duration
 	var debug, help bool
 	var metricsPath string
+	var prometheusPushGateways string
+	var prometheusOn bool
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
@@ -53,11 +56,17 @@ func main() {
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.StringVar(&proxiesURL, "p", "", "url to fetch proxies list")
+	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
+	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
 	flag.Parse()
 
 	if help {
 		flag.CommandLine.Usage()
 		return
+	}
+
+	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
+		log.Fatal("Invalid value for --prometheus_gateways")
 	}
 
 	if proxiesURL != "" {
@@ -67,10 +76,12 @@ func main() {
 	go utils.CheckCountry([]string{"Ukraine"})
 
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:    configPaths,
-		BackupConfig:   []byte(backupConfig),
-		RefreshTimeout: refreshTimeout,
-		MetricsPath:    metricsPath,
+		ConfigPaths:        configPaths,
+		BackupConfig:       []byte(backupConfig),
+		RefreshTimeout:     refreshTimeout,
+		MetricsPath:        metricsPath,
+		PrometheusOn:       prometheusOn,
+		PrometheusGateways: prometheusPushGateways,
 	}, debug)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
