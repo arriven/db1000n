@@ -1,16 +1,17 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/Arriven/db1000n/src/jobs"
-	"github.com/Arriven/db1000n/src/utils"
 )
 
 // Config for all jobs to run
@@ -18,46 +19,77 @@ type Config struct {
 	Jobs []jobs.Config
 }
 
-func FetchConfig(configPath string) (*Config, error) {
-	defer utils.PanicHandler()
+// Fetch tries to read a config from the list of mirrors until it succeeds
+func Fetch(paths []string) ([]byte, error) {
+	for i := range paths {
+		res, err := FetchSingle(paths[i])
+		if err != nil {
+			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
+			continue
+		}
 
-	var configBytes []byte
-	if configURL, err := url.ParseRequestURI(configPath); err == nil {
-		resp, err := http.Get(configURL.String())
+		log.Printf("Loading config from %q", paths[i])
+
+		return res, nil
+	}
+
+	return nil, errors.New("config fetch failed")
+}
+
+// FetchSingle reads a config from a single source
+func FetchSingle(path string) ([]byte, error) {
+	configURL, err := url.ParseRequestURI(path)
+	if err != nil {
+		res, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 
-		defer resp.Body.Close()
+		return res, nil
+	}
 
-		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
-		}
-
-		if configBytes, err = io.ReadAll(resp.Body); err != nil {
-			return nil, err
-		}
-	} else if configBytes, err = os.ReadFile(configPath); err != nil {
+	resp, err := http.Get(configURL.String())
+	if err != nil {
 		return nil, err
 	}
 
-	var config Config
-	if err := json.Unmarshal(configBytes, &config); err != nil {
-		fmt.Printf("error parsing json config: %v\n", err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
+	}
+
+	res, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return res, nil
 }
 
-func UpdateConfig(configPath, backupConfig string) (config *Config, err error) {
-	configPaths := strings.Split(configPath, ",")
-	for _, path := range configPaths {
-		config, err = FetchConfig(path)
-		if err == nil {
-			return config, nil
+func Update(paths []string, current, backup []byte) (*Config, []byte) {
+	newRawConfig, err := Fetch(paths)
+	if err != nil {
+		if current != nil {
+			log.Println("Could not load new config, proceeding with last known good config")
+			newRawConfig = current
+		} else {
+			log.Println("Could not load new config, proceeding with backupConfig")
+			newRawConfig = backup
 		}
 	}
-	err = json.Unmarshal([]byte(backupConfig), &config)
-	return config, err
+
+	if !bytes.Equal(current, newRawConfig) { // Only restart jobs if the new config differs from the current one
+		log.Println("New config received, applying")
+
+		var config Config
+
+		if err := json.Unmarshal(newRawConfig, &config); err != nil {
+			log.Printf("Failed to unmarshal job configs: %v", err)
+			return nil, nil
+		}
+
+		return &config, newRawConfig
+	}
+	return nil, nil
 }
