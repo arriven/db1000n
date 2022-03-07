@@ -52,8 +52,7 @@
     {
       "type": "dns-blast",
       "args": {
-        "target_server_ip": "10.8.0.1",
-        "target_server_port": 53,
+        "root_domain": "example.com",
         "protocol": "udp",
         "seed_domains": ["yahoo.com"],
         "parallel_queries": 3,
