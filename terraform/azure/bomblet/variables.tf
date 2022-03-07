@@ -18,4 +18,6 @@ variable "attack_memory" {
   default = "1.5"
 }
 
-variable "attack_environment_variables" {}
+variable "attack_environment_variables" { 
+  default = {}
+}
