@@ -23,11 +23,13 @@
 package metrics
 
 import (
+	"context"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -48,6 +50,19 @@ const (
 	DNSBlastProtocolLabel   = `protocol`
 )
 
+// HTTP related values and labels
+const (
+	HTTPDestinationHostLabel = `destination_host`
+	HTTPMethodLabel          = `method`
+)
+
+// Packetgen related values and labels
+const (
+	PacketgenHostLabel        = `host`
+	PacketgenDstHostPortLabel = `dst_host_port`
+	PacketgenProtocolLabel    = `protocol`
+)
+
 // registered metrics
 var (
 	dnsBlastCounter = prometheus.NewCounterVec(
@@ -55,7 +70,23 @@ var (
 			Name: "dns_blast_total",
 			Help: "Number of dns queries",
 		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel})
+	httpCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_request_total",
+			Help: "Number of http queries",
+		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusSuccess})
+	packetgenCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "packetgen_total",
+			Help: "Number of packet generation transfers",
+		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusSuccess})
 )
+
+func registerMetrics() {
+	prometheus.MustRegister(dnsBlastCounter)
+	prometheus.MustRegister(httpCounter)
+	prometheus.MustRegister(packetgenCounter)
+}
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
 // is valid URL
@@ -78,7 +109,7 @@ func ValidatePrometheusPushGateways(value string) bool {
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
 func ExportPrometheusMetrics(ctx context.Context, gateways string) {
-	prometheus.MustRegister(dnsBlastCounter)
+	registerMetrics()
 
 	http.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
@@ -134,11 +165,30 @@ func pushMetrics(ctx context.Context, gateways []string) {
 	}
 }
 
-// IncDNSBlast increments counter of sent queries
+// IncDNSBlast increments counter of sent dns queries
 func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
 	dnsBlastCounter.With(prometheus.Labels{
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
 		DNSBlastProtocolLabel:   protocol,
 		StatusLabel:             status}).Inc()
+}
+
+// IncHTTP increments counter of sent http queries
+func IncHTTP(host, method, status string) {
+	httpCounter.With(prometheus.Labels{
+		HTTPMethodLabel:          method,
+		HTTPDestinationHostLabel: host,
+		StatusSuccess:            status,
+	}).Inc()
+}
+
+// Packetgen increments counter of sent raw packets
+func IncPacketgen(host, host_port, protocol, status string) {
+	packetgenCounter.With(prometheus.Labels{
+		PacketgenHostLabel:        host,
+		PacketgenDstHostPortLabel: host_port,
+		PacketgenProtocolLabel:    protocol,
+		StatusSuccess:             status,
+	}).Inc()
 }

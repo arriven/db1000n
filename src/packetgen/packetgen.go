@@ -23,7 +23,9 @@
 package packetgen
 
 import (
+	"github.com/Arriven/db1000n/src/metrics"
 	"net"
+	"strconv"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -51,16 +53,30 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	if err != nil {
 		return 0, err
 	}
-
+	protocolLabelValue := "tcp"
 	ipPacket := buildIpPacket(c.IP)
+	var hostPort string
 	if c.UDP != nil {
 		udpPacket = buildUdpPacket(*c.UDP)
+		protocolLabelValue = "udp"
+		hostPort = string(ipPacket.DstIP) + ":" + strconv.FormatInt(int64(udpPacket.DstPort), 10)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 	} else if c.TCP != nil {
 		tcpPacket = buildTcpPacket(*c.TCP)
+		hostPort = string(ipPacket.DstIP) + ":" + strconv.FormatInt(int64(tcpPacket.DstPort), 10)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 	}
@@ -76,10 +92,20 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	}
 
 	if err = ipPacket.SerializeTo(ipHeaderBuf, opts); err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
 		return 0, err
 	}
 
 	if ipHeader, err = ipv4.ParseHeader(ipHeaderBuf.Bytes()); err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
 		return 0, err
 	}
 
@@ -89,31 +115,66 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 
 	if udpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, udpPacket, pyl); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 
 		// XXX send packet
 		if packetConn, err = net.ListenPacket("ip4:udp", "0.0.0.0"); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 	} else if tcpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 
 		// XXX send packet
 		if packetConn, err = net.ListenPacket("ip4:tcp", "0.0.0.0"); err != nil {
+			metrics.IncPacketgen(
+				destinationHost,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return 0, err
 		}
 	}
 
 	if rawConn, err = ipv4.NewRawConn(packetConn); err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
 		return 0, err
 	}
 
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
 		return 0, err
 	}
+	metrics.IncPacketgen(
+		destinationHost,
+		hostPort,
+		protocolLabelValue,
+		metrics.StatusSuccess)
 	return len(payloadBuf.Bytes()), nil
 }
 

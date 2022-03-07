@@ -86,6 +86,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			// Return random proxy from the list
 			proxy = func(r *http.Request) (*url.URL, error) {
 				if len(proxyURLs) == 0 {
+					metrics.IncHTTP(jobConfig.Path, jobConfig.Method, metrics.StatusFail)
 					return nil, errors.New("proxylist is empty")
 				}
 
@@ -96,6 +97,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 					if u, err = url.Parse(r.URL.Scheme + proxyString); err != nil && debug {
 						log.Printf("Failed to parse proxy, sending request directly: %v", err)
 					}
+					metrics.IncHTTP(jobConfig.Path, jobConfig.Method, metrics.StatusFail)
 				}
 
 				return u, nil
@@ -124,6 +126,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
 		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
 	if err != nil {
+		metrics.IncHTTP(jobConfig.Path, jobConfig.Method, metrics.StatusFail)
 		return err
 	}
 
@@ -140,6 +143,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			if debug {
 				log.Printf("error creating request: %v", err)
 			}
+			metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
 
 			continue
 		}
@@ -179,12 +183,14 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
 		if debug {
 			log.Printf("Error sending request %v: %v", req, err)
 		}
 
 		return
 	}
+	metrics.IncHTTP(req.Host, req.Method, metrics.StatusSuccess)
 
 	resp.Body.Close() // No need for response
 
