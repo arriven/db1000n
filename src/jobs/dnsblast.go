@@ -38,6 +38,11 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 	// Default settings and early misconfiguration prevention
 	//
 
+	// Root domain verification
+	if len(jobConfig.RootDomain) == 0 {
+		return errors.New("no root domain provided, consider adding it")
+	}
+
 	// Domain seeds verification
 	if len(jobConfig.SeedDomains) == 0 {
 		return errors.New("no seed domains provided, at least one is required")

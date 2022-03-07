@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/miekg/dns v1.1.46
 	github.com/mjpitz/go-ga v0.0.7
+	github.com/refraction-networking/utls v1.0.0
 	github.com/schollz/progressbar/v3 v3.8.6
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 )
