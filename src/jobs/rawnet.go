@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -15,9 +16,10 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-// RawNetJobConfig comment for linter
-type RawNetJobConfig struct {
+// rawNetJobConfig comment for linter
+type rawNetJobConfig struct {
 	BasicJobConfig
+
 	Address string
 	Body    json.RawMessage
 }
@@ -26,7 +28,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	type tcpJobConfig struct {
-		RawNetJobConfig
+		rawNetJobConfig
 	}
 
 	var jobConfig tcpJobConfig
@@ -38,6 +40,11 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
 		return err
+	}
+
+	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	if err != nil {
+		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
 
 	for jobConfig.Next(ctx) {
@@ -54,12 +61,13 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 			continue
 		}
 
-		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body), nil)))
-		trafficMonitor.Add(len(jobConfig.Body))
+		body := []byte(templates.Execute(bodyTpl, nil))
+		_, err = conn.Write(body)
+		trafficMonitor.Add(len(body))
 
 		if debug {
 			if err != nil {
-				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+				log.Printf("%s failed at %d: %v", jobConfig.Address, time.Now().Unix(), err)
 			} else {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
 			}
@@ -67,6 +75,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
+
 	return nil
 }
 
@@ -74,7 +83,7 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	type udpJobConfig struct {
-		RawNetJobConfig
+		rawNetJobConfig
 	}
 
 	var jobConfig udpJobConfig
@@ -101,13 +110,19 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
+	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	if err != nil {
+		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+	}
+
 	for jobConfig.Next(ctx) {
-		_, err = conn.Write([]byte(templates.ParseAndExecute(string(jobConfig.Body), nil)))
-		trafficMonitor.Add(len(jobConfig.Body))
+		body := []byte(templates.Execute(bodyTpl, nil))
+		_, err = conn.Write(body)
+		trafficMonitor.Add(len(body))
 
 		if debug {
 			if err != nil {
-				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
+				log.Printf("%s failed at %d: %v", jobConfig.Address, time.Now().Unix(), err)
 			} else {
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
 			}

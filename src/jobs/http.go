@@ -26,35 +26,87 @@ import (
 func httpJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
-	type httpJobConfig struct {
+	var jobConfig struct {
 		BasicJobConfig
+
 		Path    string
 		Method  string
 		Body    json.RawMessage
 		Headers map[string]string
 		Client  json.RawMessage // See HTTPClientConfig
 	}
-
-	var jobConfig httpJobConfig
 	if err := json.Unmarshal(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config json: %v", err)
 		return err
 	}
 
-	type HTTPClientConfig struct {
+	client, async := newHTTPClient(jobConfig.Client, debug)
+
+	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
+		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
+	if err != nil {
+		return err
+	}
+
+	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for jobConfig.Next(ctx) {
+		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
+		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
+
+		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
+		if err != nil {
+			if debug {
+				log.Printf("Error creating request: %v", err)
+			}
+
+			continue
+		}
+
+		select {
+		case <-ticker.C:
+			log.Printf("Attacking %v", jobConfig.Path)
+		default:
+		}
+
+		// Add random user agent and configured headers
+		req.Header.Set("user-agent", uarand.GetRandom())
+		for keyTpl, valueTpl := range headerTpls {
+			key, value := templates.Execute(keyTpl, nil), templates.Execute(valueTpl, nil)
+			req.Header.Add(key, value)
+			dataSize += len(key) + len(value)
+		}
+
+		if async {
+			go sendRequest(client, req, debug)
+		} else {
+			sendRequest(client, req, debug)
+		}
+
+		trafficMonitor.Add(dataSize)
+
+		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
+	}
+
+	return nil
+}
+
+func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client, async bool) {
+	var clientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
 		Timeout         *time.Duration `json:"timeout"`
 		MaxIdleConns    *int           `json:"max_idle_connections"`
 		ProxyURLs       string         `json:"proxy_urls"`
-		Async           bool           `json:"async"`
+		Async           bool           `json:"async"` // TODO: this is here for historical reasons, move to the job config when possible
 	}
 
-	var clientConfig HTTPClientConfig
-	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(jobConfig.Client), nil)), &clientConfig); err != nil && debug {
+	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(clientCfg), nil)), &clientConfig); err != nil && debug {
 		log.Printf("Failed to parse job client json, ignoring: %v", err)
 	}
 
-	timeout := time.Second * 90
+	timeout := 90 * time.Second
 	if clientConfig.Timeout != nil {
 		timeout = *clientConfig.Timeout
 	}
@@ -67,7 +119,6 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
-
 	if clientConfig.TLSClientConfig != nil {
 		tlsConfig = clientConfig.TLSClientConfig
 	}
@@ -105,7 +156,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 		}
 	}
 
-	client := &http.Client{
+	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 			Dial: (&net.Dialer{
@@ -119,57 +170,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			Proxy:                 proxy,
 		},
 		Timeout: timeout,
-	}
-
-	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
-		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
-	if err != nil {
-		return err
-	}
-
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	for jobConfig.Next(ctx) {
-		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
-		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-
-		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
-		if err != nil {
-			if debug {
-				log.Printf("error creating request: %v", err)
-			}
-
-			continue
-		}
-
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v", jobConfig.Path)
-		default:
-		}
-
-		// Add random user agent and configured headers
-		req.Header.Set("user-agent", uarand.GetRandom())
-		for keyTpl, valueTpl := range headerTpls {
-			key, value := templates.Execute(keyTpl, nil), templates.Execute(valueTpl, nil)
-			req.Header.Add(key, value)
-			dataSize += len(key) + len(value)
-		}
-
-		if clientConfig.Async {
-			go sendRequest(client, req, debug)
-		} else {
-			sendRequest(client, req, debug)
-		}
-
-		trafficMonitor.Add(dataSize)
-
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
-	}
-
-	return nil
+	}, clientConfig.Async
 }
 
 func sendRequest(client *http.Client, req *http.Request, debug bool) {
