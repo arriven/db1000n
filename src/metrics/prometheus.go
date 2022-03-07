@@ -63,6 +63,11 @@ const (
 	PacketgenProtocolLabel    = `protocol`
 )
 
+const (
+	RawNetAddressLabel  = `address`
+	RawNetProtocolLabel = `protocol`
+)
+
 // registered metrics
 var (
 	dnsBlastCounter = prometheus.NewCounterVec(
@@ -80,12 +85,18 @@ var (
 			Name: "packetgen_total",
 			Help: "Number of packet generation transfers",
 		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusSuccess})
+	rawNetCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "tcp_sent_packet_total",
+			Help: "Number of sent raw tcp/udp packets",
+		}, []string{RawNetAddressLabel, RawNetProtocolLabel, StatusSuccess})
 )
 
 func registerMetrics() {
 	prometheus.MustRegister(dnsBlastCounter)
 	prometheus.MustRegister(httpCounter)
 	prometheus.MustRegister(packetgenCounter)
+	prometheus.MustRegister(rawNetCounter)
 }
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
@@ -190,5 +201,14 @@ func IncPacketgen(host, host_port, protocol, status string) {
 		PacketgenDstHostPortLabel: host_port,
 		PacketgenProtocolLabel:    protocol,
 		StatusSuccess:             status,
+	}).Inc()
+}
+
+// IncRawNet increments counter of sent raw tcp\udp packets
+func IncRawNet(address, protocol, status string) {
+	rawNetCounter.With(prometheus.Labels{
+		RawNetAddressLabel:  address,
+		RawNetProtocolLabel: protocol,
+		StatusSuccess:       status,
 	}).Inc()
 }
