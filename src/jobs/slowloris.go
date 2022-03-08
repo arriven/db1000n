@@ -2,20 +2,20 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
 	"github.com/Arriven/db1000n/src/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/mitchellh/mapstructure"
 )
 
 func slowLorisJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig *slowloris.Config
-	if err := json.Unmarshal(args, &jobConfig); err != nil {
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
 		return err
 	}
 

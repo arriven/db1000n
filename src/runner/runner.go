@@ -22,6 +22,7 @@ type Config struct {
 	BackupConfig       []byte        // Raw backup config
 	RefreshTimeout     time.Duration // How often to refresh config
 	MetricsPath        string        // Where to dump metrics to
+	Format             string        // json or yaml
 	PrometheusOn       bool
 	PrometheusGateways string
 }
@@ -33,6 +34,7 @@ type Runner struct {
 	backupConfig   []byte
 	refreshTimeout time.Duration
 	metricsPath    string
+	configFormat   string
 
 	currentRawConfig []byte // currently applied config
 
@@ -69,7 +71,7 @@ func (r *Runner) Run() {
 	)
 
 	for !stop {
-		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig); cfg != nil {
+		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig, r.configFormat); cfg != nil {
 			if cancel != nil {
 				cancel()
 			}

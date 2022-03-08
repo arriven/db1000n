@@ -2,13 +2,13 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -28,8 +28,8 @@ type dnsBlastConfig struct {
 func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
-	jobConfig := new(dnsBlastConfig)
-	err := json.Unmarshal(args, &jobConfig)
+	var jobConfig dnsBlastConfig
+	err := mapstructure.Decode(args, &jobConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
 	}

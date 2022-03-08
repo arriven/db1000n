@@ -2,11 +2,10 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 )
 
 // Args comment for linter
-type Args = json.RawMessage
+type Args = map[string]interface{}
 
 // Job comment for linter
 type Job = func(ctx context.Context, args Args, debug bool) error
@@ -22,7 +21,7 @@ type Config struct {
 // Get job by type name
 func Get(t string) (Job, bool) {
 	res, ok := map[string]Job{
-		"http":       httpJob,
+		"http":       fasthttpJob,
 		"fasthttp":   fasthttpJob,
 		"tcp":        tcpJob,
 		"udp":        udpJob,

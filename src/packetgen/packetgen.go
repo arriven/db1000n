@@ -178,8 +178,8 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 }
 
 type IPPacketConfig struct {
-	SrcIP string `json:"src_ip"`
-	DstIP string `json:"dst_ip"`
+	SrcIP string `mapstructure:"src_ip"`
+	DstIP string `mapstructure:"dst_ip"`
 }
 
 // buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
@@ -193,8 +193,8 @@ func buildIpPacket(c IPPacketConfig) *layers.IPv4 {
 }
 
 type UDPPacketConfig struct {
-	SrcPort int `json:"src_port,string"`
-	DstPort int `json:"dst_port,string"`
+	SrcPort int `mapstructure:"src_port,string"`
+	DstPort int `mapstructure:"dst_port,string"`
 }
 
 func buildUdpPacket(c UDPPacketConfig) *layers.UDP {
@@ -217,8 +217,8 @@ type TCPFlagsConfig struct {
 }
 
 type TCPPacketConfig struct {
-	SrcPort int `json:"src_port,string"`
-	DstPort int `json:"dst_port,string"`
+	SrcPort int `mapstructure:"src_port,string"`
+	DstPort int `mapstructure:"dst_port,string"`
 	Seq     uint32
 	Ack     uint32
 	Window  uint16
@@ -248,8 +248,8 @@ func buildTcpPacket(c TCPPacketConfig) *layers.TCP {
 }
 
 type EthernetPacketConfig struct {
-	SrcMAC string `json:"src_mac"`
-	DstMAC string `json:"dst_mac"`
+	SrcMAC string `mapstructure:"src_mac"`
+	DstMAC string `mapstructure:"dst_mac"`
 }
 
 // buildEthernetPacket generates an layers.Ethernet and returns it with source MAC address and destination MAC address
