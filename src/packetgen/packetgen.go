@@ -23,9 +23,10 @@
 package packetgen
 
 import (
-	"github.com/Arriven/db1000n/src/metrics"
 	"net"
 	"strconv"
+
+	"github.com/Arriven/db1000n/src/metrics"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -55,11 +56,10 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	}
 	protocolLabelValue := "tcp"
 	ipPacket := buildIpPacket(c.IP)
-	var hostPort string
+	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
 	if c.UDP != nil {
 		udpPacket = buildUdpPacket(*c.UDP)
 		protocolLabelValue = "udp"
-		hostPort = ipPacket.DstIP.String() + ":" + strconv.FormatInt(int64(udpPacket.DstPort), 10)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			metrics.IncPacketgen(
 				destinationHost,
@@ -70,7 +70,6 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		}
 	} else if c.TCP != nil {
 		tcpPacket = buildTcpPacket(*c.TCP)
-		hostPort = ipPacket.DstIP.String() + ":" + strconv.FormatInt(int64(tcpPacket.DstPort), 10)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			metrics.IncPacketgen(
 				destinationHost,
