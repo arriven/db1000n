@@ -55,7 +55,7 @@ func parseHTTPRequestTemplates(method, path, body string, headers map[string]str
 	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
 
-func fasthttpJob(ctx context.Context, args Args, debug bool) error {
+func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig struct {
@@ -81,21 +81,15 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
+	log.Printf("Attacking %v", jobConfig.Path)
+
 	for jobConfig.Next(ctx) {
 		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
 		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v", jobConfig.Path)
-		default:
-		}
 
 		req.SetRequestURI(path)
 		req.Header.SetMethod(method)
@@ -107,9 +101,14 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 			req.Header.Set(key, value)
 			dataSize += len(key) + len(value)
 		}
-		sendFastHTTPRequest(client, req, debug)
 
-		trafficMonitor.Add(dataSize)
+		if err := sendFastHTTPRequest(client, req, debug); err != nil {
+			if debug {
+				log.Printf("Error sending request %v: %v", req, err)
+			}
+		} else {
+			trafficMonitor.Add(dataSize)
+		}
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -164,11 +163,11 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
-	var proxy = func() string { return "" }
+	proxy := func() string { return "" }
 	proxylist := []byte(templates.ParseAndExecute(clientConfig.ProxyURLs, nil))
 	if len(proxylist) > 0 {
 		if debug {
-			log.Printf("clientConfig.ProxyURLs: %v", string(proxylist))
+			log.Printf("List of proxies: %s", string(proxylist))
 		}
 
 		var proxyURLs []string
@@ -209,14 +208,14 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
 		// increase DNS cache time to an hour instead of default minute
-		Dial: fasthttpProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
+		Dial: fastHTTPProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial),
 	}
 }
 
-func fasthttpProxyDial(proxyFunc func() string, timeout time.Duration, backup fasthttp.DialFunc) fasthttp.DialFunc {
+func fastHTTPProxyDial(proxyFunc func() string, timeout time.Duration, backup fasthttp.DialFunc) fasthttp.DialFunc {
 	return func(addr string) (net.Conn, error) {
 		proxy := proxyFunc()
 		if proxy == "" {
@@ -227,19 +226,18 @@ func fasthttpProxyDial(proxyFunc func() string, timeout time.Duration, backup fa
 	}
 }
 
-func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) {
+func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) error {
 	if debug {
 		log.Printf("%s %s started at %d", string(req.Header.Method()), string(req.RequestURI()), time.Now().Unix())
 	}
 
-	err := client.Do(req, nil)
-	if err != nil {
+	if err := client.Do(req, nil); err != nil {
 		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
-		if debug {
-			log.Printf("Error sending request %v: %v", req, err)
-		}
 
-		return
+		return err
 	}
+
 	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
+
+	return nil
 }

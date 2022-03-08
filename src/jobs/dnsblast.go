@@ -57,7 +57,6 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 
 	case jobConfig.Protocol == "":
 		jobConfig.Protocol = defaultProto
-		isUDPProto = true
 
 	case !(isUDPProto || !isTCPProto || !isTCPTLSProto):
 		return fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",

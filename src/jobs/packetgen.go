@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
@@ -44,18 +43,11 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		log.Printf("Error parsing packet: %v", err)
 		return err
 	}
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
+	log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 
 	for jobConfig.Next(ctx) {
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v:%v", host, port)
-		default:
-		}
 
 		packetConfigRaw := packetTpl.Execute(nil)
 		if debug {

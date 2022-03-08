@@ -21,8 +21,8 @@ type Config struct {
 // Get job by type name
 func Get(t string) (Job, bool) {
 	res, ok := map[string]Job{
-		"http":       fasthttpJob,
-		"fasthttp":   fasthttpJob,
+		"http":       fastHTTPJob,
+		"fasthttp":   fastHTTPJob,
 		"tcp":        tcpJob,
 		"udp":        udpJob,
 		"slow-loris": slowLorisJob,
