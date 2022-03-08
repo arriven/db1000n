@@ -180,6 +180,10 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 	}
 
 	resp, err := client.Do(req)
+	if resp != nil {
+		resp.Body.Close() // No need for response
+	}
+
 	if err != nil {
 		metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
 		if debug {
@@ -189,8 +193,6 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 		return
 	}
 	metrics.IncHTTP(req.Host, req.Method, metrics.StatusSuccess)
-
-	resp.Body.Close() // No need for response
 
 	if debug {
 		if resp.StatusCode >= http.StatusBadRequest {
