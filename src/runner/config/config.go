@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Arriven/db1000n/src/utils"
 	"io"
 	"log"
 	"net/http"
@@ -81,14 +82,20 @@ func Update(paths []string, current, backup []byte) (*Config, []byte) {
 
 	if !bytes.Equal(current, newRawConfig) { // Only restart jobs if the new config differs from the current one
 		log.Println("New config received, applying")
-
+		if utils.IsEncrypted(newRawConfig) {
+			decryptedConfig, err := utils.DecryptConfig(newRawConfig)
+			if err != nil {
+				log.Println("Can't decrypt config")
+				return nil, nil
+			}
+			log.Println("Decrypted config")
+			newRawConfig = decryptedConfig
+		}
 		var config Config
-
 		if err := json.Unmarshal(newRawConfig, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs: %v", err)
 			return nil, nil
 		}
-
 		return &config, newRawConfig
 	}
 	return nil, nil
