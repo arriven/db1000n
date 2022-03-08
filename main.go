@@ -31,8 +31,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Arriven/db1000n/src/config"
 	"github.com/Arriven/db1000n/src/runner"
+	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )

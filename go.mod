@@ -31,3 +31,5 @@ require (
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/refraction-networking/utls => github.com/Arriven/utls v1.0.1-0.20220307194618-4d0e31286f59
