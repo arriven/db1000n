@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -45,18 +44,11 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		return fmt.Errorf("error parsing packet config template %q: %v", string(jobConfig.Packet), err)
 	}
 
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
+	log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 
 	for jobConfig.Next(ctx) {
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
-		default:
-		}
-
 		packetConfigBytes := []byte(templates.Execute(packetTpl, nil))
 		if debug {
 			log.Printf("[packetgen] Rendered packet config template:\n%s", string(packetConfigBytes))
