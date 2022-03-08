@@ -163,7 +163,8 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 }
 
 func pushMetrics(ctx context.Context, gateways []string) {
-	if len(gateways) == 0 {
+	// case of empty string splitted by empty delimiter
+	if len(gateways) == 1 && gateways[0] == "" {
 		return
 	}
 	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "default_push")
