@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Arriven/db1000n/src/utils"
 	"io"
 	"log"
 	"net/http"
@@ -88,7 +89,15 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 	}
 
 	log.Println("New config received, applying")
-
+	if utils.IsEncrypted(newRawConfig) {
+		decryptedConfig, err := utils.DecryptConfig(newRawConfig)
+		if err != nil {
+			log.Println("Can't decrypt config")
+			return nil, nil
+		}
+		log.Println("Decrypted config")
+		newRawConfig = decryptedConfig
+	}
 	var config Config
 	switch format {
 	case "", "json":
@@ -104,6 +113,5 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 	default:
 		log.Printf("Unknown config format: %v", format)
 	}
-
 	return &config, newRawConfig
 }
