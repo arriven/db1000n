@@ -7,6 +7,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.3.0
 	github.com/miekg/dns v1.1.46
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/mjpitz/go-ga v0.0.7
 	github.com/prometheus/client_golang v1.12.1
 	github.com/refraction-networking/utls v1.0.0

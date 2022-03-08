@@ -2,13 +2,13 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -19,17 +19,17 @@ const (
 
 type dnsBlastConfig struct {
 	BasicJobConfig
-	RootDomain      string   `json:"root_domain"`
-	Protocol        string   `json:"protocol"` // "udp", "tcp", "tcp-tls"
-	SeedDomains     []string `json:"seed_domains"`
-	ParallelQueries int      `json:"parallel_queries"`
+	RootDomain      string   `mapstructure:"root_domain"`
+	Protocol        string   `mapstructure:"protocol"` // "udp", "tcp", "tcp-tls"
+	SeedDomains     []string `mapstructure:"seed_domains"`
+	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
 func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
-	jobConfig := new(dnsBlastConfig)
-	err := json.Unmarshal(args, &jobConfig)
+	var jobConfig dnsBlastConfig
+	err := mapstructure.Decode(args, &jobConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
 	}

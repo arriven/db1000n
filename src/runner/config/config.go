@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Arriven/db1000n/src/jobs"
+	"gopkg.in/yaml.v3"
 )
 
 // Config for all jobs to run
@@ -67,7 +68,7 @@ func FetchSingle(path string) ([]byte, error) {
 	return res, nil
 }
 
-func Update(paths []string, current, backup []byte) (*Config, []byte) {
+func Update(paths []string, current, backup []byte, format string) (*Config, []byte) {
 	newRawConfig, err := Fetch(paths)
 	if err != nil {
 		if current != nil {
@@ -83,10 +84,22 @@ func Update(paths []string, current, backup []byte) (*Config, []byte) {
 		log.Println("New config received, applying")
 
 		var config Config
-
-		if err := json.Unmarshal(newRawConfig, &config); err != nil {
-			log.Printf("Failed to unmarshal job configs: %v", err)
-			return nil, nil
+		if format == "" {
+			format = "json"
+		}
+		switch format {
+		case "json":
+			if err := json.Unmarshal(newRawConfig, &config); err != nil {
+				log.Printf("Failed to unmarshal job configs: %v", err)
+				return nil, nil
+			}
+		case "yaml":
+			if err := yaml.Unmarshal(newRawConfig, &config); err != nil {
+				log.Printf("Failed to unmarshal job configs: %v", err)
+				return nil, nil
+			}
+		default:
+			log.Printf("Unknown config format: %v", format)
 		}
 
 		return &config, newRawConfig
