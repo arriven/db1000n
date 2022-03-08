@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// EncryptionKeyS random 32 byte key encoded into base64 string. Used by default for configs
-var EncryptionKeyS = `/45pB920B6DFNwCB/n4rYUio3AVMawrdtrFnjTSIzL4=`
+// EncryptionKeys random 32 byte key encoded into base64 string. Used by default for configs
+var EncryptionKeys = `/45pB920B6DFNwCB/n4rYUio3AVMawrdtrFnjTSIzL4=`
 
 const (
 	encryptionKeyEnvName = `ENCRYPTION_KEYS`
@@ -17,7 +17,7 @@ const (
 
 // GetEncryptionKeys returns list of encryption keys from ENCRYPTION_KEYS env variable name or default value
 func GetEncryptionKeys() ([]string, error) {
-	keysString := GetEnvStringDefault(encryptionKeyEnvName, EncryptionKeyS)
+	keysString := GetEnvStringDefault(encryptionKeyEnvName, EncryptionKeys)
 	// +1 to allocate for case if no separator and list contains key itself
 	// otherwise we just allocate +1 struct for string slice that stores just 2 int fields
 	// that is not a lot
@@ -35,7 +35,7 @@ func IsEncrypted(cfg []byte) bool {
 	return bytes.Index(cfg, []byte(`age-encryption`)) != -1
 }
 
-// DecryptConfig decrypts config using EncryptionKeyS
+// DecryptConfig decrypts config using EncryptionKeys
 func DecryptConfig(cfg []byte) ([]byte, error) {
 	keys, err := GetEncryptionKeys()
 	if err != nil {
