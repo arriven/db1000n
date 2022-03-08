@@ -63,7 +63,7 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 
 		Path    string
 		Method  string
-		Body    json.RawMessage
+		Body    string
 		Headers map[string]string
 		Client  map[string]interface{} // See HTTPClientConfig
 	}
@@ -75,7 +75,7 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 	client := newFastHTTPClient(jobConfig.Client, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
-		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
+		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers)
 	if err != nil {
 		return err
 	}

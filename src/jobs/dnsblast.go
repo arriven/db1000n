@@ -19,10 +19,10 @@ const (
 
 type dnsBlastConfig struct {
 	BasicJobConfig
-	RootDomain      string   `json:"root_domain"`
-	Protocol        string   `json:"protocol"` // "udp", "tcp", "tcp-tls"
-	SeedDomains     []string `json:"seed_domains"`
-	ParallelQueries int      `json:"parallel_queries"`
+	RootDomain      string   `mapstructure:"root_domain"`
+	Protocol        string   `mapstructure:"protocol"` // "udp", "tcp", "tcp-tls"
+	SeedDomains     []string `mapstructure:"seed_domains"`
+	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
 func dnsBlastJob(ctx context.Context, args Args, debug bool) error {

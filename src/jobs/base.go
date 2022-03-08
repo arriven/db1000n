@@ -35,8 +35,8 @@ func Get(t string) (Job, bool) {
 
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
-	IntervalMs int `json:"interval_ms,omitempty"`
-	Count      int `json:"count,omitempty"`
+	IntervalMs int `mapstructure:"interval_ms,omitempty"`
+	Count      int `mapstructure:"count,omitempty"`
 
 	iter int
 }
