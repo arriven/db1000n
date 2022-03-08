@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Arriven/db1000n/src/jobs"
+	"gopkg.in/yaml.v3"
 )
 
 // Config for all jobs to run
@@ -92,8 +93,13 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 				log.Printf("Failed to unmarshal job configs: %v", err)
 				return nil, nil
 			}
+		case "yaml":
+			if err := yaml.Unmarshal(newRawConfig, &config); err != nil {
+				log.Printf("Failed to unmarshal job configs: %v", err)
+				return nil, nil
+			}
 		default:
-			log.Printf("FUnknown config format: %v", format)
+			log.Printf("Unknown config format: %v", format)
 		}
 
 		return &config, newRawConfig

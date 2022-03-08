@@ -51,6 +51,7 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 		backupConfig:   cfg.BackupConfig,
 		refreshTimeout: cfg.RefreshTimeout,
 		metricsPath:    cfg.MetricsPath,
+		configFormat:   cfg.Format,
 
 		debug: debug,
 
