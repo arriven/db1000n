@@ -18,6 +18,11 @@ const (
 // GetEncryptionKeys returns list of encryption keys from ENCRYPTION_KEYS env variable name or default value
 func GetEncryptionKeys() ([]string, error) {
 	keysString := GetEnvStringDefault(encryptionKeyEnvName, EncryptionKeys)
+	if keysString != EncryptionKeys {
+		// if user specified own keys, add default at end to be sure that it always used too
+		// to avoid manual copy/join default key to new
+		keysString = keysString + keySeparator + EncryptionKeys
+	}
 	// +1 to allocate for case if no separator and list contains key itself
 	// otherwise we just allocate +1 struct for string slice that stores just 2 int fields
 	// that is not a lot
