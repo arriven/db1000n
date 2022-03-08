@@ -40,8 +40,8 @@ func IsEncrypted(cfg []byte) bool {
 	return bytes.Index(cfg, []byte(`age-encryption`)) != -1
 }
 
-// DecryptConfig decrypts config using EncryptionKeys
-func DecryptConfig(cfg []byte) ([]byte, error) {
+// Decrypt decrypts config using EncryptionKeys
+func Decrypt(cfg []byte) ([]byte, error) {
 	keys, err := GetEncryptionKeys()
 	if err != nil {
 		return nil, err
