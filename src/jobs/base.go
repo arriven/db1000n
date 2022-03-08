@@ -23,6 +23,7 @@ type Config struct {
 func Get(t string) (Job, bool) {
 	res, ok := map[string]Job{
 		"http":       httpJob,
+		"fasthttp":   fasthttpJob,
 		"tcp":        tcpJob,
 		"udp":        udpJob,
 		"slow-loris": slowLorisJob,
