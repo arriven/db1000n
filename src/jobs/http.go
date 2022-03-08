@@ -228,7 +228,7 @@ func parseHTTPRequestTemplates(method, path, body string, headers map[string]str
 	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
 
-func fasthttpJob(ctx context.Context, args Args, debug bool) error {
+func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig struct {
@@ -378,14 +378,14 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
 		// increase DNS cache time to an hour instead of default minute
-		Dial: fasthttpProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
+		Dial: fastHTTPProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial),
 	}
 }
 
-func fasthttpProxyDial(proxyFunc func() string, timeout time.Duration, backup fasthttp.DialFunc) fasthttp.DialFunc {
+func fastHTTPProxyDial(proxyFunc func() string, timeout time.Duration, backup fasthttp.DialFunc) fasthttp.DialFunc {
 	return func(addr string) (net.Conn, error) {
 		proxy := proxyFunc()
 		if proxy == "" {
