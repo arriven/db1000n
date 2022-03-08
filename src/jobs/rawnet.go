@@ -81,7 +81,6 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 
 	time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 
-
 	return nil
 }
 
@@ -124,19 +123,21 @@ func udpJob(ctx context.Context, args Args, debug bool) error {
 
 	for jobConfig.Next(ctx) {
 		body := []byte(templates.Execute(bodyTpl, nil))
-		_, err = conn.Write(body)
-		trafficMonitor.Add(len(body))
-		if err != nil {
+		if _, err = conn.Write(body); err != nil {
 			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
+
 			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
 			}
 		} else {
+			trafficMonitor.Add(len(body))
 			metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusSuccess)
+
 			if debug {
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
 			}
 		}
+
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 
