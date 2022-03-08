@@ -39,6 +39,12 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
+	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
+	if err != nil {
+		log.Printf("Error parsing packet: %v", err)
+		return err
+	}
+
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -47,11 +53,11 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 	for jobConfig.Next(ctx) {
 		select {
 		case <-ticker.C:
-			log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
+			log.Printf("Attacking %v:%v", host, port)
 		default:
 		}
 
-		packetConfigRaw := templates.ParseAndExecuteMapStruct(jobConfig.Packet, nil)
+		packetConfigRaw := packetTpl.Execute(nil)
 		if debug {
 			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
 		}
