@@ -41,7 +41,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	client, async := newHTTPClient(jobConfig.Client, debug)
+	client := newHTTPClient(jobConfig.Client, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
 		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
@@ -81,11 +81,7 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			dataSize += len(key) + len(value)
 		}
 
-		if async {
-			go sendRequest(client, req, debug)
-		} else {
-			sendRequest(client, req, debug)
-		}
+		sendRequest(client, req, debug)
 
 		trafficMonitor.Add(dataSize)
 
@@ -95,13 +91,12 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client, async bool) {
+func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client) {
 	var clientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
 		Timeout         *time.Duration `json:"timeout"`
 		MaxIdleConns    *int           `json:"max_idle_connections"`
 		ProxyURLs       string         `json:"proxy_urls"`
-		Async           bool           `json:"async"` // TODO: this is here for historical reasons, move to the job config when possible
 	}
 
 	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(clientCfg), nil)), &clientConfig); err != nil && debug {
@@ -172,7 +167,7 @@ func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client, 
 			Proxy:                 proxy,
 		},
 		Timeout: timeout,
-	}, clientConfig.Async
+	}
 }
 
 func sendRequest(client *http.Client, req *http.Request, debug bool) {
@@ -251,7 +246,7 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	client, _ := newFastHTTPClient(jobConfig.Client, debug)
+	client := newFastHTTPClient(jobConfig.Client, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
 		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
@@ -296,13 +291,15 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.Client, async bool) {
+func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.Client) {
 	var clientConfig struct {
 		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
 		Timeout         *time.Duration `json:"timeout"`
+		ReadTimeout     *time.Duration `json:"read_timeout"`
+		WriteTimeout    *time.Duration `json:"write_timeout"`
+		IdleTimeout     *time.Duration `json:"idle_timeout"`
 		MaxIdleConns    *int           `json:"max_idle_connections"`
 		ProxyURLs       string         `json:"proxy_urls"`
-		Async           bool           `json:"async"` // TODO: this is here for historical reasons, move to the job config when possible
 	}
 
 	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(clientCfg), nil)), &clientConfig); err != nil && debug {
@@ -312,6 +309,21 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 	timeout := 90 * time.Second
 	if clientConfig.Timeout != nil {
 		timeout = *clientConfig.Timeout
+	}
+
+	readTimeout := timeout
+	if clientConfig.ReadTimeout != nil {
+		readTimeout = *clientConfig.ReadTimeout
+	}
+
+	writeTimeout := timeout
+	if clientConfig.WriteTimeout != nil {
+		writeTimeout = *clientConfig.WriteTimeout
+	}
+
+	idleTimeout := timeout
+	if clientConfig.IdleTimeout != nil {
+		idleTimeout = *clientConfig.IdleTimeout
 	}
 
 	maxIdleConns := 1000
@@ -361,9 +373,10 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 	_ = proxy
 
 	return &fasthttp.Client{
-		ReadTimeout:                   timeout,
-		WriteTimeout:                  timeout,
-		MaxIdleConnDuration:           timeout,
+		ReadTimeout:                   readTimeout,
+		WriteTimeout:                  writeTimeout,
+		MaxConnDuration:               timeout,
+		MaxIdleConnDuration:           idleTimeout,
 		MaxConnsPerHost:               maxIdleConns,
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
@@ -374,7 +387,7 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial,
-	}, clientConfig.Async
+	}
 }
 
 func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) {
