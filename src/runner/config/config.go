@@ -19,10 +19,10 @@ type Config struct {
 	Jobs []jobs.Config
 }
 
-// Fetch tries to read a config from the list of mirrors until it succeeds
-func Fetch(paths []string) ([]byte, error) {
+// fetch tries to read a config from the list of mirrors until it succeeds
+func fetch(paths []string) ([]byte, error) {
 	for i := range paths {
-		res, err := FetchSingle(paths[i])
+		res, err := fetchSingle(paths[i])
 		if err != nil {
 			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
 			continue
@@ -36,8 +36,8 @@ func Fetch(paths []string) ([]byte, error) {
 	return nil, errors.New("config fetch failed")
 }
 
-// FetchSingle reads a config from a single source
-func FetchSingle(path string) ([]byte, error) {
+// fetchSingle reads a config from a single source
+func fetchSingle(path string) ([]byte, error) {
 	configURL, err := url.ParseRequestURI(path)
 	if err != nil {
 		res, err := os.ReadFile(path)
@@ -67,29 +67,33 @@ func FetchSingle(path string) ([]byte, error) {
 	return res, nil
 }
 
+// Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
 func Update(paths []string, current, backup []byte) (*Config, []byte) {
-	newRawConfig, err := Fetch(paths)
+	newRawConfig, err := fetch(paths)
 	if err != nil {
 		if current != nil {
-			log.Println("Could not load new config, proceeding with last known good config")
+			log.Println("Could not load new config, proceeding with the last known good one")
 			newRawConfig = current
 		} else {
-			log.Println("Could not load new config, proceeding with backupConfig")
+			log.Println("Could not load new config, proceeding with the backup one")
 			newRawConfig = backup
 		}
 	}
 
-	if !bytes.Equal(current, newRawConfig) { // Only restart jobs if the new config differs from the current one
-		log.Println("New config received, applying")
+	if bytes.Equal(current, newRawConfig) { // Only restart jobs if the new config differs from the current one
+		log.Println("The config has not changed. Keep calm and carry on!")
 
-		var config Config
-
-		if err := json.Unmarshal(newRawConfig, &config); err != nil {
-			log.Printf("Failed to unmarshal job configs: %v", err)
-			return nil, nil
-		}
-
-		return &config, newRawConfig
+		return nil, nil
 	}
-	return nil, nil
+
+	log.Println("New config received, applying")
+
+	var config Config
+
+	if err := json.Unmarshal(newRawConfig, &config); err != nil {
+		log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+		return nil, nil
+	}
+
+	return &config, newRawConfig
 }

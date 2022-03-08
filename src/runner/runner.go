@@ -79,11 +79,14 @@ func (r *Runner) Run() {
 				go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
 			}
 
+			var jobInstancesCount int
+
 			for i := range cfg.Jobs {
 				if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
 					log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
 					continue
 				}
+
 				job, ok := jobs.Get(cfg.Jobs[i].Type)
 				if !ok {
 					log.Printf("Unknown job %q", cfg.Jobs[i].Type)
@@ -102,12 +105,14 @@ func (r *Runner) Run() {
 						job(ctx, cfg.Jobs[i].Args, r.debug)
 						wg.Done()
 					}(i)
+
+					jobInstancesCount++
 				}
 			}
 
 			r.currentRawConfig = raw
 
-			log.Println("Jobs (re)started")
+			log.Printf("%d job instances (re)started", jobInstancesCount)
 		}
 
 		// Wait for refresh timer or stop signal

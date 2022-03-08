@@ -51,8 +51,8 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
+
+	log.Printf("Attacking %v", jobConfig.Path)
 
 	for jobConfig.Next(ctx) {
 		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
@@ -66,12 +66,6 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			}
 
 			continue
-		}
-
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v", jobConfig.Path)
-		default:
 		}
 
 		// Add random user agent and configured headers
