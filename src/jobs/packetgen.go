@@ -2,11 +2,8 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
@@ -22,7 +19,7 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 
 	type packetgenJobConfig struct {
 		BasicJobConfig
-		Packet json.RawMessage
+		Packet map[string]interface{}
 		Host   string
 		Port   string
 	}
@@ -41,30 +38,24 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	packetTpl, err := templates.Parse(string(jobConfig.Packet))
+	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
-		return fmt.Errorf("error parsing packet config template %q: %v", string(jobConfig.Packet), err)
+		log.Printf("Error parsing packet: %v", err)
+		return err
 	}
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
+	log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 
 	for jobConfig.Next(ctx) {
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
-		default:
-		}
 
-		packetConfigBytes := []byte(templates.Execute(packetTpl, nil))
+		packetConfigRaw := packetTpl.Execute(nil)
 		if debug {
-			log.Printf("[packetgen] Rendered packet config template:\n%s", string(packetConfigBytes))
+			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
 		}
 
 		var packetConfig packetgen.PacketConfig
-		if err := json.Unmarshal(packetConfigBytes, &packetConfig); err != nil {
+		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
 			log.Printf("Error parsing json: %v", err)
 			return err
 		}

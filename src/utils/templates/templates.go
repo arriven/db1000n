@@ -117,3 +117,55 @@ func ParseAndExecute(input string, data interface{}) string {
 
 	return output.String()
 }
+
+// ParseAndExecuteMapStruct is like ParseAndExecute but takes mapstructure as input
+func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) map[string]interface{} {
+	tpl, err := ParseMapStruct(input)
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		return input
+	}
+	return tpl.Execute(data)
+}
+
+type MapStruct struct {
+	tpl map[string]interface{}
+}
+
+func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
+	result := make(map[string]interface{})
+	for key, value := range input {
+		switch v := value.(type) {
+		case string:
+			tpl, err := Parse(v)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = tpl
+		case map[string]interface{}:
+			tpl, err := ParseMapStruct(v)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = tpl
+		default:
+			result[key] = v
+		}
+	}
+	return &MapStruct{tpl: result}, nil
+}
+
+func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range tpl.tpl {
+		switch v := value.(type) {
+		case *template.Template:
+			result[key] = Execute(v, data)
+		case *MapStruct:
+			result[key] = v.Execute(data)
+		default:
+			result[key] = v
+		}
+	}
+	return result
+}
