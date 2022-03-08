@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/packetgen"
@@ -28,7 +29,7 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 
 	var jobConfig packetgenJobConfig
 
-	if err := json.Unmarshal(args, &jobConfig); err != nil {
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing json: %v", err)
 		return err
 	}

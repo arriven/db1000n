@@ -83,4 +83,6 @@ You will find some answers on our [FAQ.md](FAQ.md)
 - [Reserv](https://t.me/+z_-Tk4zT4IxmNGQy)
 - [Chat](https://t.me/+9GPKhDPGHPAzZjdi)
 - [Follow and share](https://instagram.com/ddos_attack_separ)
+- [Instagram](https://instagram.com/ddos_attack_separ)
+- [Facebook](https://www.facebook.com/ddos.attack.separ)
 - Contact bot: @ddosseparbot
