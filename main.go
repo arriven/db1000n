@@ -27,6 +27,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/pprof"
 	"syscall"
 	"time"
 
@@ -60,11 +61,23 @@ func main() {
 	flag.StringVar(&configFormat, "format", "json", "config format")
 	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
+
+	cpuProfile := flag.String("cpu", "", "CPU profile file")
 	flag.Parse()
 
 	if help {
 		flag.CommandLine.Usage()
 		return
+	}
+
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 
 	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
