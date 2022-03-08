@@ -7,8 +7,13 @@ import (
 // Args comment for linter
 type Args = map[string]interface{}
 
+// GlobalConfig comment for linter
+type GlobalConfig struct {
+	HttpProxyUrl string
+}
+
 // Job comment for linter
-type Job = func(ctx context.Context, args Args, debug bool) error
+type Job = func(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error
 
 // Config comment for linter
 type Config struct {

@@ -50,6 +50,7 @@ func main() {
 	var configFormat string
 	var prometheusPushGateways string
 	var prometheusOn bool
+	var httpProxyUrl string
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
@@ -60,6 +61,7 @@ func main() {
 	flag.StringVar(&configFormat, "format", "json", "config format")
 	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
+	flag.StringVar(&httpProxyUrl, "http-proxy", "", "http proxy url, override client.proxy_urls in jobs config")
 	flag.Parse()
 
 	if help {
@@ -85,6 +87,7 @@ func main() {
 		Format:             configFormat,
 		PrometheusOn:       prometheusOn,
 		PrometheusGateways: prometheusPushGateways,
+		HttpProxyUrl:       httpProxyUrl,
 	}, debug)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)

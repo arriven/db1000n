@@ -55,7 +55,7 @@ func parseHTTPRequestTemplates(method, path, body string, headers map[string]str
 	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
 
-func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
+func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig struct {
@@ -72,7 +72,7 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	client := newFastHTTPClient(jobConfig.Client, debug)
+	client := newFastHTTPClient(jobConfig.Client, globalConfig, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
 		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers)
@@ -116,7 +116,7 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fasthttp.Client) {
+func newFastHTTPClient(clientCfg map[string]interface{}, globalConfig GlobalConfig, debug bool) (client *fasthttp.Client) {
 	var clientConfig struct {
 		TLSClientConfig *tls.Config    `mapstructure:"tls_config,omitempty"`
 		Timeout         *time.Duration `mapstructure:"timeout"`
@@ -165,7 +165,7 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 
 	proxy := func() string { return "" }
 	proxylist := []byte(templates.ParseAndExecute(clientConfig.ProxyURLs, nil))
-	if len(proxylist) > 0 {
+	if len(proxylist) > 0 && len(globalConfig.HttpProxyUrl) == 0 {
 		if debug {
 			log.Printf("List of proxies: %s", string(proxylist))
 		}
@@ -194,6 +194,21 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 			}
 		} else if debug {
 			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
+		}
+	}
+
+	if len(globalConfig.HttpProxyUrl) > 0 {
+		if debug {
+			log.Printf("Using Proxy: %v", globalConfig.HttpProxyUrl)
+		}
+
+		proxy = func() string {
+			u, err := url.Parse(globalConfig.HttpProxyUrl)
+			if err != nil {
+				return ""
+			}
+
+			return u.String()
 		}
 	}
 

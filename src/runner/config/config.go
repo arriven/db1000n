@@ -18,7 +18,8 @@ import (
 
 // Config for all jobs to run
 type Config struct {
-	Jobs []jobs.Config
+	Jobs   []jobs.Config
+	Global jobs.GlobalConfig
 }
 
 // fetch tries to read a config from the list of mirrors until it succeeds

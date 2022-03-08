@@ -14,7 +14,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, args Args, debug bool) error {
+func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	type packetgenJobConfig struct {

@@ -25,6 +25,7 @@ type Config struct {
 	Format             string        // json or yaml
 	PrometheusOn       bool
 	PrometheusGateways string
+	HttpProxyUrl       string // HttpProxy url
 }
 
 // Runner executes jobs according to the (fetched from remote) configuration
@@ -101,11 +102,13 @@ func (r *Runner) Run() {
 					cfg.Jobs[i].Count = 1
 				}
 
+				cfg.Global.HttpProxyUrl = r.config.HttpProxyUrl
+
 				for j := 0; j < cfg.Jobs[i].Count; j++ {
 					wg.Add(1)
 
 					go func(i int) {
-						job(ctx, cfg.Jobs[i].Args, r.debug)
+						job(ctx, cfg.Global, cfg.Jobs[i].Args, r.debug)
 						wg.Done()
 					}(i)
 
