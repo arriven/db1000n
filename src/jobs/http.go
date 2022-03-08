@@ -18,6 +18,7 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpproxy"
 
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
@@ -338,7 +339,7 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
-	var proxy func(r *http.Request) (*url.URL, error)
+	var proxy = func() string { return "" }
 	if len(clientConfig.ProxyURLs) > 0 {
 		log.Printf("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
 
@@ -350,21 +351,19 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 			}
 
 			// Return random proxy from the list
-			proxy = func(r *http.Request) (*url.URL, error) {
+			proxy = func() string {
 				if len(proxyURLs) == 0 {
-					return nil, errors.New("proxylist is empty")
+					return ""
 				}
 
 				proxyString := proxyURLs[rand.Intn(len(proxyURLs))]
 
 				u, err := url.Parse(proxyString)
 				if err != nil {
-					if u, err = url.Parse(r.URL.Scheme + proxyString); err != nil && debug {
-						log.Printf("Failed to parse proxy, sending request directly: %v", err)
-					}
+					return ""
 				}
 
-				return u, nil
+				return u.String()
 			}
 		} else if debug {
 			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
@@ -383,10 +382,21 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
 		// increase DNS cache time to an hour instead of default minute
-		Dial: (&fasthttp.TCPDialer{
+		Dial: fasthttpProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
-		}).Dial,
+		}).Dial),
+	}
+}
+
+func fasthttpProxyDial(proxyFunc func() string, timeout time.Duration, backup fasthttp.DialFunc) fasthttp.DialFunc {
+	return func(addr string) (net.Conn, error) {
+		proxy := proxyFunc()
+		if proxy == "" {
+			return backup(addr)
+		} else {
+			return fasthttpproxy.FasthttpHTTPDialerTimeout(proxy, timeout)(addr)
+		}
 	}
 }
 
