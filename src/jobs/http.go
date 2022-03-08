@@ -76,9 +76,13 @@ func httpJob(ctx context.Context, args Args, debug bool) error {
 			dataSize += len(key) + len(value)
 		}
 
-		sendRequest(client, req, debug)
-
-		trafficMonitor.Add(dataSize)
+		if err := sendRequest(client, req, debug); err != nil {
+			if debug {
+				log.Printf("Error sending request %v: %v", req, err)
+			}
+		} else {
+			trafficMonitor.Add(dataSize)
+		}
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -165,7 +169,7 @@ func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client) 
 	}
 }
 
-func sendRequest(client *http.Client, req *http.Request, debug bool) {
+func sendRequest(client *http.Client, req *http.Request, debug bool) error {
 	if debug {
 		log.Printf("%s %s started at %d", req.Method, req.RequestURI, time.Now().Unix())
 	}
@@ -173,12 +177,10 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 	resp, err := client.Do(req)
 	if err != nil {
 		metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
-		if debug {
-			log.Printf("Error sending request %v: %v", req, err)
-		}
 
-		return
+		return err
 	}
+
 	metrics.IncHTTP(req.Host, req.Method, metrics.StatusSuccess)
 
 	resp.Body.Close() // No need for response
@@ -190,6 +192,8 @@ func sendRequest(client *http.Client, req *http.Request, debug bool) {
 			log.Printf("%s %s finished at %d", req.Method, req.RequestURI, time.Now().Unix())
 		}
 	}
+
+	return nil
 }
 
 func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
@@ -270,9 +274,14 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 			req.Header.Set(key, value)
 			dataSize += len(key) + len(value)
 		}
-		sendFastHTTPRequest(client, req, debug)
 
-		trafficMonitor.Add(dataSize)
+		if err := sendFastHTTPRequest(client, req, debug); err != nil {
+			if debug {
+				log.Printf("Error sending request %v: %v", req, err)
+			}
+		} else {
+			trafficMonitor.Add(dataSize)
+		}
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
@@ -387,19 +396,18 @@ func fasthttpProxyDial(proxyFunc func() string, timeout time.Duration, backup fa
 	}
 }
 
-func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) {
+func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) error {
 	if debug {
 		log.Printf("%s %s started at %d", string(req.Header.Method()), string(req.RequestURI()), time.Now().Unix())
 	}
 
-	err := client.Do(req, nil)
-	if err != nil {
+	if err := client.Do(req, nil); err != nil {
 		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
-		if debug {
-			log.Printf("Error sending request %v: %v", req, err)
-		}
 
-		return
+		return err
 	}
+
 	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
+
+	return nil
 }
