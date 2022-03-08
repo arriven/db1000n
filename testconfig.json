@@ -10,7 +10,7 @@
           "Authorization": "wtf"
         },
         "client": {
-          "proxy_urls": "{{ get_proxylist }}"
+          "proxy_urls": "{{ join get_proxylist \",\" }}"
         },
         "interval_ms": 100
       }

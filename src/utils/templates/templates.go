@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/Arriven/db1000n/src/packetgen"
 )
@@ -82,6 +83,9 @@ func Parse(input string) (*template.Template, error) {
 		"base64_decode":        base64.StdEncoding.DecodeString,
 		"json_encode":          json.Marshal,
 		"json_decode":          json.Unmarshal,
+		"yaml_encode":          yaml.Marshal,
+		"yaml_decode":          yaml.Unmarshal,
+		"join":                 strings.Join,
 		"get_url":              getURLContent,
 		"proxylist_url":        getProxylistURL,
 		"get_proxylist":        getProxylist,
