@@ -1,22 +1,20 @@
 package jobs
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"net"
-	"net/http"
 	"net/url"
 	"text/template"
 	"time"
 
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
 
@@ -24,177 +22,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
-
-func httpJob(ctx context.Context, args Args, debug bool) error {
-	defer utils.PanicHandler()
-
-	var jobConfig struct {
-		BasicJobConfig
-
-		Path    string
-		Method  string
-		Body    json.RawMessage
-		Headers map[string]string
-		Client  json.RawMessage // See HTTPClientConfig
-	}
-	if err := json.Unmarshal(args, &jobConfig); err != nil {
-		log.Printf("Error parsing job config json: %v", err)
-		return err
-	}
-
-	client := newHTTPClient(jobConfig.Client, debug)
-
-	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
-		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
-	if err != nil {
-		return err
-	}
-
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-
-	log.Printf("Attacking %v", jobConfig.Path)
-
-	for jobConfig.Next(ctx) {
-		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
-		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-
-		req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
-		if err != nil {
-			metrics.IncHTTP(jobConfig.Path, jobConfig.Method, metrics.StatusFail)
-			if debug {
-				log.Printf("Error creating request: %v", err)
-			}
-
-			continue
-		}
-
-		// Add random user agent and configured headers
-		req.Header.Set("user-agent", uarand.GetRandom())
-		for keyTpl, valueTpl := range headerTpls {
-			key, value := templates.Execute(keyTpl, nil), templates.Execute(valueTpl, nil)
-			req.Header.Add(key, value)
-			dataSize += len(key) + len(value)
-		}
-
-		if err := sendRequest(client, req, debug); err != nil {
-			if debug {
-				log.Printf("Error sending request %v: %v", req, err)
-			}
-		} else {
-			trafficMonitor.Add(dataSize)
-		}
-
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
-	}
-
-	return nil
-}
-
-func newHTTPClient(clientCfg json.RawMessage, debug bool) (client *http.Client) {
-	var clientConfig struct {
-		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
-		Timeout         *time.Duration `json:"timeout"`
-		MaxIdleConns    *int           `json:"max_idle_connections"`
-		ProxyURLs       string         `json:"proxy_urls"`
-	}
-
-	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(clientCfg), nil)), &clientConfig); err != nil && debug {
-		log.Printf("Failed to parse job client json, ignoring: %v", err)
-	}
-
-	timeout := 90 * time.Second
-	if clientConfig.Timeout != nil {
-		timeout = *clientConfig.Timeout
-	}
-
-	maxIdleConns := 1000
-	if clientConfig.MaxIdleConns != nil {
-		maxIdleConns = *clientConfig.MaxIdleConns
-	}
-
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	if clientConfig.TLSClientConfig != nil {
-		tlsConfig = clientConfig.TLSClientConfig
-	}
-
-	var proxy func(r *http.Request) (*url.URL, error)
-	if len(clientConfig.ProxyURLs) > 0 {
-		log.Printf("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
-
-		var proxyURLs []string
-
-		if err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs); err == nil {
-			if debug {
-				log.Printf("proxyURLs: %v", proxyURLs)
-			}
-
-			// Return random proxy from the list
-			proxy = func(r *http.Request) (*url.URL, error) {
-				if len(proxyURLs) == 0 {
-					return nil, errors.New("proxylist is empty")
-				}
-
-				proxyString := proxyURLs[rand.Intn(len(proxyURLs))]
-
-				u, err := url.Parse(proxyString)
-				if err != nil {
-					if u, err = url.Parse(r.URL.Scheme + proxyString); err != nil && debug {
-						log.Printf("Failed to parse proxy, sending request directly: %v", err)
-					}
-				}
-
-				return u, nil
-			}
-		} else if debug {
-			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
-		}
-	}
-
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-			Dial: (&net.Dialer{
-				Timeout:   timeout,
-				KeepAlive: timeout,
-			}).Dial,
-			MaxIdleConns:          maxIdleConns,
-			IdleConnTimeout:       timeout,
-			TLSHandshakeTimeout:   timeout,
-			ExpectContinueTimeout: timeout,
-			Proxy:                 proxy,
-		},
-		Timeout: timeout,
-	}
-}
-
-func sendRequest(client *http.Client, req *http.Request, debug bool) error {
-	if debug {
-		log.Printf("%s %s started at %d", req.Method, req.RequestURI, time.Now().Unix())
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		metrics.IncHTTP(req.Host, req.Method, metrics.StatusFail)
-
-		return err
-	}
-
-	metrics.IncHTTP(req.Host, req.Method, metrics.StatusSuccess)
-
-	resp.Body.Close() // No need for response
-
-	if debug {
-		if resp.StatusCode >= http.StatusBadRequest {
-			log.Printf("%s %s failed at %d with code %d", req.Method, req.RequestURI, time.Now().Unix(), resp.StatusCode)
-		} else {
-			log.Printf("%s %s finished at %d", req.Method, req.RequestURI, time.Now().Unix())
-		}
-	}
-
-	return nil
-}
 
 func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
 	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls map[*template.Template]*template.Template, err error) {
@@ -236,19 +63,19 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 
 		Path    string
 		Method  string
-		Body    json.RawMessage
+		Body    string
 		Headers map[string]string
-		Client  json.RawMessage // See HTTPClientConfig
+		Client  map[string]interface{} // See HTTPClientConfig
 	}
-	if err := json.Unmarshal(args, &jobConfig); err != nil {
-		log.Printf("Error parsing job config json: %v", err)
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+		log.Printf("Error parsing job config: %v", err)
 		return err
 	}
 
 	client := newFastHTTPClient(jobConfig.Client, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
-		jobConfig.Method, jobConfig.Path, string(jobConfig.Body), jobConfig.Headers)
+		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers)
 	if err != nil {
 		return err
 	}
@@ -289,19 +116,19 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.Client) {
+func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fasthttp.Client) {
 	var clientConfig struct {
-		TLSClientConfig *tls.Config    `json:"tls_config,omitempty"`
-		Timeout         *time.Duration `json:"timeout"`
-		ReadTimeout     *time.Duration `json:"read_timeout"`
-		WriteTimeout    *time.Duration `json:"write_timeout"`
-		IdleTimeout     *time.Duration `json:"idle_timeout"`
-		MaxIdleConns    *int           `json:"max_idle_connections"`
-		ProxyURLs       string         `json:"proxy_urls"`
+		TLSClientConfig *tls.Config    `mapstructure:"tls_config,omitempty"`
+		Timeout         *time.Duration `mapstructure:"timeout"`
+		ReadTimeout     *time.Duration `mapstructure:"read_timeout"`
+		WriteTimeout    *time.Duration `mapstructure:"write_timeout"`
+		IdleTimeout     *time.Duration `mapstructure:"idle_timeout"`
+		MaxIdleConns    *int           `mapstructure:"max_idle_connections"`
+		ProxyURLs       string         `mapstructure:"proxy_urls"`
 	}
 
-	if err := json.Unmarshal([]byte(templates.ParseAndExecute(string(clientCfg), nil)), &clientConfig); err != nil && debug {
-		log.Printf("Failed to parse job client json, ignoring: %v", err)
+	if err := mapstructure.Decode(clientCfg, &clientConfig); err != nil && debug {
+		log.Printf("Failed to parse job client, ignoring: %v", err)
 	}
 
 	timeout := 90 * time.Second
@@ -337,12 +164,15 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 	}
 
 	proxy := func() string { return "" }
-	if len(clientConfig.ProxyURLs) > 0 {
-		log.Printf("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
+	proxylist := []byte(templates.ParseAndExecute(clientConfig.ProxyURLs, nil))
+	if len(proxylist) > 0 {
+		if debug {
+			log.Printf("List of proxies: %s", string(proxylist))
+		}
 
 		var proxyURLs []string
 
-		if err := json.Unmarshal([]byte(clientConfig.ProxyURLs), &proxyURLs); err == nil {
+		if err := json.Unmarshal(proxylist, &proxyURLs); err == nil {
 			if debug {
 				log.Printf("proxyURLs: %v", proxyURLs)
 			}

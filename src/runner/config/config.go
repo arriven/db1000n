@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Arriven/db1000n/src/jobs"
+	"gopkg.in/yaml.v3"
 )
 
 // Config for all jobs to run
@@ -68,7 +69,7 @@ func fetchSingle(path string) ([]byte, error) {
 }
 
 // Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
-func Update(paths []string, current, backup []byte) (*Config, []byte) {
+func Update(paths []string, current, backup []byte, format string) (*Config, []byte) {
 	newRawConfig, err := fetch(paths)
 	if err != nil {
 		if current != nil {
@@ -89,10 +90,19 @@ func Update(paths []string, current, backup []byte) (*Config, []byte) {
 	log.Println("New config received, applying")
 
 	var config Config
-
-	if err := json.Unmarshal(newRawConfig, &config); err != nil {
-		log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
-		return nil, nil
+	switch format {
+	case "", "json":
+		if err := json.Unmarshal(newRawConfig, &config); err != nil {
+			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+			return nil, nil
+		}
+	case "yaml":
+		if err := yaml.Unmarshal(newRawConfig, &config); err != nil {
+			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+			return nil, nil
+		}
+	default:
+		log.Printf("Unknown config format: %v", format)
 	}
 
 	return &config, newRawConfig

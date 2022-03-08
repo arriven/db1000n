@@ -117,3 +117,19 @@ func ParseAndExecute(input string, data interface{}) string {
 
 	return output.String()
 }
+
+// ParseAndExecuteMapStruct is like ParseAndExecute but takes mapstructure as input
+func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range input {
+		switch v := value.(type) {
+		case string:
+			result[key] = ParseAndExecute(v, data)
+		case map[string]interface{}:
+			result[key] = ParseAndExecuteMapStruct(v, data)
+		default:
+			result[key] = v
+		}
+	}
+	return result
+}

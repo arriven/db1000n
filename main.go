@@ -47,6 +47,7 @@ func main() {
 	var refreshTimeout time.Duration
 	var debug, help bool
 	var metricsPath string
+	var configFormat string
 	var prometheusPushGateways string
 	var prometheusOn bool
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
@@ -56,6 +57,7 @@ func main() {
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.StringVar(&proxiesURL, "p", "", "url to fetch proxies list")
+	flag.StringVar(&configFormat, "format", "json", "config format")
 	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
 	flag.Parse()
@@ -80,6 +82,7 @@ func main() {
 		BackupConfig:       []byte(backupConfig),
 		RefreshTimeout:     refreshTimeout,
 		MetricsPath:        metricsPath,
+		Format:             configFormat,
 		PrometheusOn:       prometheusOn,
 		PrometheusGateways: prometheusPushGateways,
 	}, debug)
