@@ -208,10 +208,7 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
 		// increase DNS cache time to an hour instead of default minute
-		Dial: fastHTTPProxyDial(proxy, timeout, (&fasthttp.TCPDialer{
-			Concurrency:      4096,
-			DNSCacheDuration: time.Hour,
-		}).Dial),
+		Dial: fastHTTPProxyDial(proxy, timeout, fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout)),
 	}
 }
 
