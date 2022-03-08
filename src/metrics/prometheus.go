@@ -24,16 +24,17 @@ package metrics
 
 import (
 	"context"
-	"github.com/Arriven/db1000n/src/utils"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/Arriven/db1000n/src/utils"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/push"
 )
 
 // common values for prometheus metrics
@@ -155,7 +156,9 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 		server.Shutdown(ctx)
 	}(ctx, server)
 
-	go pushMetrics(ctx, strings.Split(gateways, ","))
+	if gateways != "" {
+		go pushMetrics(ctx, strings.Split(gateways, ","))
+	}
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal()
@@ -163,9 +166,6 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 }
 
 func pushMetrics(ctx context.Context, gateways []string) {
-	if len(gateways) == 0 {
-		return
-	}
 	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "default_push")
 
 	gateway := gateways[rand.Int()%len(gateways)]
