@@ -250,21 +250,15 @@ func fasthttpJob(ctx context.Context, args Args, debug bool) error {
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
+	log.Printf("Attacking %v", jobConfig.Path)
+
 	for jobConfig.Next(ctx) {
 		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
 		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-
-		select {
-		case <-ticker.C:
-			log.Printf("Attacking %v", jobConfig.Path)
-		default:
-		}
 
 		req.SetRequestURI(path)
 		req.Header.SetMethod(method)
@@ -333,7 +327,7 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
-	var proxy = func() string { return "" }
+	proxy := func() string { return "" }
 	if len(clientConfig.ProxyURLs) > 0 {
 		log.Printf("clientConfig.ProxyURLs: %v", clientConfig.ProxyURLs)
 
@@ -363,7 +357,6 @@ func newFastHTTPClient(clientCfg json.RawMessage, debug bool) (client *fasthttp.
 			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
 		}
 	}
-	_ = proxy
 
 	return &fasthttp.Client{
 		ReadTimeout:                   readTimeout,
