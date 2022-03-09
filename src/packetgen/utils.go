@@ -90,15 +90,16 @@ func LocalIP() string {
 
 // ResolveHost function gets a string and returns the ip address
 func ResolveHost(host string) (string, error) {
-	addrs, err := net.LookupHost(host)
+	addrs, err := net.LookupIP(host)
 	if err != nil {
 		return "", err
 	}
 
-	// I assume net.LookupHost already handles that but just to be sure
-	if len(addrs) == 0 {
-		return "", fmt.Errorf("no addrs found for host %v", host)
+	for _, addr := range addrs {
+		if addr.To4() != nil {
+			return addr.String(), nil
+		}
 	}
 
-	return addrs[0], nil
+	return "", fmt.Errorf("no addrs found for host %v", host)
 }
