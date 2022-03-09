@@ -56,7 +56,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		tcpPacket  *layers.TCP
 		err        error
 	)
-	destinationHost, err = resolveHost(destinationHost)
+	destinationHost, err = ResolveHost(destinationHost)
 	if err != nil {
 		return 0, err
 	}
