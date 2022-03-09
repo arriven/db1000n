@@ -54,6 +54,12 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 	log.Printf("Attacking %v:%v", host, port)
 
+	protocolLabelValue := "tcp"
+	if _, ok := jobConfig.Packet["udp"]; ok {
+		protocolLabelValue = "udp"
+	}
+	hostPort := host + ":" + strconv.FormatInt(int64(port), 10)
+
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
@@ -62,7 +68,6 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	for jobConfig.Next(ctx) {
-
 		packetConfigRaw := packetTpl.Execute(nil)
 		if debug {
 			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
@@ -89,8 +94,18 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
+			metrics.IncPacketgen(
+				host,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return err
 		}
+		metrics.IncPacketgen(
+			host,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusSuccess)
 
 		trafficMonitor.Add(len)
 	}

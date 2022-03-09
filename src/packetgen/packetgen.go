@@ -24,9 +24,6 @@ package packetgen
 
 import (
 	"net"
-	"strconv"
-
-	"github.com/Arriven/db1000n/src/metrics"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -123,34 +120,14 @@ func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, d
 		ipHeader   *ipv4.Header
 		err        error
 	)
-	protocolLabelValue := "tcp"
-	if c.UDP != nil {
-		protocolLabelValue = "udp"
-	}
-	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
 	payloadBuf, ipHeader, err = BuildPacket(c)
 	if err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
 		return 0, err
 	}
 
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
 		return 0, err
 	}
-	metrics.IncPacketgen(
-		destinationHost,
-		hostPort,
-		protocolLabelValue,
-		metrics.StatusSuccess)
 	return len(payloadBuf.Bytes()), nil
 }
 
