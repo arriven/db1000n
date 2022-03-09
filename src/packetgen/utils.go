@@ -35,17 +35,20 @@ func RandomPayload(length int) []byte {
 	return payload
 }
 
+// RandomIP returns a random ip to spoof packets
 func RandomIP() string {
 	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(255)+1, rand.Intn(255)+1,
 		rand.Intn(255)+1, rand.Intn(255)+1)
 }
 
+// RandomPort returns a random port to spoof packets
 func RandomPort() int {
 	const minPort = 1024
 	const maxPort = 65535
 	return rand.Intn(maxPort-minPort) + minPort
 }
 
+// RandomMacAddr returns a random mac address to spoof packets
 func RandomMacAddr() net.HardwareAddr {
 	buf := make([]byte, 6)
 	rand.Read(buf)
@@ -53,6 +56,7 @@ func RandomMacAddr() net.HardwareAddr {
 	return net.HardwareAddr(addr.String())
 }
 
+// LocalMacAddres returns first valid mac address
 func LocalMacAddres() string {
 	ifas, err := net.Interfaces()
 	if err != nil {
@@ -67,7 +71,7 @@ func LocalMacAddres() string {
 	return ""
 }
 
-// GetLocalIP returns the non loopback local IP of the host
+// LocalIP returns the first non loopback local IP of the host
 func LocalIP() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -89,6 +93,11 @@ func ResolveHost(host string) (string, error) {
 	addrs, err := net.LookupHost(host)
 	if err != nil {
 		return "", err
+	}
+
+	// I assume net.LookupHost already handles that but just to be sure
+	if len(addrs) == 0 {
+		return "", fmt.Errorf("no addrs found for host %v", host)
 	}
 
 	return addrs[0], nil
