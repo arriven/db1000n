@@ -103,13 +103,24 @@ func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader 
 	return payloadBuf, ipHeader, nil
 }
 
+// OpenRawConnection opens a raw ip network connection based on the provided config
+func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
+	var (
+		packetConn net.PacketConn
+		err        error
+	)
+	if packetConn, err = net.ListenPacket(c.Name, c.Address); err != nil {
+		return nil, err
+	}
+
+	return ipv4.NewRawConn(packetConn)
+}
+
 // SendPacket is used to generate and send the packet over the network
-func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (int, error) {
+func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, destinationPort int) (int, error) {
 	var (
 		payloadBuf gopacket.SerializeBuffer
 		ipHeader   *ipv4.Header
-		packetConn net.PacketConn
-		rawConn    *ipv4.RawConn
 		err        error
 	)
 	protocolLabelValue := "tcp"
@@ -119,25 +130,6 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
 	payloadBuf, ipHeader, err = BuildPacket(c)
 	if err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
-	}
-
-	// XXX send packet
-	if packetConn, err = net.ListenPacket(c.Network.Name, c.Network.Address); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
-	}
-
-	if rawConn, err = ipv4.NewRawConn(packetConn); err != nil {
 		metrics.IncPacketgen(
 			destinationHost,
 			hostPort,

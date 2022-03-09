@@ -19,9 +19,10 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	type packetgenJobConfig struct {
 		BasicJobConfig
-		Packet map[string]interface{}
-		Host   string
-		Port   string
+		Packet  map[string]interface{}
+		Network packetgen.NetworkConfig
+		Host    string
+		Port    string
 	}
 
 	var jobConfig packetgenJobConfig
@@ -38,6 +39,14 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		return err
 	}
 
+	if jobConfig.Network.Address == "" {
+		jobConfig.Network.Address = "0.0.0.0"
+	}
+
+	if jobConfig.Network.Name == "" {
+		jobConfig.Network.Name = "ip4:tcp"
+	}
+
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
 		log.Printf("Error parsing packet: %v", err)
@@ -46,6 +55,11 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	log.Printf("Attacking %v:%v", host, port)
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
+	if err != nil {
+		log.Printf("Error building raw connection: %v", err)
+		return err
+	}
 
 	for jobConfig.Next(ctx) {
 
@@ -72,7 +86,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 			}
 		}
 
-		len, err := packetgen.SendPacket(packetConfig, host, port)
+		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
 			return err
