@@ -9,7 +9,7 @@
 
 To deploy run:
 
-```terraform
+```sh
 terraform apply -var-file="ireland.tfvars"
 ```
 
@@ -18,7 +18,7 @@ To swich between regions you can use `terraform workspace` command.
 
 For example:
 
-```terraform
+```sh
 terraform init
 terraform workspace new eu
 terraform apply -var-file="ireland.tfvars"
@@ -30,7 +30,7 @@ terraform apply -var-file="useast.tfvars"
 
 To destroy infrastructure use commands:
 
-```terraform
+```sh
 terraform workspace select eu
 terraform destroy -var-file="ireland.tfvars"
 terraform workspace select us

@@ -10,7 +10,7 @@
 
 To deploy run:
 
-```terraform
+```sh
 export DO_TOKEN=<place-api-token-here>
 terraform init
 terraform plan -var "do_token=${DO_TOKEN}"
@@ -23,7 +23,7 @@ After deployment (usually takes 5-10 mins) go to [Apps List](https://cloud.digit
 
 To destroy infrastructure use commands:
 
-```terraform
+```sh
 export DO_TOKEN=<place-api-token-here>
 terraform destroy -var "do_token=${DO_TOKEN}"
 ```

@@ -3,14 +3,14 @@
 ## Requirements
 
 - GCP account
-- Subscription on https://www.expressvpn.com (get the activation code)
+- Subscription on [expressvpn.com](https://www.expressvpn.com) (get the activation code)
 - `terraform` installed
 
 ## Deploy
 
 To deploy run:
 
-```terraform
+```sh
 terraform apply
 ```
 
@@ -18,6 +18,6 @@ terraform apply
 
 To destroy infrastructure use commands:
 
-```terraform
+```sh
 terraform destroy
 ```
