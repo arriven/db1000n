@@ -77,7 +77,7 @@ func main() {
 		}
 
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+		// defer pprof.StopCPUProfile()
 	}
 
 	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
@@ -106,9 +106,10 @@ func main() {
 	go func() {
 		// Wait for sigterm
 		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGTERM)
+		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
 		<-sigs
 		log.Println("Terminating")
+		pprof.StopCPUProfile() // TODO: move via defer to start above
 		r.Stop()
 	}()
 
