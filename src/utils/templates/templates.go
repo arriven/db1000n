@@ -79,6 +79,7 @@ func Parse(input string) (*template.Template, error) {
 		"random_mac_addr":      packetgen.RandomMacAddr,
 		"local_ip":             packetgen.LocalIP,
 		"local_mac_addr":       packetgen.LocalMacAddres,
+		"resolve_host":         packetgen.ResolveHost,
 		"base64_encode":        base64.StdEncoding.EncodeToString,
 		"base64_decode":        base64.StdEncoding.DecodeString,
 		"json_encode":          json.Marshal,

@@ -43,7 +43,7 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 		log.Printf("Error parsing packet: %v", err)
 		return err
 	}
-	log.Printf("Attacking %v:%v", jobConfig.Host, jobConfig.Port)
+	log.Printf("Attacking %v:%v", host, port)
 
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 
