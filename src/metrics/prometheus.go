@@ -158,7 +158,10 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	}
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
-		server.Shutdown(ctx)
+		err := server.Shutdown(ctx)
+		if err != nil {
+			log.Println("failure shutting down prometheus server:", err)
+		}
 	}(ctx, server)
 
 	if gateways != "" {
