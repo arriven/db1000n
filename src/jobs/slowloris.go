@@ -11,7 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-func slowLorisJob(ctx context.Context, args Args, debug bool) error {
+func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig *slowloris.Config

@@ -18,11 +18,12 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths        string        // Comma-separated config location URLs
-	BackupConfig       []byte        // Raw backup config
-	RefreshTimeout     time.Duration // How often to refresh config
-	MetricsPath        string        // Where to dump metrics to
-	Format             string        // json or yaml
+	ConfigPaths        string            // Comma-separated config location URLs
+	BackupConfig       []byte            // Raw backup config
+	RefreshTimeout     time.Duration     // How often to refresh config
+	MetricsPath        string            // Where to dump metrics to
+	Format             string            // json or yaml
+	Global             jobs.GlobalConfig // meant to pass cmdline and other args to every job
 	PrometheusOn       bool
 	PrometheusGateways string
 }
@@ -105,7 +106,7 @@ func (r *Runner) Run() {
 					wg.Add(1)
 
 					go func(i int) {
-						job(ctx, cfg.Jobs[i].Args, r.debug)
+						job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
 						wg.Done()
 					}(i)
 
