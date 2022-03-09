@@ -46,13 +46,8 @@ Yes, you can. I personally leave the browser on overnight and it works fine.
 
 To do this, you need to install a program which keeps the screen turned off. Instructions for different operating systems below:
 
-**_I have Windows:_**
-
-Program name: **Caffeinated ([download](https://www.microsoft.com/en-us/p/windows-caffeinated/9pbvhhsn78bl?activetab=pivot:overviewtab))**
-
-**_I have Mac OS:_**
-
-Program name: **Amphetamine ([download](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12))**
+- I have Windows: Caffeinated ([download](https://www.microsoft.com/en-us/p/windows-caffeinated/9pbvhhsn78bl?activetab=pivot:overviewtab))
+- I have Mac OS: Amphetamine ([download](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12))
 
 **How can I make it more effective?**
 
