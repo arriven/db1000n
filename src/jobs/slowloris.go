@@ -39,8 +39,8 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		jobConfig.SleepInterval = 10 * time.Second
 	}
 
-	if jobConfig.DurationSeconds == 0 {
-		jobConfig.DurationSeconds = 10 * time.Second
+	if jobConfig.Duration == 0 {
+		jobConfig.Duration = 10 * time.Second
 	}
 
 	shouldStop := make(chan bool)
