@@ -25,6 +25,8 @@ package main
 import (
 	"flag"
 	"log"
+	"net/http"
+	pprofhttp "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,6 +50,7 @@ func main() {
 	var backupConfig string
 	var refreshTimeout time.Duration
 	var debug, help bool
+	var pprof string
 	var metricsPath string
 	var configFormat string
 	var prometheusPushGateways string
@@ -56,6 +59,7 @@ func main() {
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "refresh-interval", time.Minute, "refresh timeout for updating the config")
 	flag.BoolVar(&debug, "debug", false, "enable debug level logging")
+	flag.StringVar(&pprof, "pprof", "", "enable pprof")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
 	flag.StringVar(&metricsPath, "metrics-url", "", "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.StringVar(&proxiesURL, "proxylist-url", "", "url to fetch proxylist")
@@ -68,6 +72,20 @@ func main() {
 	if help {
 		flag.CommandLine.Usage()
 		return
+	}
+
+	if debug && pprof == "" {
+		pprof = ":8080"
+	}
+
+	if pprof != "" {
+		mux := http.NewServeMux()
+		mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
+		mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
+		mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
+		mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
+		mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
+		go http.ListenAndServe(pprof, mux)
 	}
 
 	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
