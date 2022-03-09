@@ -19,10 +19,12 @@ jobs:
     name: Lint repository
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: markdownlint-cli
-        uses: nosborn/github-action-markdown-cli@v3.0.1
+      - uses: actions/checkout@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          files: .
+          ruby-version: "3.1"
+      - name: Install mdl
+        run: gem install mdl
+      - name: Run markdownlint
+        run: mdl .
