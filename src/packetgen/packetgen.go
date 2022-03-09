@@ -38,7 +38,6 @@ type NetworkConfig struct {
 
 // PacketConfig stores full packet configuration
 type PacketConfig struct {
-	Network  NetworkConfig
 	Ethernet EthernetPacketConfig
 	IP       IPPacketConfig
 	TCP      *TCPPacketConfig
