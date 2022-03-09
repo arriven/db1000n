@@ -23,12 +23,9 @@
 package packetgen
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
-	"regexp"
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
@@ -87,37 +84,12 @@ func LocalIP() string {
 	return ""
 }
 
-// isDNS returns a boolean which indicates host parameter is a DNS record or not
-func isDNS(host string) bool {
-	res, err := regexp.MatchString(dnsRegex, host)
-	if err != nil {
-		log.Printf("Error matching provided --host with DNS regex: %v", err)
-	}
-
-	return res
-}
-
-// isIP returns a boolean which indicates host parameter is an IP address or not
-func isIP(host string) bool {
-	res, err := regexp.MatchString(ipRegex, host)
-	if err != nil {
-		log.Printf("Error matching provided --host with IP regex: %v", err)
-	}
-
-	return res
-}
-
-// ResolveHost function gets a string and returns the ip address while deciding it is an ip address already or DNS record
+// ResolveHost function gets a string and returns the ip address
 func ResolveHost(host string) (string, error) {
-	if !isIP(host) && isDNS(host) {
-		ipRecords, err := net.DefaultResolver.LookupIP(context.Background(), "ip4", host)
-		if err != nil {
-			log.Printf("Error looking up DNS: %v", err)
-			return "", err
-		}
-
-		host = ipRecords[0].String()
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		return "", err
 	}
 
-	return host, nil
+	return addrs[0], nil
 }
