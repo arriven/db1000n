@@ -60,6 +60,18 @@ func packetgenJob(ctx context.Context, args Args, debug bool) error {
 			return err
 		}
 
+		if packetConfig.Network.Address == "" {
+			packetConfig.Network.Address = "0.0.0.0"
+		}
+
+		if packetConfig.Network.Name == "" {
+			if packetConfig.UDP != nil {
+				packetConfig.Network.Name = "ip4:udp"
+			} else if packetConfig.TCP != nil {
+				packetConfig.Network.Name = "ip4:tcp"
+			}
+		}
+
 		len, err := packetgen.SendPacket(packetConfig, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
