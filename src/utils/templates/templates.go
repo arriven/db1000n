@@ -1,3 +1,4 @@
+// Package templates [provides utility functions to enable templating in app configuration]
 package templates
 
 import (

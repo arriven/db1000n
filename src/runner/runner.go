@@ -1,3 +1,4 @@
+// Package runner [responsible for updating the config and managing jobs accordingly]
 package runner
 
 import (

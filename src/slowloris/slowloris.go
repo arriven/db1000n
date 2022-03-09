@@ -1,3 +1,4 @@
+// Package slowloris [inspired by https://github.com/valyala/goloris]
 package slowloris
 
 import (

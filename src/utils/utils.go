@@ -1,3 +1,4 @@
+// Package utils [general utility functions for the db1000n app]
 package utils
 
 import (

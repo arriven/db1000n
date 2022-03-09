@@ -1,3 +1,4 @@
+// Package qry [general utility functions for the dnsblast package]
 package qry
 
 import (
