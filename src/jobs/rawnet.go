@@ -47,7 +47,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
 
-	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
@@ -123,7 +123,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
 
-	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {

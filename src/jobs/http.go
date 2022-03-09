@@ -79,8 +79,10 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		return err
 	}
 
-	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
+	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
@@ -102,12 +104,13 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 			dataSize += len(key) + len(value)
 		}
 
+		trafficMonitor.Add(dataSize)
 		if err := sendFastHTTPRequest(client, req, debug); err != nil {
 			if debug {
 				log.Printf("Error sending request %v: %v", req, err)
 			}
 		} else {
-			trafficMonitor.Add(dataSize)
+			processedTrafficMonitor.Add(dataSize)
 		}
 
 		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)

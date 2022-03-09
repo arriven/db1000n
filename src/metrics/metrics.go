@@ -29,6 +29,12 @@ import (
 	"time"
 )
 
+// supported default metrics
+const (
+	Traffic          = "traffic"
+	ProcessedTraffic = "processed_traffic"
+)
+
 // Storage is a general struct to store custom metrics
 type Storage struct {
 	trackers map[string]*metricTracker
@@ -44,7 +50,8 @@ var Default Storage
 
 func init() {
 	Default = Storage{trackers: make(map[string]*metricTracker)}
-	Default.trackers["traffic"] = &metricTracker{}
+	Default.trackers[Traffic] = &metricTracker{}
+	Default.trackers[ProcessedTraffic] = &metricTracker{}
 }
 
 func (ms *Storage) Write(name, jobID string, value int) {

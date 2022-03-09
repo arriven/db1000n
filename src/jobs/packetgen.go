@@ -67,7 +67,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		return err
 	}
 
-	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
