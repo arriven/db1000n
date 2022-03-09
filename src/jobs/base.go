@@ -1,3 +1,4 @@
+// Package jobs [contains all the attack types db1000n can simulate]
 package jobs
 
 import (

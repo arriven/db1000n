@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
@@ -60,12 +61,14 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 	hostPort := host + ":" + strconv.FormatInt(int64(port), 10)
 
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
 		log.Printf("Error building raw connection: %v", err)
 		return err
 	}
+
+	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
 		packetConfigRaw := packetTpl.Execute(nil)

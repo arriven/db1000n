@@ -13,6 +13,8 @@ const (
 	dhhGeneratorBufferSize = 128
 )
 
+// DistinctHeavyHitterGenerator creates an endless stream of fake domain names
+// using the random subdomain.
 type DistinctHeavyHitterGenerator struct {
 	buffer chan string
 
@@ -44,12 +46,14 @@ func NewDistinctHeavyHitterGenerator(seedDomains []string) (*DistinctHeavyHitter
 	return generator, nil
 }
 
+// Next is here for iteration purposes
 func (rcv *DistinctHeavyHitterGenerator) Next() chan string {
 	return rcv.buffer
 }
 
+// Cancel allows to cancel execution prematurely
 func (rcv *DistinctHeavyHitterGenerator) Cancel() {
-	rcv.cancelOnce.Do(func() {rcv.cancelGeneration()})
+	rcv.cancelOnce.Do(func() { rcv.cancelGeneration() })
 }
 
 func (rcv *DistinctHeavyHitterGenerator) ignite(ctx context.Context, rootDomains []string) {
@@ -64,7 +68,7 @@ func (rcv *DistinctHeavyHitterGenerator) ignite(ctx context.Context, rootDomains
 		default:
 			rcv.buffer <- rcv.generateSubdomain() + "." + rootDomains[currentDomainIndex] + "."
 
-			currentDomainIndex += 1
+			currentDomainIndex++
 			if currentDomainIndex == totalSeeds {
 				currentDomainIndex = 0
 			}

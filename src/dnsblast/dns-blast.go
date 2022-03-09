@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/Arriven/db1000n/src/metrics"
 	"log"
 	"net"
 	"strconv"
@@ -12,11 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Arriven/db1000n/src/metrics"
+
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
 )
 
+// Useful contants
 const (
 	DefaultDNSPort        = 53
 	DefaultDNSOverTLSPort = 853
@@ -26,6 +28,7 @@ const (
 	TCPTLSProtoName = "tcp-tls"
 )
 
+// Config contains all the necessary configuration for dns-blast
 type Config struct {
 	RootDomain      string
 	Protocol        string        // "udp", "tcp", "tcp-tls"
@@ -34,8 +37,10 @@ type Config struct {
 	ParallelQueries int
 }
 
+// DNSBlaster is a main worker struct for the package
 type DNSBlaster struct{}
 
+// Start starts the job based on provided configuration
 func Start(ctx context.Context, config *Config) error {
 	defer utils.PanicHandler()
 
@@ -79,10 +84,12 @@ func Start(ctx context.Context, config *Config) error {
 	return nil
 }
 
+// NewDNSBlaster returns properly initialized blaster instance
 func NewDNSBlaster() *DNSBlaster {
 	return &DNSBlaster{}
 }
 
+// StressTestParameters contains parameters for a single stress test
 type StressTestParameters struct {
 	Delay           time.Duration
 	ParallelQueries int
@@ -90,6 +97,7 @@ type StressTestParameters struct {
 	SeedDomains     []string
 }
 
+// ExecuteStressTest executes a stress test based on parameters
 func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string, parameters *StressTestParameters) error {
 	defer utils.PanicHandler()
 
@@ -121,7 +129,7 @@ blastLoop:
 			log.Printf("[DNS BLAST] Still blasting to [server=%s], OK!", reusableQuery.HostAndPort)
 			keepAliveCounter = 0
 		} else {
-			keepAliveCounter += 1
+			keepAliveCounter++
 		}
 
 		select {
@@ -154,18 +162,21 @@ blastLoop:
 	return nil
 }
 
+// QueryParameters contains parameters of a single dns query
 type QueryParameters struct {
 	HostAndPort string
 	QName       string
 	QType       uint16
 }
 
+// Response is a dns response struct
 type Response struct {
 	WithErr bool
 	Err     error
 	Latency time.Duration
 }
 
+// SimpleQuery performs a simple dns query based on parameters
 func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *QueryParameters) *Response {
 	question := new(dns.Msg).
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
@@ -192,6 +203,7 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 	}
 }
 
+// SimpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
 func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters) {
 	question := new(dns.Msg).
 		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)

@@ -27,7 +27,7 @@ func TestDistinctHeavyHitterGenerator(t *testing.T) {
 		}
 		t.Logf("new domain: %s", newDomain)
 
-		if subDomainsGeneratedNumber += 1; subDomainsGeneratedNumber == dhhGeneratorBufferSize {
+		if subDomainsGeneratedNumber++; subDomainsGeneratedNumber == dhhGeneratorBufferSize {
 			dhhGenerator.Cancel()
 		}
 	}

@@ -79,7 +79,8 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		return err
 	}
 
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	go trafficMonitor.Update(ctx, time.Second)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
