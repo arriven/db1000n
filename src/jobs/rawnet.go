@@ -37,7 +37,6 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return err
 	}
 
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
 		return err
@@ -47,6 +46,9 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	if err != nil {
 		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
+
+	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
 		if debug {
@@ -97,7 +99,6 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return err
 	}
 
-	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
 	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
 		return err
@@ -121,6 +122,9 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	if err != nil {
 		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
+
+	trafficMonitor := metrics.Default.NewWriter("traffic", uuid.New().String())
+	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
 		body := []byte(templates.Execute(bodyTpl, nil))

@@ -126,8 +126,8 @@ func ValidatePrometheusPushGateways(value string) bool {
 	}
 	listValues := strings.Split(value, ",")
 	result := true
-	for i, gatewayUrl := range listValues {
-		_, err := url.Parse(gatewayUrl)
+	for i, gatewayURL := range listValues {
+		_, err := url.Parse(gatewayURL)
 		if err != nil {
 			log.Printf("Can't parse %dth (0-based) push gateway\n", i)
 			result = false
@@ -195,7 +195,7 @@ var PushGatewayCA string
 
 // getTLSConfig returns tls.Config with system root CAs and embedded CA if not empty
 func getTLSConfig() (*tls.Config, error) {
-	rootCAs := x509.NewCertPool()
+	var rootCAs *x509.CertPool
 	var err error
 	if rootCAs, err = x509.SystemCertPool(); err != nil {
 		log.Println("Can't get system cert pool")
@@ -253,6 +253,7 @@ func pushMetrics(ctx context.Context, gateways []string) {
 			if err := pusher.Push(); err != nil {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 				gateway = gateways[rand.Int()%len(gateways)]
+				pusher = push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
 			}
 		}
 	}
@@ -277,10 +278,10 @@ func IncHTTP(host, method, status string) {
 }
 
 // IncPacketgen increments counter of sent raw packets
-func IncPacketgen(host, host_port, protocol, status string) {
+func IncPacketgen(host, hostPort, protocol, status string) {
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
-		PacketgenDstHostPortLabel: host_port,
+		PacketgenDstHostPortLabel: hostPort,
 		PacketgenProtocolLabel:    protocol,
 		StatusLabel:               status,
 	}).Inc()
