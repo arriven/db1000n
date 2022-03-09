@@ -210,9 +210,8 @@ func fastHTTPProxyDial(proxyFunc func() string, timeout time.Duration, backup fa
 		proxy := proxyFunc()
 		if proxy == "" {
 			return backup(addr)
-		} else {
-			return fasthttpproxy.FasthttpHTTPDialerTimeout(proxy, timeout)(addr)
 		}
+		return fasthttpproxy.FasthttpHTTPDialerTimeout(proxy, timeout)(addr)
 	}
 }
 

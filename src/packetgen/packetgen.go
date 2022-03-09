@@ -24,22 +24,20 @@ package packetgen
 
 import (
 	"net"
-	"strconv"
-
-	"github.com/Arriven/db1000n/src/metrics"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"golang.org/x/net/ipv4"
 )
 
+// NetworkConfig describes which network to use when sending packets
 type NetworkConfig struct {
 	Name    string
 	Address string
 }
 
+// PacketConfig stores full packet configuration
 type PacketConfig struct {
-	Network  NetworkConfig
 	Ethernet EthernetPacketConfig
 	IP       IPPacketConfig
 	TCP      *TCPPacketConfig
@@ -47,38 +45,22 @@ type PacketConfig struct {
 	Payload  string
 }
 
-func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (int, error) {
+// BuildPacket is used to build and serialize packet based on the provided configuration
+func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader *ipv4.Header, err error) {
 	var (
-		ipHeader   *ipv4.Header
-		packetConn net.PacketConn
-		rawConn    *ipv4.RawConn
-		udpPacket  *layers.UDP
-		tcpPacket  *layers.TCP
-		err        error
+		udpPacket *layers.UDP
+		tcpPacket *layers.TCP
 	)
-	protocolLabelValue := "tcp"
-	ipPacket := buildIpPacket(c.IP)
-	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
+	ipPacket := buildIPPacket(c.IP)
 	if c.UDP != nil {
-		udpPacket = buildUdpPacket(*c.UDP)
-		protocolLabelValue = "udp"
+		udpPacket = buildUDPPacket(*c.UDP)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	} else if c.TCP != nil {
-		tcpPacket = buildTcpPacket(*c.TCP)
+		tcpPacket = buildTCPPacket(*c.TCP)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	}
 
@@ -93,89 +75,69 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	}
 
 	if err = ipPacket.SerializeTo(ipHeaderBuf, opts); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
+		return nil, nil, err
 	}
 
 	if ipHeader, err = ipv4.ParseHeader(ipHeaderBuf.Bytes()); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
+		return nil, nil, err
 	}
 
 	ethernetLayer := buildEthernetPacket(c.Ethernet)
-	payloadBuf := gopacket.NewSerializeBuffer()
+	payloadBuf = gopacket.NewSerializeBuffer()
 	pyl := gopacket.Payload(c.Payload)
 
 	if udpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, udpPacket, pyl); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	} else if tcpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	}
 
-	// XXX send packet
-	if packetConn, err = net.ListenPacket(c.Network.Name, c.Network.Address); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
+	return payloadBuf, ipHeader, nil
+}
+
+// OpenRawConnection opens a raw ip network connection based on the provided config
+func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
+	var (
+		packetConn net.PacketConn
+		err        error
+	)
+	if packetConn, err = net.ListenPacket(c.Name, c.Address); err != nil {
+		return nil, err
 	}
 
-	if rawConn, err = ipv4.NewRawConn(packetConn); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
+	return ipv4.NewRawConn(packetConn)
+}
+
+// SendPacket is used to generate and send the packet over the network
+func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, destinationPort int) (int, error) {
+	var (
+		payloadBuf gopacket.SerializeBuffer
+		ipHeader   *ipv4.Header
+		err        error
+	)
+	payloadBuf, ipHeader, err = BuildPacket(c)
+	if err != nil {
 		return 0, err
 	}
 
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
 		return 0, err
 	}
-	metrics.IncPacketgen(
-		destinationHost,
-		hostPort,
-		protocolLabelValue,
-		metrics.StatusSuccess)
 	return len(payloadBuf.Bytes()), nil
 }
 
+// IPPacketConfig describes ip layer configuration
 type IPPacketConfig struct {
 	SrcIP string `mapstructure:"src_ip"`
 	DstIP string `mapstructure:"dst_ip"`
 }
 
 // buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
-func buildIpPacket(c IPPacketConfig) *layers.IPv4 {
+func buildIPPacket(c IPPacketConfig) *layers.IPv4 {
 	return &layers.IPv4{
 		SrcIP:    net.ParseIP(c.SrcIP).To4(),
 		DstIP:    net.ParseIP(c.DstIP).To4(),
@@ -184,18 +146,20 @@ func buildIpPacket(c IPPacketConfig) *layers.IPv4 {
 	}
 }
 
+// UDPPacketConfig describes udp layer configuration
 type UDPPacketConfig struct {
 	SrcPort int `mapstructure:"src_port,string"`
 	DstPort int `mapstructure:"dst_port,string"`
 }
 
-func buildUdpPacket(c UDPPacketConfig) *layers.UDP {
+func buildUDPPacket(c UDPPacketConfig) *layers.UDP {
 	return &layers.UDP{
 		SrcPort: layers.UDPPort(c.SrcPort),
 		DstPort: layers.UDPPort(c.DstPort),
 	}
 }
 
+// TCPFlagsConfig stores flags to be set on tcp layer
 type TCPFlagsConfig struct {
 	SYN bool
 	ACK bool
@@ -208,6 +172,7 @@ type TCPFlagsConfig struct {
 	NS  bool
 }
 
+// TCPPacketConfig describes tcp layer configuration
 type TCPPacketConfig struct {
 	SrcPort int `mapstructure:"src_port,string"`
 	DstPort int `mapstructure:"dst_port,string"`
@@ -218,8 +183,8 @@ type TCPPacketConfig struct {
 	Flags   TCPFlagsConfig
 }
 
-// buildTcpPacket generates a layers.TCP and returns it with source port and destination port
-func buildTcpPacket(c TCPPacketConfig) *layers.TCP {
+// buildTCPPacket generates a layers.TCP and returns it with source port and destination port
+func buildTCPPacket(c TCPPacketConfig) *layers.TCP {
 	return &layers.TCP{
 		SrcPort: layers.TCPPort(c.SrcPort),
 		DstPort: layers.TCPPort(c.DstPort),
@@ -239,6 +204,7 @@ func buildTcpPacket(c TCPPacketConfig) *layers.TCP {
 	}
 }
 
+// EthernetPacketConfig describes ethernet layer configuration
 type EthernetPacketConfig struct {
 	SrcMAC string `mapstructure:"src_mac"`
 	DstMAC string `mapstructure:"dst_mac"`

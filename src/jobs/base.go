@@ -7,7 +7,7 @@ import (
 // Args comment for linter
 type Args = map[string]interface{}
 
-// GloablConfig is a struct meant to pass commandline arguments to every job
+// GlobalConfig is a struct meant to pass commandline arguments to every job
 type GlobalConfig struct {
 	ProxyURL string
 }

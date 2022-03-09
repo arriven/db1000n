@@ -19,9 +19,10 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	type packetgenJobConfig struct {
 		BasicJobConfig
-		Packet map[string]interface{}
-		Host   string
-		Port   string
+		Packet  map[string]interface{}
+		Network packetgen.NetworkConfig
+		Host    string
+		Port    string
 	}
 
 	var jobConfig packetgenJobConfig
@@ -38,6 +39,14 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		return err
 	}
 
+	if jobConfig.Network.Address == "" {
+		jobConfig.Network.Address = "0.0.0.0"
+	}
+
+	if jobConfig.Network.Name == "" {
+		jobConfig.Network.Name = "ip4:tcp"
+	}
+
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
 		log.Printf("Error parsing packet: %v", err)
@@ -45,10 +54,20 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 	log.Printf("Attacking %v:%v", host, port)
 
+	protocolLabelValue := "tcp"
+	if _, ok := jobConfig.Packet["udp"]; ok {
+		protocolLabelValue = "udp"
+	}
+	hostPort := host + ":" + strconv.FormatInt(int64(port), 10)
+
 	trafficMonitor := metrics.Default.NewWriter(ctx, "traffic", uuid.New().String())
+	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
+	if err != nil {
+		log.Printf("Error building raw connection: %v", err)
+		return err
+	}
 
 	for jobConfig.Next(ctx) {
-
 		packetConfigRaw := packetTpl.Execute(nil)
 		if debug {
 			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
@@ -60,23 +79,21 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 			return err
 		}
 
-		if packetConfig.Network.Address == "" {
-			packetConfig.Network.Address = "0.0.0.0"
-		}
-
-		if packetConfig.Network.Name == "" {
-			if packetConfig.UDP != nil {
-				packetConfig.Network.Name = "ip4:udp"
-			} else if packetConfig.TCP != nil {
-				packetConfig.Network.Name = "ip4:tcp"
-			}
-		}
-
-		len, err := packetgen.SendPacket(packetConfig, host, port)
+		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
+			metrics.IncPacketgen(
+				host,
+				hostPort,
+				protocolLabelValue,
+				metrics.StatusFail)
 			return err
 		}
+		metrics.IncPacketgen(
+			host,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusSuccess)
 
 		trafficMonitor.Add(len)
 	}

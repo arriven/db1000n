@@ -60,7 +60,7 @@
     {
       "type": "packetgen",
       "args": {
-        "host": "{{ resolve_host \"localhost\" }}",
+        "host": "{{ resolve_host \"google.com\" }}",
         "port": "{{ random_port }}",
         "packet": {
           "payload": "test:blah",
@@ -70,7 +70,7 @@
           },
           "ip": {
             "src_ip": "{{ local_ip }}",
-            "dst_ip": "{{ resolve_host \"localhost\" }}"
+            "dst_ip": "{{ resolve_host \"google.com\" }}"
           },
           "tcp": {
             "src_port": "{{ random_port }}",
