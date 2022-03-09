@@ -152,7 +152,8 @@ func dumpMetrics(path, name, clientID string, debug bool) {
 		}
 	}()
 
-	bytesGenerated := metrics.Default.Read(name)
+	bytesGenerated := metrics.Default.Read(metrics.Traffic)
+	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
 	err := utils.ReportStatistics(int64(bytesGenerated), clientID)
 	if err != nil && debug {
 		log.Println("error reporting statistics:", err)
@@ -160,7 +161,10 @@ func dumpMetrics(path, name, clientID string, debug bool) {
 	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app has generated approximately %v bytes of traffic", bytesGenerated)
+		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
+		if bytesProcessed > 0 {
+			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
+		}
 	} else {
 		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
 	}
