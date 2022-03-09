@@ -59,4 +59,4 @@ kubectl delete daemonset db1000n -n db1000n
 ### How it works?
 
 DaemonSet will create one `db1000n` pod on each node that labeled as `db1000n=true`.
-It coule be usefuke in large cluster types that can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes.
+It coule be useful in large cluster types that can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes.

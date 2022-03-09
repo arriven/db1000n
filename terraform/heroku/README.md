@@ -10,7 +10,7 @@
 
 To deploy run:
 
-```terraform
+```sh
 export EMAIL=<place-email-here>
 export API_KEY=<place-api-key-here>
 terraform init
@@ -25,7 +25,7 @@ You can check logs for application with Heroku CLI: https://devcenter.heroku.com
 
 To destroy infrastructure use commands:
 
-```terraform
+```sh
 export EMAIL=<place-email-here>
 export API_KEY=<place-api-key-here>
 terraform destroy -var "email=${EMAIL}" -var "api_key=${API_KEY}"
