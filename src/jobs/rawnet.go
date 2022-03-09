@@ -49,6 +49,8 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
+	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
 		if debug {
@@ -78,6 +80,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 			if debug {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
 			}
+			processedTrafficMonitor.Add(len(body))
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 		}
 	}
