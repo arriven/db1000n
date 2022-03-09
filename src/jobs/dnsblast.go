@@ -25,7 +25,7 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
+func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig

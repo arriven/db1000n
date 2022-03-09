@@ -31,6 +31,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/runner"
 	"github.com/Arriven/db1000n/src/runner/config"
@@ -44,6 +45,7 @@ func main() {
 
 	var configPaths string
 	var proxiesURL string
+	var systemProxy string
 	var backupConfig string
 	var refreshTimeout time.Duration
 	var debug, help bool
@@ -53,11 +55,12 @@ func main() {
 	var prometheusOn bool
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
-	flag.DurationVar(&refreshTimeout, "r", time.Minute, "refresh timeout for updating the config")
-	flag.BoolVar(&debug, "d", false, "enable debug level logging")
+	flag.DurationVar(&refreshTimeout, "refresh-interval", time.Minute, "refresh timeout for updating the config")
+	flag.BoolVar(&debug, "debug", false, "enable debug level logging")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
-	flag.StringVar(&metricsPath, "m", "", "path where to dump usage metrics, can be URL or file, empty to disable")
-	flag.StringVar(&proxiesURL, "p", "", "url to fetch proxies list")
+	flag.StringVar(&metricsPath, "metrics-url", "", "path where to dump usage metrics, can be URL or file, empty to disable")
+	flag.StringVar(&proxiesURL, "proxylist-url", "", "url to fetch proxylist")
+	flag.StringVar(&systemProxy, "proxy", "", "system proxy to set by default")
 	flag.StringVar(&configFormat, "format", "json", "config format")
 	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
@@ -96,6 +99,7 @@ func main() {
 		RefreshTimeout:     refreshTimeout,
 		MetricsPath:        metricsPath,
 		Format:             configFormat,
+		Global:             jobs.GlobalConfig{ProxyURL: systemProxy},
 		PrometheusOn:       prometheusOn,
 		PrometheusGateways: prometheusPushGateways,
 	}, debug)

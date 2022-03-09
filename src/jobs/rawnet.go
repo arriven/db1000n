@@ -25,7 +25,7 @@ type rawNetJobConfig struct {
 	Body    json.RawMessage
 }
 
-func tcpJob(ctx context.Context, args Args, debug bool) error {
+func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	type tcpJobConfig struct {
@@ -85,7 +85,7 @@ func tcpJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func udpJob(ctx context.Context, args Args, debug bool) error {
+func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	type udpJobConfig struct {

@@ -54,7 +54,7 @@ func parseHTTPRequestTemplates(method, path, body string, headers map[string]str
 	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
 
-func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
+func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	defer utils.PanicHandler()
 
 	var jobConfig struct {
@@ -71,7 +71,7 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 		return err
 	}
 
-	client := newFastHTTPClient(jobConfig.Client, debug)
+	client := newFastHTTPClient(jobConfig.Client, globalConfig, debug)
 
 	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
 		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers)
@@ -115,7 +115,7 @@ func fastHTTPJob(ctx context.Context, args Args, debug bool) error {
 	return nil
 }
 
-func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fasthttp.Client) {
+func newFastHTTPClient(clientCfg map[string]interface{}, globalConfig GlobalConfig, debug bool) (client *fasthttp.Client) {
 	var clientConfig struct {
 		TLSClientConfig *tls.Config    `mapstructure:"tls_config,omitempty"`
 		Timeout         *time.Duration `mapstructure:"timeout"`
@@ -185,6 +185,11 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 		}
 	}
 
+	defaultProxy := fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout)
+	if globalConfig.ProxyURL != "" {
+		defaultProxy = fasthttpproxy.FasthttpSocksDialer(globalConfig.ProxyURL)
+	}
+
 	return &fasthttp.Client{
 		ReadTimeout:                   readTimeout,
 		WriteTimeout:                  writeTimeout,
@@ -196,7 +201,7 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
 		// increase DNS cache time to an hour instead of default minute
-		Dial: fastHTTPProxyDial(proxy, timeout, fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout)),
+		Dial: fastHTTPProxyDial(proxy, timeout, defaultProxy),
 	}
 }
 
