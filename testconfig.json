@@ -10,7 +10,7 @@
           "Authorization": "wtf"
         },
         "client": {
-          "proxy_urls": "{{ get_proxylist }}"
+          "proxy_urls": "{{ join get_proxylist \",\" }}"
         },
         "interval_ms": 100
       }
@@ -60,7 +60,7 @@
     {
       "type": "packetgen",
       "args": {
-        "host": "{{ random_ip }}",
+        "host": "{{ resolve_host \"localhost\" }}",
         "port": "{{ random_port }}",
         "packet": {
           "payload": "test:blah",
@@ -70,7 +70,7 @@
           },
           "ip": {
             "src_ip": "{{ local_ip }}",
-            "dst_ip": "{{ random_ip }}"
+            "dst_ip": "{{ resolve_host \"localhost\" }}"
           },
           "tcp": {
             "src_port": "{{ random_port }}",

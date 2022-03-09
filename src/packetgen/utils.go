@@ -24,7 +24,6 @@ package packetgen
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 )
@@ -37,8 +36,8 @@ func RandomPayload(length int) []byte {
 }
 
 func RandomIP() string {
-	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(256), rand.Intn(256),
-		rand.Intn(256), rand.Intn(256))
+	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(255)+1, rand.Intn(255)+1,
+		rand.Intn(255)+1, rand.Intn(255)+1)
 }
 
 func RandomPort() int {
@@ -85,46 +84,8 @@ func LocalIP() string {
 	return ""
 }
 
-// getIps returns a string slice to spoof ip packets with dummy source ip addresses
-func getIps() []string {
-	ips := make([]string, 0)
-	for i := 0; i < 20; i++ {
-		ips = append(ips, fmt.Sprintf("%d.%d.%d.%d", rand.Intn(256), rand.Intn(256),
-			rand.Intn(256), rand.Intn(256)))
-	}
-
-	return ips
-}
-
-// getPorts returns an int slice to spoof ip packets with dummy source ports
-func getPorts() []int {
-	ports := make([]int, 0)
-	for i := 1024; i <= 65535; i++ {
-		ports = append(ports, i)
-	}
-
-	return ports
-}
-
-// getMacAddrs returns a byte slice to spoof ip packets with dummy MAC addresses
-func getMacAddrs() [][]byte {
-	macAddrs := make([][]byte, 0)
-	for i := 0; i <= 50; i++ {
-		buf := make([]byte, 6)
-
-		if _, err := rand.Read(buf); err != nil {
-			log.Printf("Error %v", err)
-			continue
-		}
-
-		macAddrs = append(macAddrs, buf)
-	}
-
-	return macAddrs
-}
-
-// resolveHost function gets a string and returns the ip address
-func resolveHost(host string) (string, error) {
+// ResolveHost function gets a string and returns the ip address
+func ResolveHost(host string) (string, error) {
 	addrs, err := net.LookupHost(host)
 	if err != nil {
 		return "", err

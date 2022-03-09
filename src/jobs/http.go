@@ -3,12 +3,11 @@ package jobs
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net"
-	"net/url"
+	"strings"
 	"text/template"
 	"time"
 
@@ -164,36 +163,25 @@ func newFastHTTPClient(clientCfg map[string]interface{}, debug bool) (client *fa
 	}
 
 	proxy := func() string { return "" }
-	proxylist := []byte(templates.ParseAndExecute(clientConfig.ProxyURLs, nil))
-	if len(proxylist) > 0 {
+	proxylist := templates.ParseAndExecute(clientConfig.ProxyURLs, nil)
+	if proxylist != "" {
 		if debug {
-			log.Printf("List of proxies: %s", string(proxylist))
+			log.Printf("List of proxies: %s", proxylist)
 		}
 
-		var proxyURLs []string
+		var proxyURLs = strings.Split(proxylist, ",")
 
-		if err := json.Unmarshal(proxylist, &proxyURLs); err == nil {
-			if debug {
-				log.Printf("proxyURLs: %v", proxyURLs)
+		if debug {
+			log.Printf("proxyURLs: %v", proxyURLs)
+		}
+
+		// Return random proxy from the list
+		proxy = func() string {
+			if len(proxyURLs) == 0 {
+				return ""
 			}
 
-			// Return random proxy from the list
-			proxy = func() string {
-				if len(proxyURLs) == 0 {
-					return ""
-				}
-
-				proxyString := proxyURLs[rand.Intn(len(proxyURLs))]
-
-				u, err := url.Parse(proxyString)
-				if err != nil {
-					return ""
-				}
-
-				return u.String()
-			}
-		} else if debug {
-			log.Printf("Failed to parse proxies: %v", err) // It will still send traffic as if no proxies were specified, no need for warning
+			return proxyURLs[rand.Intn(len(proxyURLs))]
 		}
 	}
 

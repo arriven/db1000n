@@ -90,7 +90,7 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 
 	log.Println("New config received, applying")
 	if utils.IsEncrypted(newRawConfig) {
-		decryptedConfig, err := utils.DecryptConfig(newRawConfig)
+		decryptedConfig, err := utils.Decrypt(newRawConfig)
 		if err != nil {
 			log.Println("Can't decrypt config")
 			return nil, nil

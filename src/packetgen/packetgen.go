@@ -33,7 +33,13 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
+type NetworkConfig struct {
+	Name    string
+	Address string
+}
+
 type PacketConfig struct {
+	Network  NetworkConfig
 	Ethernet EthernetPacketConfig
 	IP       IPPacketConfig
 	TCP      *TCPPacketConfig
@@ -50,7 +56,7 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 		tcpPacket  *layers.TCP
 		err        error
 	)
-	destinationHost, err = resolveHost(destinationHost)
+	destinationHost, err = ResolveHost(destinationHost)
 	if err != nil {
 		return 0, err
 	}
@@ -121,16 +127,6 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 				metrics.StatusFail)
 			return 0, err
 		}
-
-		// XXX send packet
-		if packetConn, err = net.ListenPacket("ip4:udp", "0.0.0.0"); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
-		}
 	} else if tcpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
 			metrics.IncPacketgen(
@@ -140,16 +136,16 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 				metrics.StatusFail)
 			return 0, err
 		}
+	}
 
-		// XXX send packet
-		if packetConn, err = net.ListenPacket("ip4:tcp", "0.0.0.0"); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
-		}
+	// XXX send packet
+	if packetConn, err = net.ListenPacket(c.Network.Name, c.Network.Address); err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
+		return 0, err
 	}
 
 	if rawConn, err = ipv4.NewRawConn(packetConn); err != nil {
