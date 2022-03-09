@@ -4,7 +4,7 @@ Prometheus exporter can be configured with next CLI parameters:
 
 - `--prometheus_on` - turns on prometheus exporter
 - `--prometheus_gateways=<url>,<url>` - comma separated list of urls to Push Gateway. Example: `https://localhost:9091`.
-  It uses TLS for https:// schema otherwise raw TCP connection
+  It uses TLS for `https://` schema otherwise raw TCP connection
 
 With env variables:
 

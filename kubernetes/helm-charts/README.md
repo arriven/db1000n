@@ -1,6 +1,6 @@
 # db1000n Helm chart
 
-_If you want to use plain manifests, see manifests [here](../manifests/)_
+## If you want to use plain manifests, see manifests [here](../manifests/)
 
 This is a Helm chart for Kubernetes
 
