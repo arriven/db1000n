@@ -22,15 +22,16 @@ func getProxylistURL() string {
 	return proxiesURL
 }
 
-func SetProxiesUrl(url string) {
+// SetProxiesURL is used to override the default proxylist url
+func SetProxiesURL(url string) {
 	proxiesURL = url
 }
 
 func getProxylist() (urls []string) {
-	return getProxylistByUrl(getProxylistURL())
+	return getProxylistByURL(getProxylistURL())
 }
 
-func getProxylistByUrl(url string) (urls []string) {
+func getProxylistByURL(url string) (urls []string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil
@@ -90,7 +91,7 @@ func Parse(input string) (*template.Template, error) {
 		"get_url":              getURLContent,
 		"proxylist_url":        getProxylistURL,
 		"get_proxylist":        getProxylist,
-		"get_proxylist_by_url": getProxylistByUrl,
+		"get_proxylist_by_url": getProxylistByURL,
 		"mod":                  mod,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
@@ -133,10 +134,12 @@ func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) ma
 	return tpl.Execute(data)
 }
 
+// MapStruct is a helper structure to parse configs in a format accepted by mapstructure package
 type MapStruct struct {
 	tpl map[string]interface{}
 }
 
+// ParseMapStruct is like Parse but takes mapstructure as input
 func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 	result := make(map[string]interface{})
 	for key, value := range input {
@@ -160,6 +163,7 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 	return &MapStruct{tpl: result}, nil
 }
 
+// Execute same as regular Execute
 func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for key, value := range tpl.tpl {

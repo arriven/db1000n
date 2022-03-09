@@ -93,7 +93,7 @@ func main() {
 	}
 
 	if proxiesURL != "" {
-		templates.SetProxiesUrl(proxiesURL)
+		templates.SetProxiesURL(proxiesURL)
 	}
 
 	go utils.CheckCountry([]string{"Ukraine"})
