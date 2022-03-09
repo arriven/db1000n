@@ -49,39 +49,22 @@ type PacketConfig struct {
 	Payload  string
 }
 
-// SendPacket is used to generate and send the packet over the network
-func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (int, error) {
+// BuildPacket is used to build and serialize packet based on the provided configuration
+func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader *ipv4.Header, err error) {
 	var (
-		ipHeader   *ipv4.Header
-		packetConn net.PacketConn
-		rawConn    *ipv4.RawConn
-		udpPacket  *layers.UDP
-		tcpPacket  *layers.TCP
-		err        error
+		udpPacket *layers.UDP
+		tcpPacket *layers.TCP
 	)
-	protocolLabelValue := "tcp"
 	ipPacket := buildIPPacket(c.IP)
-	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
 	if c.UDP != nil {
 		udpPacket = buildUDPPacket(*c.UDP)
-		protocolLabelValue = "udp"
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	} else if c.TCP != nil {
 		tcpPacket = buildTCPPacket(*c.TCP)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	}
 
@@ -96,45 +79,52 @@ func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (in
 	}
 
 	if err = ipPacket.SerializeTo(ipHeaderBuf, opts); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
+		return nil, nil, err
 	}
 
 	if ipHeader, err = ipv4.ParseHeader(ipHeaderBuf.Bytes()); err != nil {
-		metrics.IncPacketgen(
-			destinationHost,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusFail)
-		return 0, err
+		return nil, nil, err
 	}
 
 	ethernetLayer := buildEthernetPacket(c.Ethernet)
-	payloadBuf := gopacket.NewSerializeBuffer()
+	payloadBuf = gopacket.NewSerializeBuffer()
 	pyl := gopacket.Payload(c.Payload)
 
 	if udpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, udpPacket, pyl); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
 	} else if tcpPacket != nil {
 		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
-			metrics.IncPacketgen(
-				destinationHost,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail)
-			return 0, err
+			return nil, nil, err
 		}
+	}
+
+	return payloadBuf, ipHeader, nil
+}
+
+// SendPacket is used to generate and send the packet over the network
+func SendPacket(c PacketConfig, destinationHost string, destinationPort int) (int, error) {
+	var (
+		payloadBuf gopacket.SerializeBuffer
+		ipHeader   *ipv4.Header
+		packetConn net.PacketConn
+		rawConn    *ipv4.RawConn
+		err        error
+	)
+	protocolLabelValue := "tcp"
+	if c.UDP != nil {
+		protocolLabelValue = "udp"
+	}
+	hostPort := destinationHost + ":" + strconv.FormatInt(int64(destinationPort), 10)
+	payloadBuf, ipHeader, err = BuildPacket(c)
+	if err != nil {
+		metrics.IncPacketgen(
+			destinationHost,
+			hostPort,
+			protocolLabelValue,
+			metrics.StatusFail)
+		return 0, err
 	}
 
 	// XXX send packet
