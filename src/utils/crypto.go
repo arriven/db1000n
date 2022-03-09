@@ -2,9 +2,10 @@ package utils
 
 import (
 	"bytes"
-	"filippo.io/age"
 	"io/ioutil"
 	"strings"
+
+	"filippo.io/age"
 )
 
 // EncryptionKeys random 32 byte key encoded into base64 string. Used by default for configs
@@ -37,7 +38,7 @@ func GetEncryptionKeys() ([]string, error) {
 
 // IsEncrypted returns true if cfg encrypted with age tool (https://github.com/FiloSottile/age)
 func IsEncrypted(cfg []byte) bool {
-	return bytes.Index(cfg, []byte(`age-encryption`)) != -1
+	return bytes.Contains(cfg, []byte(`age-encryption`))
 }
 
 // Decrypt decrypts config using EncryptionKeys

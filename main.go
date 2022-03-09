@@ -85,7 +85,9 @@ func main() {
 		mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
 		mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 		mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
-		go http.ListenAndServe(pprof, mux)
+		go func() {
+			log.Println(http.ListenAndServe(pprof, mux))
+		}()
 	}
 
 	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {

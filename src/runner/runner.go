@@ -107,7 +107,10 @@ func (r *Runner) Run() {
 					wg.Add(1)
 
 					go func(i int) {
-						job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+						err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+						if err != nil {
+							log.Println("error running job:", err)
+						}
 						wg.Done()
 					}(i)
 
@@ -129,7 +132,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.metricsPath, "traffic", clientID.String())
+		dumpMetrics(r.metricsPath, "traffic", clientID.String(), r.debug)
 	}
 
 	if cancel != nil {
@@ -142,7 +145,7 @@ func (r *Runner) Run() {
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
 
-func dumpMetrics(path, name, clientID string) {
+func dumpMetrics(path, name, clientID string, debug bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("caught panic: %v", err)
@@ -150,7 +153,10 @@ func dumpMetrics(path, name, clientID string) {
 	}()
 
 	bytesGenerated := metrics.Default.Read(name)
-	utils.ReportStatistics(int64(bytesGenerated), clientID)
+	err := utils.ReportStatistics(int64(bytesGenerated), clientID)
+	if err != nil && debug {
+		log.Println("error reporting statistics:", err)
+	}
 	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
