@@ -16,6 +16,8 @@ import (
 )
 
 func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	type packetgenJobConfig struct {

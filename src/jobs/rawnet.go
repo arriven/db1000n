@@ -26,6 +26,8 @@ type rawNetJobConfig struct {
 }
 
 func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	type tcpJobConfig struct {
@@ -91,6 +93,8 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 }
 
 func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	type udpJobConfig struct {

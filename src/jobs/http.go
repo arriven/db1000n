@@ -22,39 +22,9 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
-	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls map[*template.Template]*template.Template, err error) {
-	if methodTpl, err = templates.Parse(method); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing method template: %v", err)
-	}
-
-	if pathTpl, err = templates.Parse(path); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing path template: %v", err)
-	}
-
-	if bodyTpl, err = templates.Parse(body); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing body template: %v", err)
-	}
-
-	headerTpls = make(map[*template.Template]*template.Template, len(headers))
-	for key, value := range headers {
-		keyTpl, err := templates.Parse(key)
-		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
-		}
-
-		valueTpl, err := templates.Parse(value)
-		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
-		}
-
-		headerTpls[keyTpl] = valueTpl
-	}
-
-	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
-}
-
 func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig struct {
@@ -233,4 +203,36 @@ func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug b
 	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
 
 	return nil
+}
+
+func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
+	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls map[*template.Template]*template.Template, err error) {
+	if methodTpl, err = templates.Parse(method); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing method template: %v", err)
+	}
+
+	if pathTpl, err = templates.Parse(path); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing path template: %v", err)
+	}
+
+	if bodyTpl, err = templates.Parse(body); err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("error parsing body template: %v", err)
+	}
+
+	headerTpls = make(map[*template.Template]*template.Template, len(headers))
+	for key, value := range headers {
+		keyTpl, err := templates.Parse(key)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
+		}
+
+		valueTpl, err := templates.Parse(value)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
+		}
+
+		headerTpls[keyTpl] = valueTpl
+	}
+
+	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
 }
