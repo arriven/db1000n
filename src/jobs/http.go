@@ -83,15 +83,18 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		c := fasthttp.AcquireCookie()
 		defer fasthttp.ReleaseCookie(c)
 
-		c.ParseBytes(value)
+		err := c.ParseBytes(value)
+		if err != nil {
+			return
+		}
 
 		if expire := c.Expire(); expire != fasthttp.CookieExpireUnlimited && expire.Before(time.Now()) {
 			if debug {
 				log.Println("cookie from request expired:", string(key))
 			}
-		} else {
-			cookies[string(key)] = string(c.Value())
+			return
 		}
+		cookies[string(key)] = string(c.Value())
 	})
 	response := make(map[string]interface{})
 	response["body"] = string(resp.Body())
