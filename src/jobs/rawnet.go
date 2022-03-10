@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
@@ -25,7 +24,7 @@ type rawNetJobConfig struct {
 	Body    json.RawMessage
 }
 
-func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -35,18 +34,18 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	}
 
 	var jobConfig tcpJobConfig
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return err
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, err
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	bodyTpl, err := templates.Parse(string(jobConfig.Body))
 	if err != nil {
-		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -87,10 +86,10 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -100,13 +99,13 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	}
 
 	var jobConfig udpJobConfig
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return err
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, err
 	}
 
 	udpAddr, err := net.ResolveUDPAddr("udp", strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if debug {
@@ -120,12 +119,12 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		}
 		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
-		return err
+		return nil, err
 	}
 
 	bodyTpl, err := templates.Parse(string(jobConfig.Body))
 	if err != nil {
-		return fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -149,5 +148,5 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		}
 	}
 
-	return nil
+	return nil, nil
 }

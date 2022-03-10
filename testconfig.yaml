@@ -1,15 +1,17 @@
 jobs:
-  - type: http
+  - type: sequence
     args:
-      method: GET
-      path: "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}"
-      client:
-        proxy_urls: '{{ join get_proxylist "," }}'
-  - type: tcp
-    args:
-      address: "localhost:9090"
-      body: "test"
-  - type: udp
-    args:
-      address: "localhost:9090"
-      body: "test"
+      jobs:
+        - type: http
+          args:
+            count: 1
+            method: GET
+            path: 'https://localhost:8080/search?searchid={{ index (.Value (ctx_key "config")) "args" "jobs" 0 "type" }}&l10n=ru&reqenc=&text={{ random_uuid }}'
+            client:
+              timeout: 1s
+        - type: http
+          args:
+            method: GET
+            path: "https://localhost:8090/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}"
+            client:
+              proxy_urls: '{{ join get_proxylist "," }}'

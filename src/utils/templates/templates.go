@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
@@ -68,6 +69,13 @@ func mod(lhs, rhs uint32) uint32 {
 	return lhs % rhs
 }
 
+// ContextKey used to work with context and not trigger linter
+type ContextKey string
+
+func ctxKey(key string) ContextKey {
+	return ContextKey(key)
+}
+
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
@@ -79,6 +87,7 @@ func Parse(input string) (*template.Template, error) {
 		"random_ip":            packetgen.RandomIP,
 		"random_port":          packetgen.RandomPort,
 		"random_mac_addr":      packetgen.RandomMacAddr,
+		"random_user_agent":    uarand.GetRandom,
 		"local_ip":             packetgen.LocalIP,
 		"local_mac_addr":       packetgen.LocalMacAddres,
 		"resolve_host":         packetgen.ResolveHost,
@@ -94,6 +103,7 @@ func Parse(input string) (*template.Template, error) {
 		"get_proxylist":        getProxylist,
 		"get_proxylist_by_url": getProxylistByURL,
 		"mod":                  mod,
+		"ctx_key":              ctxKey,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
 
