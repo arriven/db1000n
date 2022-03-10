@@ -88,7 +88,7 @@ func TestBlast(t *testing.T) {
 			blastContext, cancel := context.WithTimeout(context.Background(), testcase.Duration)
 			defer cancel()
 
-			err := Start(blastContext, config)
+			err := Start(blastContext, nil, config)
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
 				return

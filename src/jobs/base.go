@@ -3,6 +3,7 @@ package jobs
 
 import (
 	"context"
+	"time"
 )
 
 // Args comment for linter
@@ -52,14 +53,13 @@ func (c *BasicJobConfig) Next(ctx context.Context) bool {
 	select {
 	case <-ctx.Done():
 		return false
-	default:
+	case <-time.After(time.Duration(c.IntervalMs) * time.Millisecond):
+		if c.Count <= 0 {
+			return true
+		}
+
+		c.iter++
+
+		return c.iter <= c.Count
 	}
-
-	if c.Count <= 0 {
-		return true
-	}
-
-	c.iter++
-
-	return c.iter <= c.Count
 }

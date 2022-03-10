@@ -41,7 +41,7 @@ type Config struct {
 type DNSBlaster struct{}
 
 // Start starts the job based on provided configuration
-func Start(ctx context.Context, config *Config) error {
+func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 	defer utils.PanicHandler()
 
 	log.Printf("[DNS BLAST] igniting the blaster, parameters to start: "+
@@ -68,7 +68,13 @@ func Start(ctx context.Context, config *Config) error {
 	}
 
 	for _, nameserver := range nameservers {
+		if wg != nil {
+			wg.Add(1)
+		}
 		go func(nameserver string, parameters *StressTestParameters) {
+			if wg != nil {
+				defer wg.Done()
+			}
 			defer utils.PanicHandler()
 
 			if err := blaster.ExecuteStressTest(ctx, nameserver, parameters); err != nil {

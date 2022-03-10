@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
@@ -26,6 +27,8 @@ type dnsBlastConfig struct {
 }
 
 func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig
@@ -73,14 +76,18 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		jobConfig.IntervalMs = defaultIntervalInMS
 	}
 
+	var wg sync.WaitGroup
+
 	//
 	// Blast the Job!
 	//
-	return dnsblast.Start(ctx, &dnsblast.Config{
+	err = dnsblast.Start(ctx, &wg, &dnsblast.Config{
 		RootDomain:      jobConfig.RootDomain,
 		Protocol:        jobConfig.Protocol,
 		SeedDomains:     jobConfig.SeedDomains,
 		ParallelQueries: jobConfig.ParallelQueries,
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 	})
+	wg.Wait()
+	return err
 }
