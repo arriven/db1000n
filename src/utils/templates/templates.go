@@ -104,6 +104,7 @@ func Parse(input string) (*template.Template, error) {
 		"get_proxylist_by_url": getProxylistByURL,
 		"mod":                  mod,
 		"ctx_key":              ctxKey,
+		"split":                strings.Split,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
 

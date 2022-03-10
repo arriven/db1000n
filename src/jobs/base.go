@@ -40,6 +40,7 @@ func Get(t string) (Job, bool) {
 		"sequence":     sequenceJob,
 		"parallel":     parallelJob,
 		"log":          logJob,
+		"set-value":    setVarJob,
 	}[t]
 
 	return res, ok

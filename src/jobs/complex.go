@@ -34,7 +34,7 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
-		ctx = context.WithValue(ctx, templates.ContextKey(cfg.Name), data)
+		ctx = context.WithValue(ctx, templates.ContextKey("data."+cfg.Name), data)
 	}
 	return nil, nil
 }
@@ -79,16 +79,5 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		}
 	}
 	wg.Wait()
-	return nil, nil
-}
-
-func logJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
-	var jobConfig struct {
-		Text string
-	}
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
-	}
-	log.Println(templates.ParseAndExecute(jobConfig.Text, ctx))
 	return nil, nil
 }
