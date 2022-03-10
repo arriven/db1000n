@@ -1,0 +1,66 @@
+jobs:
+  - type: sequence
+    args:
+      jobs:
+        - type: set-value
+          name: useragent
+          args:
+            value: "{{ random_user_agent }}"
+        - type: log
+          args:
+            text: 'user-agent: {{ .Value (ctx_key "data.useragent") }}'
+        - type: http-request
+          name: initial
+          args:
+            method: GET
+            path: "https://ddos-guard.net"
+            headers:
+              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+              Accept: "text/html"
+              Accept-Language: "en-US"
+              Connection: "keep-alive"
+              Sec-Fetch-Dest: "document"
+              Sec-Fetch-Mode: "navigate"
+              Sec-Fetch-Site: "none"
+              Sec-Fetch-User: "?1"
+              TE: "trailers"
+              DNT: "1"
+        - type: log
+          args:
+            text: 'body: {{ index (.Value (ctx_key "data.initial")) "response" "body" }}'
+        - type: log
+          args:
+            text: 'headers: {{ index (.Value (ctx_key "data.initial")) "response" "headers" }}'
+        - type: log
+          args:
+            text: 'cookies: {{ index (.Value (ctx_key "data.initial")) "response" "cookies" }}'
+        - type: http-request
+          name: check
+          args:
+            method: GET
+            path: "https://check.ddos-guard.net/check.js"
+            headers:
+              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+              Accept: "*/*"
+              Accept-Language: "en-US,en;q=0.5"
+              Accept-Encoding: "gzip, deflate"
+              Referer: "https://ddos-guard.net"
+              Cookie: cookieString(c) #TODO
+              Sec-Fetch-Dest: "script"
+              Sec-Fetch-Mode: "no-cors"
+              Sec-Fetch-Site: "cross-site"
+        - type: set-value
+          name: check-body
+          args:
+            value: '{{ index (.Value (ctx_key "data.check")) "response" "body"}}'
+        - type: set-value
+          name: check-body-tmp
+          args:
+            value: '{{ index (split (.Value (ctx_key "data.check-body")) "/.well-known/ddos-guard/id/") 1 }}'
+        - type: set-value
+          name: id
+          args:
+            value: '{{ index (split (index (split (.Value (ctx_key "data.check-body")) "/.well-known/ddos-guard/id/") 1) "''") 0 }}'
+        - type: log
+          args:
+            text: '{{ .Value (ctx_key "data.id") }}'
