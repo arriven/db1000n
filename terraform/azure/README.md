@@ -14,6 +14,7 @@ The composition creates container instances in 6 different regions for a broader
 Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm:
 
 - `bomblet_count=10` - can be used for custom number of containers per region
+- `attack_commands=["/usr/src/app/main","-c=https://link_to_your_config_file"]`
 
 `terrafrom init` - to restore all dependencies.
 

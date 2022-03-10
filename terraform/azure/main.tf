@@ -14,6 +14,7 @@ module "bomblet" {
   region              = "northeurope"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
 
 module "bomblet_we" {
@@ -23,6 +24,7 @@ module "bomblet_we" {
   region              = "westeurope"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
 
 module "bomblet_cc" {
@@ -32,6 +34,7 @@ module "bomblet_cc" {
   region              = "canadacentral"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
 
 module "bomblet_uae" {
@@ -41,6 +44,7 @@ module "bomblet_uae" {
   region              = "uaenorth"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
 
 module "bomblet_cu" {
@@ -50,6 +54,7 @@ module "bomblet_cu" {
   region              = "centralus"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
 
 module "bomblet_ea" {
@@ -59,4 +64,5 @@ module "bomblet_ea" {
   region              = "eastasia"
   prefix              = var.prefix
   resource_group_name = azurerm_resource_group.main.name
+  attack_commands     = var.attack_commands
 }
