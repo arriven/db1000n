@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/Arriven/db1000n/src/utils"
 
@@ -52,7 +53,10 @@ func fetchSingle(path string) ([]byte, error) {
 		return res, nil
 	}
 
-	resp, err := http.Get(configURL.String())
+	client := http.Client{
+		Timeout: 20 * time.Second,
+	}
+	resp, err := client.Get(configURL.String())
 	if err != nil {
 		return nil, err
 	}
