@@ -10,18 +10,18 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig *slowloris.Config
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(jobConfig.Path) == 0 {
-		return errors.New("path is empty")
+		return nil, errors.New("path is empty")
 	}
 
 	if jobConfig.ContentLength == 0 {
@@ -54,5 +54,5 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		log.Printf("sending slow loris with params: %v", jobConfig)
 	}
 
-	return slowloris.Start(shouldStop, jobConfig)
+	return nil, slowloris.Start(shouldStop, jobConfig)
 }

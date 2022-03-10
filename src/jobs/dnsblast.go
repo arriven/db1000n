@@ -25,15 +25,15 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig
-	err := utils.Decode(args, &jobConfig)
+	err = utils.Decode(args, &jobConfig)
 	if err != nil {
-		return fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
+		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
 	}
 
 	//
@@ -42,12 +42,12 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 
 	// Root domain verification
 	if len(jobConfig.RootDomain) == 0 {
-		return errors.New("no root domain provided, consider adding it")
+		return nil, errors.New("no root domain provided, consider adding it")
 	}
 
 	// Domain seeds verification
 	if len(jobConfig.SeedDomains) == 0 {
-		return errors.New("no seed domains provided, at least one is required")
+		return nil, errors.New("no seed domains provided, at least one is required")
 	}
 
 	// Protocol settlement
@@ -61,7 +61,7 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		jobConfig.Protocol = defaultProto
 
 	case !(isUDPProto || !isTCPProto || !isTCPTLSProto):
-		return fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",
+		return nil, fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",
 			[]string{dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName})
 	}
 
@@ -88,5 +88,5 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 	})
 	wg.Wait()
-	return err
+	return nil, err
 }

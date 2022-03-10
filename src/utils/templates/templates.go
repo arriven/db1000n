@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
@@ -86,6 +87,7 @@ func Parse(input string) (*template.Template, error) {
 		"random_ip":            packetgen.RandomIP,
 		"random_port":          packetgen.RandomPort,
 		"random_mac_addr":      packetgen.RandomMacAddr,
+		"random_user_agent":    uarand.GetRandom,
 		"local_ip":             packetgen.LocalIP,
 		"local_mac_addr":       packetgen.LocalMacAddres,
 		"resolve_host":         packetgen.ResolveHost,

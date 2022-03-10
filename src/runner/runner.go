@@ -113,7 +113,7 @@ func (r *Runner) Run() {
 					wg.Add(1)
 
 					go func(i int) {
-						err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+						_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
 						if err != nil {
 							log.Println("error running job:", err)
 						}

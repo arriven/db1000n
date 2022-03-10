@@ -15,7 +15,7 @@ type GlobalConfig struct {
 }
 
 // Job comment for linter
-type Job = func(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error
+type Job = func(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error)
 
 // Config comment for linter
 type Config struct {
@@ -39,6 +39,7 @@ func Get(t string) (Job, bool) {
 		"dns-blast":    dnsBlastJob,
 		"sequence":     sequenceJob,
 		"parallel":     parallelJob,
+		"log":          logJob,
 	}[t]
 
 	return res, ok

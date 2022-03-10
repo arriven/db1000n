@@ -15,7 +15,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -32,14 +32,14 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing json: %v", err)
-		return err
+		return nil, err
 	}
 
 	host := templates.ParseAndExecute(jobConfig.Host, nil)
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
 		log.Printf("Error parsing port: %v", err)
-		return err
+		return nil, err
 	}
 
 	if jobConfig.Network.Address == "" {
@@ -53,7 +53,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
 		log.Printf("Error parsing packet: %v", err)
-		return err
+		return nil, err
 	}
 	log.Printf("Attacking %v:%v", host, port)
 
@@ -66,7 +66,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
 		log.Printf("Error building raw connection: %v", err)
-		return err
+		return nil, err
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -81,7 +81,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		var packetConfig packetgen.PacketConfig
 		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
 			log.Printf("Error parsing json: %v", err)
-			return err
+			return nil, err
 		}
 
 		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
@@ -92,7 +92,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 				hostPort,
 				protocolLabelValue,
 				metrics.StatusFail)
-			return err
+			return nil, err
 		}
 		metrics.IncPacketgen(
 			host,
@@ -103,5 +103,5 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		trafficMonitor.Add(len)
 	}
 
-	return nil
+	return nil, nil
 }

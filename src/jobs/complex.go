@@ -7,10 +7,11 @@ import (
 	"sync"
 
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/mitchellh/mapstructure"
 )
 
-func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -21,23 +22,24 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Jobs []Config
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %v", err)
 	}
 
 	for _, cfg := range jobConfig.Jobs {
 		job, ok := Get(cfg.Type)
 		if !ok {
-			return fmt.Errorf("unknown job %q", cfg.Type)
+			return nil, fmt.Errorf("unknown job %q", cfg.Type)
 		}
-		err := job(ctx, globalConfig, cfg.Args, debug)
+		data, err := job(ctx, globalConfig, cfg.Args, debug)
 		if err != nil {
-			return fmt.Errorf("error running job: %w", err)
+			return nil, fmt.Errorf("error running job: %w", err)
 		}
+		ctx = context.WithValue(ctx, templates.ContextKey(cfg.Name), data)
 	}
-	return nil
+	return nil, nil
 }
 
-func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -48,7 +50,7 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Jobs []Config
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %v", err)
 	}
 
 	var wg sync.WaitGroup
@@ -68,7 +70,7 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 			wg.Add(1)
 
 			go func(i int) {
-				err := job(ctx, globalConfig, jobConfig.Jobs[i].Args, debug)
+				_, err := job(ctx, globalConfig, jobConfig.Jobs[i].Args, debug)
 				if err != nil {
 					log.Println("error running job:", err)
 				}
@@ -77,5 +79,16 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		}
 	}
 	wg.Wait()
-	return nil
+	return nil, nil
+}
+
+func logJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+	var jobConfig struct {
+		Text string
+	}
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %v", err)
+	}
+	log.Println(templates.ParseAndExecute(jobConfig.Text, ctx))
+	return nil, nil
 }

@@ -28,10 +28,11 @@ type httpJobConfig struct {
 	Method  string
 	Body    string
 	Headers map[string]string
+	Cookies map[string]string
 	Client  map[string]interface{} // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -39,7 +40,7 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
-		return err
+		return nil, err
 	}
 	client := newFastHTTPClient(jobConfig.Client, globalConfig, debug)
 
@@ -48,11 +49,13 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 	method, path, body := templates.ParseAndExecute(jobConfig.Method, ctx), templates.ParseAndExecute(jobConfig.Path, ctx), templates.ParseAndExecute(jobConfig.Body, ctx)
-	dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
+
+	log.Printf("Sent single http request to %v", path)
 
 	req.SetRequestURI(path)
 	req.Header.SetMethod(method)
 	req.SetBodyString(body)
+	dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
 	// Add random user agent and configured headers
 	req.Header.Set("user-agent", uarand.GetRandom())
 	for key, value := range jobConfig.Headers {
@@ -60,16 +63,48 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		req.Header.Set(key, value)
 		dataSize += len(key) + len(value)
 	}
+	for key, value := range jobConfig.Cookies {
+		key, value = templates.ParseAndExecute(key, ctx), templates.ParseAndExecute(value, ctx)
+		req.Header.SetCookie(key, value)
+		dataSize += len(key) + len(value)
+	}
 
 	metrics.Default.Write(metrics.Traffic, uuid.New().String(), dataSize)
-	if err := sendFastHTTPRequest(client, req, resp, debug); err != nil {
-		return err
+	err = sendFastHTTPRequest(client, req, resp, debug)
+	if err == nil {
+		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), dataSize)
 	}
-	metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), dataSize)
-	return nil
+	headers := make(map[string]interface{})
+	resp.Header.VisitAll(func(key []byte, value []byte) {
+		headers[string(key)] = string(value)
+	})
+	cookies := make(map[string]interface{})
+	resp.Header.VisitAllCookie(func(key []byte, value []byte) {
+		c := fasthttp.AcquireCookie()
+		defer fasthttp.ReleaseCookie(c)
+
+		c.ParseBytes(value)
+
+		if expire := c.Expire(); expire != fasthttp.CookieExpireUnlimited && expire.Before(time.Now()) {
+			if debug {
+				log.Println("cookie from request expired:", string(key))
+			}
+		} else {
+			cookies[string(key)] = string(c.Value())
+		}
+	})
+	response := make(map[string]interface{})
+	response["body"] = string(resp.Body())
+	response["status_code"] = resp.StatusCode()
+	response["headers"] = headers
+	response["cookies"] = cookies
+	result := make(map[string]interface{})
+	result["response"] = response
+	result["error"] = err
+	return result, nil
 }
 
-func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -77,15 +112,15 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
-		return err
+		return nil, err
 	}
 
 	client := newFastHTTPClient(jobConfig.Client, globalConfig, debug)
 
-	methodTpl, pathTpl, bodyTpl, headerTpls, err := parseHTTPRequestTemplates(
-		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers)
+	methodTpl, pathTpl, bodyTpl, headerTpls, cookieTpls, err := parseHTTPRequestTemplates(
+		jobConfig.Method, jobConfig.Path, jobConfig.Body, jobConfig.Headers, jobConfig.Cookies)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -101,7 +136,7 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	for jobConfig.Next(ctx) {
 		method, path, body := templates.Execute(methodTpl, ctx), templates.Execute(pathTpl, ctx), templates.Execute(bodyTpl, ctx)
 		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-		fmt.Println(path)
+
 		req.SetRequestURI(path)
 		req.Header.SetMethod(method)
 		req.SetBodyString(body)
@@ -110,6 +145,11 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		for keyTpl, valueTpl := range headerTpls {
 			key, value := templates.Execute(keyTpl, ctx), templates.Execute(valueTpl, ctx)
 			req.Header.Set(key, value)
+			dataSize += len(key) + len(value)
+		}
+		for keyTpl, valueTpl := range cookieTpls {
+			key, value := templates.Execute(keyTpl, ctx), templates.Execute(valueTpl, ctx)
+			req.Header.SetCookie(key, value)
 			dataSize += len(key) + len(value)
 		}
 
@@ -123,7 +163,7 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func newFastHTTPClient(clientCfg map[string]interface{}, globalConfig GlobalConfig, debug bool) (client *fasthttp.Client) {
@@ -242,34 +282,49 @@ func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *f
 	return nil
 }
 
-func parseHTTPRequestTemplates(method, path, body string, headers map[string]string) (
-	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls map[*template.Template]*template.Template, err error) {
+func parseHTTPRequestTemplates(method, path, body string, headers map[string]string, cookies map[string]string) (
+	methodTpl, pathTpl, bodyTpl *template.Template, headerTpls, cookieTpls map[*template.Template]*template.Template, err error) {
 	if methodTpl, err = templates.Parse(method); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing method template: %v", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("error parsing method template: %v", err)
 	}
 
 	if pathTpl, err = templates.Parse(path); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing path template: %v", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("error parsing path template: %v", err)
 	}
 
 	if bodyTpl, err = templates.Parse(body); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error parsing body template: %v", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("error parsing body template: %v", err)
 	}
 
 	headerTpls = make(map[*template.Template]*template.Template, len(headers))
 	for key, value := range headers {
 		keyTpl, err := templates.Parse(key)
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
 		}
 
 		valueTpl, err := templates.Parse(value)
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
 		}
 
 		headerTpls[keyTpl] = valueTpl
 	}
 
-	return methodTpl, pathTpl, bodyTpl, headerTpls, nil
+	cookieTpls = make(map[*template.Template]*template.Template, len(headers))
+	for key, value := range cookies {
+		keyTpl, err := templates.Parse(key)
+		if err != nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("error parsing header key template %q: %v", key, err)
+		}
+
+		valueTpl, err := templates.Parse(value)
+		if err != nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("error parsing header value template %q: %v", value, err)
+		}
+
+		cookieTpls[keyTpl] = valueTpl
+	}
+
+	return methodTpl, pathTpl, bodyTpl, headerTpls, cookieTpls, nil
 }
