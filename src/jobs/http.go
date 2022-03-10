@@ -69,10 +69,10 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		dataSize += len(key) + len(value)
 	}
 
-	metrics.Default.Write(metrics.Traffic, uuid.New().String(), dataSize)
+	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
 	err = sendFastHTTPRequest(client, req, resp, debug)
 	if err == nil {
-		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), dataSize)
+		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
 	}
 	headers := make(map[string]string)
 	resp.Header.VisitAll(func(key []byte, value []byte) {
@@ -156,13 +156,13 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 			dataSize += len(key) + len(value)
 		}
 
-		trafficMonitor.Add(dataSize)
+		trafficMonitor.Add(uint64(dataSize))
 		if err := sendFastHTTPRequest(client, req, nil, debug); err != nil {
 			if debug {
 				log.Printf("Error sending request %v: %v", req, err)
 			}
 		} else {
-			processedTrafficMonitor.Add(dataSize)
+			processedTrafficMonitor.Add(uint64(dataSize))
 		}
 	}
 
