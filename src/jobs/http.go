@@ -74,11 +74,11 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	if err == nil {
 		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), dataSize)
 	}
-	headers := make(map[string]interface{})
+	headers := make(map[string]string)
 	resp.Header.VisitAll(func(key []byte, value []byte) {
 		headers[string(key)] = string(value)
 	})
-	cookies := make(map[string]interface{})
+	cookies := make(map[string]string)
 	resp.Header.VisitAllCookie(func(key []byte, value []byte) {
 		c := fasthttp.AcquireCookie()
 		defer fasthttp.ReleaseCookie(c)
