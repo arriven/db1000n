@@ -15,7 +15,7 @@ jobs:
           name: initial
           args:
             method: GET
-            path: "https://ddos-guard.net"
+            path: https://noxx.is
             headers:
               User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
               Accept: "text/html"
@@ -29,7 +29,7 @@ jobs:
               DNT: "1"
         - type: log
           args:
-            text: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
+            text: 'cookies: {{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
         - type: http-request
           name: check
           args:
@@ -40,7 +40,7 @@ jobs:
               Accept: "*/*"
               Accept-Language: "en-US,en;q=0.5"
               Accept-Encoding: "gzip, deflate"
-              Referer: "https://ddos-guard.net"
+              Referer: https://noxx.is
               Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
               Sec-Fetch-Dest: "script"
               Sec-Fetch-Mode: "no-cors"
@@ -55,7 +55,7 @@ jobs:
             value: '{{ index (split (index (split (.Value (ctx_key "data.check-body")) "/.well-known/ddos-guard/id/") 1) "''") 0 }}'
         - type: log
           args:
-            text: '{{ .Value (ctx_key "data.id") }}'
+            text: 'id: {{ .Value (ctx_key "data.id") }}'
         - type: http-request
           name: final-cookies-request
           args:
@@ -67,7 +67,7 @@ jobs:
               Accept-Language: "en-US,en;q=0.5"
               Accept-Encoding: "gzip, deflate"
               Cache-Control: "no-cache"
-              Referer: https://ddos-guard.net
+              Referer: https://noxx.is
               Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
               Sec-Fetch-Dest: "script"
               Sec-Fetch-Mode: "no-cors"
@@ -83,10 +83,10 @@ jobs:
           name: actual-request
           args:
             method: GET
-            path: https://ddos-guard.net
+            path: https://noxx.is
             headers:
               User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
-              Referer: https://ddos-guard.net/en
+              Referer: https://noxx.is
               Cookie: '{{ .Value (ctx_key "data.final-cookies") }}'
         - type: log
           args:
