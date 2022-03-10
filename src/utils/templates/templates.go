@@ -4,6 +4,7 @@ package templates
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -76,6 +77,19 @@ func ctxKey(key string) ContextKey {
 	return ContextKey(key)
 }
 
+func cookieString(cookies map[string]string) string {
+	var s = ""
+	for key, value := range cookies {
+		s = fmt.Sprintf("%s %s=%s;", s, key, value)
+	}
+	return strings.Trim(strings.TrimSpace(s), ";")
+	// header := &fasthttp.RequestHeader{}
+	// for key, value := range cookies {
+	// 	header.SetCookie(key, value)
+	// }
+	// return header.C
+}
+
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
@@ -105,6 +119,7 @@ func Parse(input string) (*template.Template, error) {
 		"mod":                  mod,
 		"ctx_key":              ctxKey,
 		"split":                strings.Split,
+		"cookie_string":        cookieString,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
 
