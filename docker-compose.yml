@@ -1,6 +1,16 @@
-version: "3"
+version: "3.9"
 
 services:
+
+  # creates privileged container
+  autoheal:
+    container_name: autoheal
+    image: willfarrell/autoheal:1.2.0
+    restart: always
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:Z
+
   # creates OpenVPN Docker container to first provider that randomly picks .conf file
   ovpn_01:
     image: ghcr.io/wfg/openvpn-client:2.1.0
@@ -19,6 +29,11 @@ services:
       HTTP_PROXY: "off"
       VPN_AUTH_SECRET: provider01_secret
       VPN_CONFIG_PATTERN: provider01*.conf # this will match provider01_country01.conf, provider01_country02.conf etc
+    healthcheck:
+      test: [ "CMD", "nslookup", "google.com" ]
+      timeout: 10s
+      interval: 30s
+      retries: 3
     secrets:
       - provider01_secret
 
@@ -35,11 +50,18 @@ services:
       - ./openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
+    labels:
+        autoheal: "true"
     environment:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
       VPN_AUTH_SECRET: provider01_secret
       VPN_CONFIG_FILE: provider01.endpoint02.conf # will use only this .conf file
+    healthcheck:
+      test: [ "CMD", "nslookup", "google.com" ]
+      timeout: 10s
+      interval: 30s
+      retries: 3
     secrets:
       - provider01_secret
 
@@ -56,6 +78,8 @@ services:
       - ./openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
+    labels:
+        autoheal: "true"
     environment:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
