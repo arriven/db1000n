@@ -19,24 +19,26 @@ type Job = func(ctx context.Context, globalConfig GlobalConfig, args Args, debug
 
 // Config comment for linter
 type Config struct {
-	Type   string
-	Count  int
-	Filter string
-	Args   Args
+	Name   string `mapstructure:"name"`
+	Type   string `mapstructure:"type"`
+	Count  int    `mapstructure:"count"`
+	Filter string `mapstructure:"filter"`
+	Args   Args   `mapstructure:"args"`
 }
 
 // Get job by type name
 func Get(t string) (Job, bool) {
 	res, ok := map[string]Job{
-		"http":       fastHTTPJob,
-		"fasthttp":   fastHTTPJob,
-		"tcp":        tcpJob,
-		"udp":        udpJob,
-		"slow-loris": slowLorisJob,
-		"packetgen":  packetgenJob,
-		"dns-blast":  dnsBlastJob,
-		"sequence":   sequenceJob,
-		"parallel":   parallelJob,
+		"http":         fastHTTPJob,
+		"http-flood":   fastHTTPJob,
+		"http-request": singleRequestJob,
+		"tcp":          tcpJob,
+		"udp":          udpJob,
+		"slow-loris":   slowLorisJob,
+		"packetgen":    packetgenJob,
+		"dns-blast":    dnsBlastJob,
+		"sequence":     sequenceJob,
+		"parallel":     parallelJob,
 	}[t]
 
 	return res, ok

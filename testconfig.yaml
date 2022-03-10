@@ -6,7 +6,7 @@ jobs:
           args:
             count: 1
             method: GET
-            path: "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}"
+            path: 'https://localhost:8080/search?searchid={{ index (.Value (ctx_key "config")) "args" "jobs" 0 "type" }}&l10n=ru&reqenc=&text={{ random_uuid }}'
             client:
               timeout: 1s
         - type: http

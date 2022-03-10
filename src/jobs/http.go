@@ -21,20 +21,60 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+type httpJobConfig struct {
+	BasicJobConfig
+
+	Path    string
+	Method  string
+	Body    string
+	Headers map[string]string
+	Client  map[string]interface{} // See HTTPClientConfig
+}
+
+func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	defer utils.PanicHandler()
+
+	var jobConfig httpJobConfig
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		log.Printf("Error parsing job config: %v", err)
+		return err
+	}
+	client := newFastHTTPClient(jobConfig.Client, globalConfig, debug)
+
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+	method, path, body := templates.ParseAndExecute(jobConfig.Method, ctx), templates.ParseAndExecute(jobConfig.Path, ctx), templates.ParseAndExecute(jobConfig.Body, ctx)
+	dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
+
+	req.SetRequestURI(path)
+	req.Header.SetMethod(method)
+	req.SetBodyString(body)
+	// Add random user agent and configured headers
+	req.Header.Set("user-agent", uarand.GetRandom())
+	for key, value := range jobConfig.Headers {
+		key, value = templates.ParseAndExecute(key, ctx), templates.ParseAndExecute(value, ctx)
+		req.Header.Set(key, value)
+		dataSize += len(key) + len(value)
+	}
+
+	metrics.Default.Write(metrics.Traffic, uuid.New().String(), dataSize)
+	if err := sendFastHTTPRequest(client, req, resp, debug); err != nil {
+		return err
+	}
+	metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), dataSize)
+	return nil
+}
+
 func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
 
-	var jobConfig struct {
-		BasicJobConfig
-
-		Path    string
-		Method  string
-		Body    string
-		Headers map[string]string
-		Client  map[string]interface{} // See HTTPClientConfig
-	}
+	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
 		return err
@@ -59,22 +99,22 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	log.Printf("Attacking %v", jobConfig.Path)
 
 	for jobConfig.Next(ctx) {
-		method, path, body := templates.Execute(methodTpl, nil), templates.Execute(pathTpl, nil), templates.Execute(bodyTpl, nil)
+		method, path, body := templates.Execute(methodTpl, ctx), templates.Execute(pathTpl, ctx), templates.Execute(bodyTpl, ctx)
 		dataSize := len(method) + len(path) + len(body) // Rough uploaded data size for reporting
-
+		fmt.Println(path)
 		req.SetRequestURI(path)
 		req.Header.SetMethod(method)
 		req.SetBodyString(body)
 		// Add random user agent and configured headers
 		req.Header.Set("user-agent", uarand.GetRandom())
 		for keyTpl, valueTpl := range headerTpls {
-			key, value := templates.Execute(keyTpl, nil), templates.Execute(valueTpl, nil)
+			key, value := templates.Execute(keyTpl, ctx), templates.Execute(valueTpl, ctx)
 			req.Header.Set(key, value)
 			dataSize += len(key) + len(value)
 		}
 
 		trafficMonitor.Add(dataSize)
-		if err := sendFastHTTPRequest(client, req, debug); err != nil {
+		if err := sendFastHTTPRequest(client, req, nil, debug); err != nil {
 			if debug {
 				log.Printf("Error sending request %v: %v", req, err)
 			}
@@ -186,12 +226,12 @@ func fastHTTPProxyDial(proxyFunc func() string, timeout time.Duration, backup fa
 	}
 }
 
-func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, debug bool) error {
+func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response, debug bool) error {
 	if debug {
 		log.Printf("%s %s started at %d", string(req.Header.Method()), string(req.RequestURI()), time.Now().Unix())
 	}
 
-	if err := client.Do(req, nil); err != nil {
+	if err := client.Do(req, resp); err != nil {
 		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 
 		return err

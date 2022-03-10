@@ -102,6 +102,12 @@ func (r *Runner) Run() {
 				if cfg.Jobs[i].Count < 1 {
 					cfg.Jobs[i].Count = 1
 				}
+				cfgMap := make(map[string]interface{})
+				err := utils.Decode(cfg.Jobs[i], &cfgMap)
+				if err != nil {
+					log.Fatal("failed to encode cfg map")
+				}
+				ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
 
 				for j := 0; j < cfg.Jobs[i].Count; j++ {
 					wg.Add(1)
