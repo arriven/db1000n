@@ -82,8 +82,6 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		} else {
 			processedTrafficMonitor.Add(dataSize)
 		}
-
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 
 	return nil

@@ -87,8 +87,6 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		}
 	}
 
-	time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
-
 	return nil
 }
 
@@ -149,8 +147,6 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 				log.Printf("%s started at %d", jobConfig.Address, time.Now().Unix())
 			}
 		}
-
-		time.Sleep(time.Duration(jobConfig.IntervalMs) * time.Millisecond)
 	}
 
 	return nil
