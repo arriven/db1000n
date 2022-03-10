@@ -41,6 +41,7 @@ func Get(t string) (Job, bool) {
 		"parallel":     parallelJob,
 		"log":          logJob,
 		"set-value":    setVarJob,
+		"check":        checkJob,
 	}[t]
 
 	return res, ok
