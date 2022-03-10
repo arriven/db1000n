@@ -8,7 +8,6 @@ import (
 
 	"github.com/Arriven/db1000n/src/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/mitchellh/mapstructure"
 )
 
 func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) error {
@@ -17,7 +16,7 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	defer utils.PanicHandler()
 
 	var jobConfig *slowloris.Config
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(args, &jobConfig); err != nil {
 		return err
 	}
 

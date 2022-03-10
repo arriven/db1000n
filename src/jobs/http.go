@@ -13,7 +13,6 @@ import (
 
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
 
@@ -36,7 +35,7 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Headers map[string]string
 		Client  map[string]interface{} // See HTTPClientConfig
 	}
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
 		return err
 	}
@@ -98,7 +97,7 @@ func newFastHTTPClient(clientCfg map[string]interface{}, globalConfig GlobalConf
 		ProxyURLs       string         `mapstructure:"proxy_urls"`
 	}
 
-	if err := mapstructure.Decode(clientCfg, &clientConfig); err != nil && debug {
+	if err := utils.Decode(clientCfg, &clientConfig); err != nil && debug {
 		log.Printf("Failed to parse job client, ignoring: %v", err)
 	}
 

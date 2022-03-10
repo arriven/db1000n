@@ -9,7 +9,6 @@ import (
 
 	"github.com/Arriven/db1000n/src/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -32,7 +31,7 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig
-	err := mapstructure.Decode(args, &jobConfig)
+	err := utils.Decode(args, &jobConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
 	}

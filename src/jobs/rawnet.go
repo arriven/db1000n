@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/utils"
@@ -35,7 +34,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	}
 
 	var jobConfig tcpJobConfig
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(args, &jobConfig); err != nil {
 		return err
 	}
 
@@ -100,7 +99,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	}
 
 	var jobConfig udpJobConfig
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(args, &jobConfig); err != nil {
 		return err
 	}
 

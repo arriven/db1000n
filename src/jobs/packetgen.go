@@ -30,7 +30,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	var jobConfig packetgenJobConfig
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing json: %v", err)
 		return err
 	}
