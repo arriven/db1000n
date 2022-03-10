@@ -100,7 +100,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 			protocolLabelValue,
 			metrics.StatusSuccess)
 
-		trafficMonitor.Add(len)
+		trafficMonitor.Add(uint64(len))
 	}
 
 	return nil, nil

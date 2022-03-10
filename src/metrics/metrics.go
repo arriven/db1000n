@@ -54,17 +54,17 @@ func init() {
 	Default.trackers[ProcessedTraffic] = &metricTracker{}
 }
 
-func (ms *Storage) Write(name, jobID string, value int) {
+func (ms *Storage) Write(name, jobID string, value uint64) {
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Store(jobID, value)
 	}
 }
 
-func (ms *Storage) Read(name string) int {
-	sum := 0
+func (ms *Storage) Read(name string) uint64 {
+	sum := uint64(0)
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Range(func(k, v interface{}) bool {
-			if value, ok := v.(int); ok {
+			if value, ok := v.(uint64); ok {
 				sum = sum + value
 			}
 			return true
@@ -84,16 +84,16 @@ type Writer struct {
 	ms    *Storage
 	jobID string
 	name  string
-	value int
+	value uint64
 }
 
 // Add used to increase metric value by a specific amount
-func (w *Writer) Add(value int) {
+func (w *Writer) Add(value uint64) {
 	w.value = w.value + value
 }
 
 // Set used to set metric to a specific value
-func (w *Writer) Set(value int) {
+func (w *Writer) Set(value uint64) {
 	w.value = value
 }
 
@@ -102,9 +102,9 @@ func (w *Writer) Flush() {
 	w.ms.Write(w.name, w.jobID, w.value)
 }
 
-// Update updates writer with a set interval
-func (w *Writer) Update(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
+// Update updates writer with a set uint64erval
+func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
+	ticker := time.NewTicker(uint64erval)
 	defer ticker.Stop()
 	for {
 		select {
