@@ -24,4 +24,4 @@ RUN apk add --update curl && rm  -rf /tmp/* /var/cache/apk/*
 WORKDIR /usr/src/app
 COPY --from=builder /build/db1000n .
 
-CMD ["./db1000n"]
+ENTRYPOINT ["./db1000n"]
