@@ -14,5 +14,6 @@ resource "azurerm_container_group" "main" {
     memory = var.attack_memory
 
     environment_variables = var.attack_environment_variables
+    commands = var.attack_commands
   }
 }

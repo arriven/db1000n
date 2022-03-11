@@ -1,8 +1,10 @@
+// Package templates [provides utility functions to enable templating in app configuration]
 package templates
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -10,7 +12,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/corpix/uarand"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/Arriven/db1000n/src/packetgen"
 )
@@ -21,15 +25,16 @@ func getProxylistURL() string {
 	return proxiesURL
 }
 
-func SetProxiesUrl(url string) {
+// SetProxiesURL is used to override the default proxylist url
+func SetProxiesURL(url string) {
 	proxiesURL = url
 }
 
 func getProxylist() (urls []string) {
-	return getProxylistByUrl(getProxylistURL())
+	return getProxylistByURL(getProxylistURL())
 }
 
-func getProxylistByUrl(url string) (urls []string) {
+func getProxylistByURL(url string) (urls []string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil
@@ -65,6 +70,26 @@ func mod(lhs, rhs uint32) uint32 {
 	return lhs % rhs
 }
 
+// ContextKey used to work with context and not trigger linter
+type ContextKey string
+
+func ctxKey(key string) ContextKey {
+	return ContextKey(key)
+}
+
+func cookieString(cookies map[string]string) string {
+	var s = ""
+	for key, value := range cookies {
+		s = fmt.Sprintf("%s %s=%s;", s, key, value)
+	}
+	return strings.Trim(strings.TrimSpace(s), ";")
+	// header := &fasthttp.RequestHeader{}
+	// for key, value := range cookies {
+	// 	header.SetCookie(key, value)
+	// }
+	// return header.C
+}
+
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
@@ -76,17 +101,25 @@ func Parse(input string) (*template.Template, error) {
 		"random_ip":            packetgen.RandomIP,
 		"random_port":          packetgen.RandomPort,
 		"random_mac_addr":      packetgen.RandomMacAddr,
+		"random_user_agent":    uarand.GetRandom,
 		"local_ip":             packetgen.LocalIP,
 		"local_mac_addr":       packetgen.LocalMacAddres,
+		"resolve_host":         packetgen.ResolveHost,
 		"base64_encode":        base64.StdEncoding.EncodeToString,
 		"base64_decode":        base64.StdEncoding.DecodeString,
 		"json_encode":          json.Marshal,
 		"json_decode":          json.Unmarshal,
+		"yaml_encode":          yaml.Marshal,
+		"yaml_decode":          yaml.Unmarshal,
+		"join":                 strings.Join,
 		"get_url":              getURLContent,
 		"proxylist_url":        getProxylistURL,
 		"get_proxylist":        getProxylist,
-		"get_proxylist_by_url": getProxylistByUrl,
+		"get_proxylist_by_url": getProxylistByURL,
 		"mod":                  mod,
+		"ctx_key":              ctxKey,
+		"split":                strings.Split,
+		"cookie_string":        cookieString,
 	}).Parse(strings.Replace(input, "\\", "", -1))
 }
 
@@ -116,4 +149,59 @@ func ParseAndExecute(input string, data interface{}) string {
 	}
 
 	return output.String()
+}
+
+// ParseAndExecuteMapStruct is like ParseAndExecute but takes mapstructure as input
+func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) map[string]interface{} {
+	tpl, err := ParseMapStruct(input)
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		return input
+	}
+	return tpl.Execute(data)
+}
+
+// MapStruct is a helper structure to parse configs in a format accepted by mapstructure package
+type MapStruct struct {
+	tpl map[string]interface{}
+}
+
+// ParseMapStruct is like Parse but takes mapstructure as input
+func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
+	result := make(map[string]interface{})
+	for key, value := range input {
+		switch v := value.(type) {
+		case string:
+			tpl, err := Parse(v)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = tpl
+		case map[string]interface{}:
+			tpl, err := ParseMapStruct(v)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = tpl
+		default:
+			result[key] = v
+		}
+	}
+	return &MapStruct{tpl: result}, nil
+}
+
+// Execute same as regular Execute
+func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range tpl.tpl {
+		switch v := value.(type) {
+		case *template.Template:
+			result[key] = Execute(v, data)
+		case *MapStruct:
+			result[key] = v.Execute(data)
+		default:
+			result[key] = v
+		}
+	}
+	return result
 }

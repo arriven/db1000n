@@ -1,0 +1,10 @@
+defaultBaseImage: gcr.io/distroless/static
+builds:
+  - id: db1000n
+    dir: . # default is .
+    main: ./main.go
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -extldflags "-static"

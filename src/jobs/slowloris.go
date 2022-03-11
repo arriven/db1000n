@@ -8,19 +8,20 @@ import (
 
 	"github.com/Arriven/db1000n/src/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/mitchellh/mapstructure"
 )
 
-func slowLorisJob(ctx context.Context, args Args, debug bool) error {
+func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig *slowloris.Config
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return err
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, err
 	}
 
 	if len(jobConfig.Path) == 0 {
-		return errors.New("path is empty")
+		return nil, errors.New("path is empty")
 	}
 
 	if jobConfig.ContentLength == 0 {
@@ -39,8 +40,8 @@ func slowLorisJob(ctx context.Context, args Args, debug bool) error {
 		jobConfig.SleepInterval = 10 * time.Second
 	}
 
-	if jobConfig.DurationSeconds == 0 {
-		jobConfig.DurationSeconds = 10 * time.Second
+	if jobConfig.Duration == 0 {
+		jobConfig.Duration = 10 * time.Second
 	}
 
 	shouldStop := make(chan bool)
@@ -53,5 +54,5 @@ func slowLorisJob(ctx context.Context, args Args, debug bool) error {
 		log.Printf("sending slow loris with params: %v", jobConfig)
 	}
 
-	return slowloris.Start(shouldStop, jobConfig)
+	return nil, slowloris.Start(shouldStop, jobConfig)
 }

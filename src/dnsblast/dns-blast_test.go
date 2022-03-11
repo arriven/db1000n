@@ -73,27 +73,28 @@ func TestBlast(t *testing.T) {
 	}
 
 	for i := range testCases {
-		t.Run(testCases[i].Name, func(tt *testing.T) {
+		testcase := testCases[i]
+		t.Run(testcase.Name, func(tt *testing.T) {
 			config := &Config{
-				RootDomain:      testCases[i].RootDomain,
-				Protocol:        testCases[i].Protocol,
-				SeedDomains:     testCases[i].SeedDomains,
-				Delay:           testCases[i].Delay,
-				ParallelQueries: testCases[i].ParallelQueries,
+				RootDomain:      testcase.RootDomain,
+				Protocol:        testcase.Protocol,
+				SeedDomains:     testcase.SeedDomains,
+				Delay:           testcase.Delay,
+				ParallelQueries: testcase.ParallelQueries,
 			}
 
-			tt.Logf("[%s] benchmark configuration: %+v", testCases[i].Name, config)
+			tt.Logf("[%s] benchmark configuration: %+v", testcase.Name, config)
 
-			blastContext, cancel := context.WithTimeout(context.Background(), testCases[i].Duration)
+			blastContext, cancel := context.WithTimeout(context.Background(), testcase.Duration)
 			defer cancel()
 
-			err := Start(blastContext, config)
+			err := Start(blastContext, nil, config)
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
 				return
 			}
 
-			time.Sleep(testCases[i].Duration + time.Second)
+			time.Sleep(testcase.Duration + time.Second)
 		})
 	}
 }

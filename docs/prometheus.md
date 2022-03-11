@@ -1,0 +1,74 @@
+# Exporting metrics
+
+Prometheus exporter can be configured with next CLI parameters:
+
+- `--prometheus_on` - turns on prometheus exporter
+- `--prometheus_gateways=<url>,<url>` - comma separated list of urls to Push Gateway. Example: `https://localhost:9091`.
+  It uses TLS for `https://` schema otherwise raw TCP connection
+
+With env variables:
+
+- `PROMETHEUS_PUSH_PERIOD` - set interval for pushing metrics. Default: `1m`
+- `PROMETHEUS_JOB_NAME` - name for job used in metric pushes
+
+Exporter uses basic authentication with credentials stored in `src/prometheus.BasicAuth` variable encrypted with
+`src/utils/EncryptionKeys` default key.
+
+Additionally, exporter may be configured with embedded encrypted CA used for TLS connections to push gateways to verify
+self-signed server's certificates
+
+## How to encrypt new credentials
+
+Let's use next credentials for example: `username:password` and our `EncryptionKey: YWtzZGthbHNkCg==`
+
+```sh
+echo -ne 'username:password' > /tmp/credentials
+age --encrypt -p --output /tmp/credentials.enc /tmp/credentials
+```
+
+Pass password:
+
+```sh
+Enter passphrase (leave empty to autogenerate a secure one): YWtzZGthbHNkCg==
+Confirm passphrase: YWtzZGthbHNkCg==
+```
+
+Encode to base64:
+
+```sh
+cat /tmp/credentials.enc | base64 | tr -d '\n'
+YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCBpYWlSV1VBRWcweEt2NWdTd240a0JBIDE4CmlONnhLcURxWEVWdmFuU1RhSVl0dmplNGpLc0FqLzN5SE5neXdnM0xIMVUKLS0tIE1YdVNBVmk1NG9zNzRpQnh2R3U3MDBpWm5MNUxCb0hNeGxKTERGRDFRamMKJkpimmJGSDmxBX2e38Z38EQZK7aq/W29YMbZKz/omNL0GPvurXZA6GTPmmlD/XZ+EjCkW6bKajIS9y9533tsn6MR8NMtFJoS+z7M9b/yd8YJR6fW069b2A==
+```
+
+Now that base64 value you can use to replace `src/prometheus.BasicAuth` variable.
+
+## How to embed self-signed CA for TLS connections into binary
+
+For example, we have PEM encoded CA certificate at `/home/user/ca.crt` and password `YWtzZGthbHNkCg==`.
+Encrypt and generate value:
+
+```sh
+make CA_PATH=/home/user/ca.crt encrypt_ca
+Enter passphrase (leave empty to autogenerate a secure one): YWtzZGthbHNkCg==
+Confirm passphrase: YWtzZGthbHNkCg==
+```
+
+Output:
+
+```sh
+Saved in file: /tmp/filer21V74
+Save value as env variable:
+export CA_PATH_VALUE='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'
+```
+
+Now export variable before building binary:
+
+```sh
+export CA_PATH_VALUE='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'
+```
+
+And build new binary with embedding encrypted CA certificate:
+
+```sh
+make build_encrypted
+```

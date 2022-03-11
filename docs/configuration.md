@@ -81,8 +81,6 @@ Warning: `packetgen` requires root privileges to run
 - `tcp.urgent` - `[number]`
 - `tcp.flags` - `[object]` flags for tcp (every flag has its respective name)
 
-Warning: `slow-loris` from testconfig.json is not yet finished and may overload the app due to not handling config refreshes
-
 Almost every leaf `[string]` or `[object]` parameter can be templated with go template syntax. I've also added couple helper functions (list will be growing):
 
 - `random_uuid`

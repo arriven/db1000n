@@ -20,15 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package packetgen [allows sending customized tcp/udp traffic. Inspired by https://github.com/bilalcaliskan/syn-flood]
 package packetgen
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
-	"regexp"
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
@@ -38,17 +36,20 @@ func RandomPayload(length int) []byte {
 	return payload
 }
 
+// RandomIP returns a random ip to spoof packets
 func RandomIP() string {
-	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(256), rand.Intn(256),
-		rand.Intn(256), rand.Intn(256))
+	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(255)+1, rand.Intn(255)+1,
+		rand.Intn(255)+1, rand.Intn(255)+1)
 }
 
+// RandomPort returns a random port to spoof packets
 func RandomPort() int {
 	const minPort = 1024
 	const maxPort = 65535
 	return rand.Intn(maxPort-minPort) + minPort
 }
 
+// RandomMacAddr returns a random mac address to spoof packets
 func RandomMacAddr() net.HardwareAddr {
 	buf := make([]byte, 6)
 	rand.Read(buf)
@@ -56,6 +57,7 @@ func RandomMacAddr() net.HardwareAddr {
 	return net.HardwareAddr(addr.String())
 }
 
+// LocalMacAddres returns first valid mac address
 func LocalMacAddres() string {
 	ifas, err := net.Interfaces()
 	if err != nil {
@@ -70,7 +72,7 @@ func LocalMacAddres() string {
 	return ""
 }
 
-// GetLocalIP returns the non loopback local IP of the host
+// LocalIP returns the first non loopback local IP of the host
 func LocalIP() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -87,75 +89,18 @@ func LocalIP() string {
 	return ""
 }
 
-// getIps returns a string slice to spoof ip packets with dummy source ip addresses
-func getIps() []string {
-	ips := make([]string, 0)
-	for i := 0; i < 20; i++ {
-		ips = append(ips, fmt.Sprintf("%d.%d.%d.%d", rand.Intn(256), rand.Intn(256),
-			rand.Intn(256), rand.Intn(256)))
-	}
-
-	return ips
-}
-
-// getPorts returns an int slice to spoof ip packets with dummy source ports
-func getPorts() []int {
-	ports := make([]int, 0)
-	for i := 1024; i <= 65535; i++ {
-		ports = append(ports, i)
-	}
-
-	return ports
-}
-
-// getMacAddrs returns a byte slice to spoof ip packets with dummy MAC addresses
-func getMacAddrs() [][]byte {
-	macAddrs := make([][]byte, 0)
-	for i := 0; i <= 50; i++ {
-		buf := make([]byte, 6)
-
-		if _, err := rand.Read(buf); err != nil {
-			log.Printf("Error %v", err)
-			continue
-		}
-
-		macAddrs = append(macAddrs, buf)
-	}
-
-	return macAddrs
-}
-
-// isDNS returns a boolean which indicates host parameter is a DNS record or not
-func isDNS(host string) bool {
-	res, err := regexp.MatchString(dnsRegex, host)
+// ResolveHost function gets a string and returns the ip address
+func ResolveHost(host string) (string, error) {
+	addrs, err := net.LookupIP(host)
 	if err != nil {
-		log.Printf("Error matching provided --host with DNS regex: %v", err)
+		return "", err
 	}
 
-	return res
-}
-
-// isIP returns a boolean which indicates host parameter is an IP address or not
-func isIP(host string) bool {
-	res, err := regexp.MatchString(ipRegex, host)
-	if err != nil {
-		log.Printf("Error matching provided --host with IP regex: %v", err)
-	}
-
-	return res
-}
-
-// resolveHost function gets a string and returns the ip address while deciding it is an ip address already or DNS record
-func resolveHost(host string) (string, error) {
-	if !isIP(host) && isDNS(host) {
-		ipRecords, err := net.DefaultResolver.LookupIP(context.Background(), "ip4", host)
-		if err != nil {
-			log.Printf("Error looking up DNS: %v", err)
-			return "", err
+	for _, addr := range addrs {
+		if addr.To4() != nil {
+			return addr.String(), nil
 		}
-
-		host = ipRecords[0].String()
 	}
 
-	return host, nil
+	return "", fmt.Errorf("no addrs found for host %v", host)
 }

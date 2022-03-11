@@ -1,12 +1,14 @@
 # Death by 1000 needles (UA)
 
-_Будь ласка перевіряйте вже відкриті Issues (як відчинені, так і зачинені) перед тим як створювати нові. Це дуже економить час на відповіді та допоможе cконцентруватися на більш критичних речах. Дякую_
+24-го лютого росія почала повномасштабне вторгнення в Україну. Ми робимо все можливе щоб не дозволити подальше пролиття невинної крові
 
-_This README in English: [README.md](README.md)_
+_Будь ласка перевіряйте вже відкриті Issues (як відчинені, так і зачинені) перед тим як створювати нові. Це дуже економить час на відповіді та допоможе cконцентруватися на більш критичних речах. Дякую!_
+
+## This README in English: [README.md](README.md)
 
 ## Гайд по швидкому старту
 
-### Використовуємо VPN (якщо ви в Україні)!
+### Використовуємо VPN (якщо ви в Україні)
 
 - Переключіть VPN на Росію, якщо це можливо
 - Не використовуйте Україну як локацию VPN!
@@ -16,35 +18,37 @@ _This README in English: [README.md](README.md)_
 ### Для новачків
 
 1. Завантажте останню версію програми для вашої платформи:
-   - [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-windows-386.zip)
-   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-darwin-arm64.tar.gz)
-   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-darwin-amd64.tar.gz)
-   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-linux-386.zip)
-   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-linux-amd64.tar.gz)
-2. Розпакуйте архів
-3. Запустіть файл з архіву
-4. Усе!
 
-**Дуже важливо! Хмарні провайдери можуть стягувати значні кошти не тільки за обчислювальні ресурси, але й за трафік. Якщо ви запускаєте програму в такого провайдера, будь ласка слідкуйте за своїм білінгом**
+- [Windows](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-windows-386.zip)
+- [Mac M1](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-darwin-arm64.tar.gz)
+- [Mac Intel](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-darwin-amd64.tar.gz)
+- [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-linux-386.zip)
+- [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/v0.5.17/db1000n-v0.5.17-linux-amd64.tar.gz)
 
-**Якщо ви бачите попередження з вашого комп'ютеру - ігноруйте їх (або дозвольте використання в налаштуваннях системи). Наше програмне забезпечення є відкритим, ви можете самі перевірити його код**
+1. Розпакуйте архів
+1. Запустіть файл з архіву
+1. Усе!
+
+**Дуже важливо! Хмарні провайдери можуть стягувати значні кошти не тільки за обчислювальні ресурси, але й за трафік. Якщо ви запускаєте програму в такого провайдера, будь ласка слідкуйте за своїм білінгом (актуально для продвинутих користувачів).**
+
+**Якщо ви бачите попередження з вашого комп'ютеру - ігноруйте їх (або дозвольте використання в налаштуваннях системи). Наше програмне забезпечення є відкритим, ви можете самі перевірити його код.**
 
 ## Як обрати VPN
 
 ### Безкоштовно за запитом чи з промокодом
 
-- https://clearvpn.com/ з промокодом `SAVEUKRAINE` або перейдіть за лінкою https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE ви отримаєте 1 рік підписки
-- NordVPN: заповніть цю форму https://nordvpn.org/emergency-vpn/
-- https://windscribe.com/ за промокодом `ПИЗДЕЦ` ви отримаєте 30GB
-- https://www.hotspotshield.com/blog/privacy-security-for-ukraine
-- https://www.vpnunlimited.com/stop-russian-aggression
-- F-Secure FREEDOME VPN - https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine
+- <https://clearvpn.com/> з промокодом `SAVEUKRAINE` або перейдіть за лінкою <https://my.clearvpn.com/promo/redeem?code=SAVEUKRAINE> ви отримаєте 1 рік підписки
+- NordVPN: заповніть цю форму <https://nordvpn.org/emergency-vpn/>
+- <https://windscribe.com/> за промокодом `ПИЗДЕЦ` ви отримаєте 30GB
+- <https://www.hotspotshield.com/blog/privacy-security-for-ukraine>
+- <https://www.vpnunlimited.com/stop-russian-aggression>
+- F-Secure FREEDOME VPN - <https://onlineshop.f-secure.com/789/purl-free-freedome-for-ukraine>
 
 ### Безкоштовно
 
-- https://protonvpn.com/
-- https://www.f-secure.com/
-- https://www.urban-vpn.com/
+- <https://protonvpn.com/>
+- <https://www.f-secure.com/>
+- <https://www.urban-vpn.com/>
 
 ## Як встановити програму
 
@@ -70,7 +74,7 @@ docker run ghcr.io/arriven/db1000n
 ## Що далі
 
 Намагайтесь тримати комп'ютер в активному стані, використовуйте VPN та слідкуйте за тим що програма працює.
-Наші експерти координують атаки без вашої активної участі.
+Наші експерти координують все выддалено без вашої активної участі.
 Дякуємо вам за допомогу!
 
 ## Я все ще маю питання

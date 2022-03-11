@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Arriven/db1000n/src/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -25,13 +25,15 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
+func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig
-	err := mapstructure.Decode(args, &jobConfig)
+	err = utils.Decode(args, &jobConfig)
 	if err != nil {
-		return fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
+		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %s", err)
 	}
 
 	//
@@ -40,12 +42,12 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 
 	// Root domain verification
 	if len(jobConfig.RootDomain) == 0 {
-		return errors.New("no root domain provided, consider adding it")
+		return nil, errors.New("no root domain provided, consider adding it")
 	}
 
 	// Domain seeds verification
 	if len(jobConfig.SeedDomains) == 0 {
-		return errors.New("no seed domains provided, at least one is required")
+		return nil, errors.New("no seed domains provided, at least one is required")
 	}
 
 	// Protocol settlement
@@ -57,10 +59,9 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 
 	case jobConfig.Protocol == "":
 		jobConfig.Protocol = defaultProto
-		isUDPProto = true
 
 	case !(isUDPProto || !isTCPProto || !isTCPTLSProto):
-		return fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",
+		return nil, fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",
 			[]string{dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName})
 	}
 
@@ -74,14 +75,18 @@ func dnsBlastJob(ctx context.Context, args Args, debug bool) error {
 		jobConfig.IntervalMs = defaultIntervalInMS
 	}
 
+	var wg sync.WaitGroup
+
 	//
 	// Blast the Job!
 	//
-	return dnsblast.Start(ctx, &dnsblast.Config{
+	err = dnsblast.Start(ctx, &wg, &dnsblast.Config{
 		RootDomain:      jobConfig.RootDomain,
 		Protocol:        jobConfig.Protocol,
 		SeedDomains:     jobConfig.SeedDomains,
 		ParallelQueries: jobConfig.ParallelQueries,
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 	})
+	wg.Wait()
+	return nil, err
 }

@@ -1,3 +1,4 @@
+// Package runner [responsible for updating the config and managing jobs accordingly]
 package runner
 
 import (
@@ -18,11 +19,12 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths        string        // Comma-separated config location URLs
-	BackupConfig       []byte        // Raw backup config
-	RefreshTimeout     time.Duration // How often to refresh config
-	MetricsPath        string        // Where to dump metrics to
-	Format             string        // json or yaml
+	ConfigPaths        string            // Comma-separated config location URLs
+	BackupConfig       []byte            // Raw backup config
+	RefreshTimeout     time.Duration     // How often to refresh config
+	MetricsPath        string            // Where to dump metrics to
+	Format             string            // json or yaml
+	Global             jobs.GlobalConfig // meant to pass cmdline and other args to every job
 	PrometheusOn       bool
 	PrometheusGateways string
 }
@@ -82,11 +84,14 @@ func (r *Runner) Run() {
 				go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
 			}
 
+			var jobInstancesCount int
+
 			for i := range cfg.Jobs {
 				if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
 					log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
 					continue
 				}
+
 				job, ok := jobs.Get(cfg.Jobs[i].Type)
 				if !ok {
 					log.Printf("Unknown job %q", cfg.Jobs[i].Type)
@@ -97,20 +102,31 @@ func (r *Runner) Run() {
 				if cfg.Jobs[i].Count < 1 {
 					cfg.Jobs[i].Count = 1
 				}
+				cfgMap := make(map[string]interface{})
+				err := utils.Decode(cfg.Jobs[i], &cfgMap)
+				if err != nil {
+					log.Fatal("failed to encode cfg map")
+				}
+				ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
 
 				for j := 0; j < cfg.Jobs[i].Count; j++ {
 					wg.Add(1)
 
 					go func(i int) {
-						job(ctx, cfg.Jobs[i].Args, r.debug)
+						_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+						if err != nil {
+							log.Println("error running job:", err)
+						}
 						wg.Done()
 					}(i)
+
+					jobInstancesCount++
 				}
 			}
 
 			r.currentRawConfig = raw
 
-			log.Println("Jobs (re)started")
+			log.Printf("%d job instances (re)started", jobInstancesCount)
 		}
 
 		// Wait for refresh timer or stop signal
@@ -122,7 +138,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.metricsPath, "traffic", clientID.String())
+		dumpMetrics(r.metricsPath, "traffic", clientID.String(), r.debug)
 	}
 
 	if cancel != nil {
@@ -135,19 +151,26 @@ func (r *Runner) Run() {
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
 
-func dumpMetrics(path, name, clientID string) {
+func dumpMetrics(path, name, clientID string, debug bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("caught panic: %v", err)
 		}
 	}()
 
-	bytesGenerated := metrics.Default.Read(name)
-	utils.ReportStatistics(int64(bytesGenerated), clientID)
+	bytesGenerated := metrics.Default.Read(metrics.Traffic)
+	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
+	err := utils.ReportStatistics(int64(bytesGenerated), clientID)
+	if err != nil && debug {
+		log.Println("error reporting statistics:", err)
+	}
 	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app has generated approximately %v bytes of traffic", bytesGenerated)
+		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
+		if bytesProcessed > 0 {
+			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
+		}
 	} else {
 		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
 	}

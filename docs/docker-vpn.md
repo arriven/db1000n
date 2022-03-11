@@ -7,14 +7,14 @@ One of the easy ways to set it up is through the docker-compose.
 
 `openvpn/provider01.txt`:
 
-```
+```text
 <your username for OpenVPN provider 01>
 <your password for OpenVPN provider 01>
 ```
 
 `openvpn/provider02.txt`:
 
-```
+```text
 <your username for OpenVPN provider 02>
 <your password for OpenVPN provider 02>
 ```

@@ -2,7 +2,7 @@
 
 ## For developers
 
-_Developed by Arriven: (https://github.com/Arriven)_
+_Developed by [Arriven](https://github.com/Arriven)._
 
 This is a simple distributed load generation client written in go.
 It is able to fetch simple json config from a local or remote location.
@@ -13,10 +13,6 @@ Feel free to use it in your load tests (wink-wink).
 
 The software is provided as is under no guarantee.
 I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day of Russian invasion into Ukraine).
-
-Synflood implementation is taken from [bilalcaliskan/syn-flood](https://github.com/bilalcaliskan/syn-flood) and slightly patched.
-I couldn't just import the package as all the functionality code was in an internal package preventing import into other modules.
-Will figure it out better later (sorry to the owner)
 
 ## Go installation
 
@@ -44,12 +40,12 @@ You can run it via this command:
 
 ## Docker + OpenVPN
 
-How to install docker: https://docs.docker.com/get-docker/
+How to install docker: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
 
 Make sure you've set all available resources to docker:
 
-- https://docs.docker.com/desktop/windows/#resources
-- https://docs.docker.com/desktop/mac/#resources
+- [https://docs.docker.com/desktop/windows/#resources](https://docs.docker.com/desktop/windows/#resources)
+- [https://docs.docker.com/desktop/mac/#resources](https://docs.docker.com/desktop/mac/#resources)
 
 Note: there are currently two images pointing to different configs for different usages in this repo:
 

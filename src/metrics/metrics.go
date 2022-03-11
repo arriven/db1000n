@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package metrics [everything related to metrics goes here]
 package metrics
 
 import (
@@ -28,7 +29,14 @@ import (
 	"time"
 )
 
-type MetricsStorage struct {
+// supported default metrics
+const (
+	Traffic          = "traffic"
+	ProcessedTraffic = "processed_traffic"
+)
+
+// Storage is a general struct to store custom metrics
+type Storage struct {
 	trackers map[string]*metricTracker
 }
 
@@ -36,24 +44,27 @@ type metricTracker struct {
 	metrics sync.Map
 }
 
-var Default MetricsStorage
+// Default to allow global access for ease of use
+// similar to http.DefaultClient and such
+var Default Storage
 
 func init() {
-	Default = MetricsStorage{trackers: make(map[string]*metricTracker)}
-	Default.trackers["traffic"] = &metricTracker{}
+	Default = Storage{trackers: make(map[string]*metricTracker)}
+	Default.trackers[Traffic] = &metricTracker{}
+	Default.trackers[ProcessedTraffic] = &metricTracker{}
 }
 
-func (ms *MetricsStorage) Write(name, jobID string, value int) {
+func (ms *Storage) Write(name, jobID string, value uint64) {
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Store(jobID, value)
 	}
 }
 
-func (ms *MetricsStorage) Read(name string) int {
-	sum := 0
+func (ms *Storage) Read(name string) uint64 {
+	sum := uint64(0)
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Range(func(k, v interface{}) bool {
-			if value, ok := v.(int); ok {
+			if value, ok := v.(uint64); ok {
 				sum = sum + value
 			}
 			return true
@@ -62,34 +73,45 @@ func (ms *MetricsStorage) Read(name string) int {
 	return sum
 }
 
-func (ms *MetricsStorage) NewWriter(ctx context.Context, name, jobID string) *MetricWriter {
-	writer := &MetricWriter{ms: ms, jobID: jobID, name: name, value: 0}
-	ticker := time.NewTicker(time.Second)
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				writer.ms.Write(writer.name, writer.jobID, writer.value)
-			}
-		}
-	}()
+// NewWriter creates a writer for accumulated writes to the storage
+func (ms *Storage) NewWriter(name, jobID string) *Writer {
+	writer := &Writer{ms: ms, jobID: jobID, name: name, value: 0}
 	return writer
 }
 
-type MetricWriter struct {
-	ms    *MetricsStorage
+// Writer is a helper to accumulate writes to a storage on a regular basis
+type Writer struct {
+	ms    *Storage
 	jobID string
 	name  string
-	value int
+	value uint64
 }
 
-func (w *MetricWriter) Add(value int) {
+// Add used to increase metric value by a specific amount
+func (w *Writer) Add(value uint64) {
 	w.value = w.value + value
 }
 
-func (w *MetricWriter) Set(value int) {
+// Set used to set metric to a specific value
+func (w *Writer) Set(value uint64) {
 	w.value = value
+}
+
+// Flush used to flush pending metrics updates to the storage
+func (w *Writer) Flush() {
+	w.ms.Write(w.name, w.jobID, w.value)
+}
+
+// Update updates writer with a set uint64erval
+func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
+	ticker := time.NewTicker(uint64erval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			w.Flush()
+		}
+	}
 }

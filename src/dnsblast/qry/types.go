@@ -1,9 +1,11 @@
+// Package qry [general utility functions for the dnsblast package]
 package qry
 
 import (
 	"github.com/miekg/dns"
 )
 
+// ResponseCode convert numerical response code value to string
 func ResponseCode(rc int) string {
 	rcodes := map[int]string{
 		0: "NOERROR",
@@ -20,6 +22,7 @@ func ResponseCode(rc int) string {
 	return rcodes[rc]
 }
 
+// Qtype is used to conver string representation of query type into proper dns format
 func Qtype(qt string) uint16 {
 	switch qt {
 	case "None":

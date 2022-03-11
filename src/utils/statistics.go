@@ -8,14 +8,15 @@ import (
 var previousTraffic int64 = 0
 var client = v1.NewClient("UA-222030361-1", "customUserAgent")
 
-func ReportStatistics(traffic int64, clientId string) error {
+// ReportStatistics sends basic usage events to google analytics
+func ReportStatistics(traffic int64, clientID string) error {
 	delta := traffic - previousTraffic
 	previousTraffic = traffic
-	return trackEvent(delta, clientId)
+	return trackEvent(delta, clientID)
 }
 
-func trackEvent(traffic int64, clientId string) error {
-	users := gatypes.Users{ClientID: clientId}
+func trackEvent(traffic int64, clientID string) error {
+	users := gatypes.Users{ClientID: clientID}
 	ping := &gatypes.Payload{
 		HitType:                           "event",
 		NonInteractionHit:                 true,

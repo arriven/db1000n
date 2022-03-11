@@ -23,7 +23,12 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
+	"errors"
 	"log"
 	"math/rand"
 	"net/http"
@@ -121,8 +126,8 @@ func ValidatePrometheusPushGateways(value string) bool {
 	}
 	listValues := strings.Split(value, ",")
 	result := true
-	for i, gatewayUrl := range listValues {
-		_, err := url.Parse(gatewayUrl)
+	for i, gatewayURL := range listValues {
+		_, err := url.Parse(gatewayURL)
 		if err != nil {
 			log.Printf("Can't parse %dth (0-based) push gateway\n", i)
 			result = false
@@ -153,7 +158,10 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	}
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
-		server.Shutdown(ctx)
+		err := server.Shutdown(ctx)
+		if err != nil && err != http.ErrServerClosed {
+			log.Println("failure shutting down prometheus server:", err)
+		}
 	}(ctx, server)
 
 	if gateways != "" {
@@ -163,6 +171,54 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	if err != nil {
 		log.Fatal()
 	}
+}
+
+// BasicAuth client's credentials for push gateway encrypted with utils/crypto.go#EncryptionKeys[0] key
+var BasicAuth = `YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCBpYWlSV1VBRWcweEt2NWdTd240a0JBIDE4CmlONnhLcURxWEVWdmFuU1RhSVl0dmplNGpLc0FqLzN5SE5neXdnM0xIMVUKLS0tIE1YdVNBVmk1NG9zNzRpQnh2R3U3MDBpWm5MNUxCb0hNeGxKTERGRDFRamMKJkpimmJGSDmxBX2e38Z38EQZK7aq/W29YMbZKz/omNL0GPvurXZA6GTPmmlD/XZ+EjCkW6bKajIS9y9533tsn6MR8NMtFJoS+z7M9b/yd8YJR6fW069b2A==`
+
+// getBasicAuth returns decrypted basic auth credential for push gateway
+func getBasicAuth() (string, string, error) {
+	encryptedData, err := base64.StdEncoding.DecodeString(BasicAuth)
+	if err != nil {
+		return "", "", err
+	}
+	decryptedData, err := utils.Decrypt(encryptedData)
+	if err != nil {
+		return "", "", err
+	}
+	parts := bytes.Split(decryptedData, []byte{':'})
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid basic auth credential format")
+	}
+	return string(parts[0]), string(parts[1]), nil
+}
+
+// PushGatewayCA variable to embed self-signed CA for TLS
+var PushGatewayCA string
+
+// getTLSConfig returns tls.Config with system root CAs and embedded CA if not empty
+func getTLSConfig() (*tls.Config, error) {
+	var rootCAs *x509.CertPool
+	var err error
+	if rootCAs, err = x509.SystemCertPool(); err != nil {
+		log.Println("Can't get system cert pool")
+	}
+	if PushGatewayCA != "" {
+		decoded, err := base64.StdEncoding.DecodeString(PushGatewayCA)
+		if err != nil {
+			return nil, err
+		}
+		decrypted, err := utils.Decrypt(decoded)
+		if err != nil {
+			return nil, err
+		}
+		if ok := rootCAs.AppendCertsFromPEM(decrypted); !ok {
+			return nil, errors.New("invalid embedded CA")
+		}
+	}
+	return &tls.Config{
+		RootCAs: rootCAs,
+	}, nil
 }
 
 func pushMetrics(ctx context.Context, gateways []string) {
@@ -175,7 +231,23 @@ func pushMetrics(ctx context.Context, gateways []string) {
 		log.Println("Invalid value for <PROMETHEUS_PUSH_PERIOD> env variable. Read docs: https://pkg.go.dev/time#ParseDuration")
 	}
 	ticker := time.NewTicker(tickerPeriod)
-	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer)
+	tlsConfig, err := getTLSConfig()
+	if err != nil {
+		log.Println("Can't get tls config")
+		return
+	}
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+	user, password, err := getBasicAuth()
+	if err != nil {
+		log.Println("Can't fetch basic auth credentials")
+		return
+	}
+	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -184,6 +256,7 @@ func pushMetrics(ctx context.Context, gateways []string) {
 			if err := pusher.Push(); err != nil {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 				gateway = gateways[rand.Int()%len(gateways)]
+				pusher = push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
 			}
 		}
 	}
@@ -208,10 +281,10 @@ func IncHTTP(host, method, status string) {
 }
 
 // IncPacketgen increments counter of sent raw packets
-func IncPacketgen(host, host_port, protocol, status string) {
+func IncPacketgen(host, hostPort, protocol, status string) {
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
-		PacketgenDstHostPortLabel: host_port,
+		PacketgenDstHostPortLabel: hostPort,
 		PacketgenProtocolLabel:    protocol,
 		StatusLabel:               status,
 	}).Inc()
