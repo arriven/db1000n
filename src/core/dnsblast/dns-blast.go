@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Arriven/db1000n/src/metrics"
-
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
+
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
 )

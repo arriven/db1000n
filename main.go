@@ -32,12 +32,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Arriven/db1000n/ota"
 	"github.com/Arriven/db1000n/src/jobs"
-	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/runner"
 	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
+	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
