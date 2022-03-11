@@ -1,5 +1,3 @@
-# For advanced users and developers
-
 ## For developers
 
 _Developed by [Arriven](https://github.com/Arriven)._
@@ -44,20 +42,31 @@ How to install docker: [https://docs.docker.com/get-docker/](https://docs.docker
 
 Make sure you've set all available resources to docker:
 
-- [https://docs.docker.com/desktop/windows/#resources](https://docs.docker.com/desktop/windows/#resources)
-- [https://docs.docker.com/desktop/mac/#resources](https://docs.docker.com/desktop/mac/#resources)
+- [Windows](https://docs.docker.com/desktop/windows/#resources)
+- [Mac](https://docs.docker.com/desktop/mac/#resources)
+- [Linux](https://docs.docker.com/desktop/linux/#resources)
 
-Note: there are currently two images pointing to different configs for different usages in this repo:
+???+ note
 
-- `ghcr.io/arriven/db1000n` - default image using primitive configs that make their claim on the amount of traffic generated
-- `ghcr.io/arriven/db1000n-advanced` - image pointing to a more advanced config that has its goal in generating less traffic that is harder to detect and has more chances to actually get to the target and be processed by it (potentially exploiting known vulnerabilities). Preferable (and default) for usage with cloud providers as it should lower your bills and chances of the provider marking your deployment as 'compromised'
+    there are currently two images pointing to different configs for different usages in this repo:
+
+    - `ghcr.io/arriven/db1000n` - default image using primitive configs that make their claim on the amount of traffic generated
+    - `ghcr.io/arriven/db1000n-advanced` - image pointing to a more advanced config that has its goal in generating less traffic that is harder to detect and has more chances to actually get to the target and be processed by it (potentially exploiting known vulnerabilities). Preferable (and default) for usage with cloud providers as it should lower your bills and chances of the provider marking your deployment as 'compromised'
 
 See [docker-vpn](docker-vpn.md) for instructions on setting it up
 
 ## Kubernetes
 
-See [../kubernetes/](../kubernetes/) for possible ways to deploy into it
+Here possible ways to deploy into it
+- [Helm Chart](/db1000n/advanced-docs/kubernetes/helm-charts/)
+- [Manifest](/db1000n/advanced-docs/kubernetes/manifests/)
 
 ## Public Clouds
 
-See [../terraform/](../terraform/) for possible ways to deploy into them
+See possible ways to deploy into public clouds
+
+- [AWS](/db1000n/advanced-docs/terraform/aws/)
+- [Azure](/db1000n/advanced-docs/terraform/azure/)
+- [Digital Ocean](/db1000n/advanced-docs/terraform/digital-ocean/)
+- [Googls Cloud Platform](/db1000n/advanced-docs/terraform/gcp/)
+- [Heroku](/db1000n/advanced-docs/terraform/heroku/)

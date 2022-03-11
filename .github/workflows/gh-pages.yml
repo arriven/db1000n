@@ -1,18 +1,20 @@
 name: PushToGithubPages
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - master
+      - main
 
+  workflow_dispatch:
 jobs:
-  push_to_pages:
-    name: "Push to GitHub Pages"
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site/assets
-          exclude_assets: ''
+          python-version: 3.x
+      - run: pip install poetry
+      - run: poerty update
+      - run: mkdocs gh-deploy --force

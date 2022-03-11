@@ -1,6 +1,6 @@
 # Kubernetes manifests to install
 
-## If you use Helm, see our [Helm Chart](../helm-charts/)
+## If you use Helm, see our [Helm Chart](/db1000n/advanced-docs/kubernetes/helm-charts/)
 
 There are two ways to deploy it with plain manifests:
 
@@ -56,7 +56,7 @@ Destroy:
 kubectl delete daemonset db1000n -n db1000n
 ```
 
-**How it works?**
+???+ info "How it works?"
 
-DaemonSet will create one `db1000n` pod on each node that labeled as `db1000n=true`.
-It coule be useful in large cluster types that can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes.
+    DaemonSet will create one `db1000n` pod on each node that labeled as `db1000n=true`.
+    It coule be useful in large cluster types that can be autoscaled horizontally, for example, GKE standard k8s cluster from the free tier purposes.

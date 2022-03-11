@@ -1,9 +1,13 @@
-# Setting up VPN for Docker users
+## Setting up VPN for Docker users
 
 In case of using a dedicated VPS that has banned public IP, a container with OpenVPN client can be deployed inside the same network as db1000n is in.
 One of the easy ways to set it up is through the docker-compose.
 
-`docker-compose.yml`: see [../docker-compose.yml](../docker-compose.yml)
+`docker-compose.yml`
+
+```yaml
+{% include "../../docker-compose.yml" %}
+```
 
 `openvpn/provider01.txt`:
 

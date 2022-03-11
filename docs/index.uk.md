@@ -1,0 +1,104 @@
+## Death by 1000 needles (UA)
+
+24-го лютого росія почала повномасштабне вторгнення в Україну. Ми робимо все можливе щоб не дозволити подальше пролиття невинної крові
+
+!!! attention "Увага"
+
+    Будь ласка перевіряйте вже відкриті Issues (як відчинені, так і зачинені) перед тим як створювати нові. Це дуже економить час на відповіді та допоможе cконцентруватися на більш критичних речах. Дякую!
+
+!!! info "До вашого відома"
+
+    You can read this page in [English](/db1000n/en/)!
+
+---
+
+## Гайд по швидкому старту
+
+### Використовуємо VPN (якщо ви в Україні)
+
+- Переключіть VPN на Росію, якщо це можливо
+- Не використовуйте Україну як локацию VPN!
+- Будь яка інша країна - теж добре
+- Бережіть себе!
+
+### Для новачків
+
+1. Завантажте останню версію програми для вашої платформи:
+    - [Windows](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-windows-386.zip)
+    - [Mac M1](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-arm64.tar.gz)
+    - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-amd64.tar.gz)
+    - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-386.zip)
+    - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-amd64.tar.gz)
+
+1. Розпакуйте архів
+1. Запустіть файл з архіву
+1. Усе!
+
+!!! important "Дуже важливо!"
+
+    Хмарні провайдери можуть стягувати значні кошти не тільки за обчислювальні ресурси, але й за трафік. Якщо ви запускаєте програму в такого провайдера, будь ласка слідкуйте за своїм білінгом (актуально для продвинутих користувачів).
+
+!!! info "До вашого відома"
+
+    Якщо ви бачите попередження з вашого комп'ютеру - ігноруйте їх (або дозвольте використання в налаштуваннях системи). Наше програмне забезпечення є відкритим, ви можете самі перевірити його код.
+
+---
+
+## Як обрати VPN
+
+### Безкоштовно за запитом чи з промокодом
+
+{%
+   include-markdown "./vpn.uk.md"
+   start="Безкоштовні VPN:"
+%}
+
+---
+
+## Як встановити програму
+
+Ви можете встановити `db1000n` кількома способами
+
+### Бінарний файл
+
+Завантажте [останній реліз](https://github.com/Arriven/db1000n/releases/latest) згідно вашої архітектури/ОС.
+Розпакуйте архів та запустіть файл
+
+### Docker
+
+Якщо в вас є встановлений Docker, запустіть:
+
+```bash
+docker run --rm -it --pull always ghcr.io/arriven/db1000n
+```
+
+### Для досвідчених користувачів
+
+Дивіться [Для досвідчених](/db1000n/advanced-docs/advanced-and-devs/)
+
+---
+
+## Що далі
+
+Намагайтесь тримати комп'ютер в активному стані, використовуйте VPN та слідкуйте за тим що програма працює.
+Наші експерти координують все выддалено без вашої активної участі.
+Дякуємо вам за допомогу!
+
+---
+
+## Я все ще маю питання
+
+Ви можете знайти деякі відповіді на сторінці [FAQ](/db1000n/uk/faq/)
+
+---
+
+## Контакти
+
+- [Telegram група (головна)](https://t.me/ddos_separ)
+- [Telegram група (запасна)](https://t.me/+z_-Tk4zT4IxmNGQy)
+- [Telegram чат](https://t.me/+9GPKhDPGHPAzZjdi)
+- [Instagram](https://instagram.com/ddos_attack_separ)
+- [Facebook](https://www.facebook.com/ddos.attack.separ)
+- [Чат бот](https://t.me/ddosseparbot)
+
+---

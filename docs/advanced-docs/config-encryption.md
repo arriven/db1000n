@@ -1,4 +1,6 @@
-# How application uses configuration files according to encryption
+# Encryption
+
+## How application uses configuration files according to encryption
 
 Encryption is done using [age](https://github.com/FiloSottile/age) as CLI and golang library for encryption/decryption.
 Under the hood it uses ChaCha20+Poly1305 as AEAD encryption and store encrypted files with pre-defined header `age-encryption.org/v1`
