@@ -1,7 +1,14 @@
-REPOSITORY_BASE_PATH := github.com/Arriven/db1000n
-build:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o main ./main.go
+APP_NAME := db1000n
 
+REPOSITORY_BASE_PATH := github.com/Arriven/db1000n
+LATEST_TAG := $(shell git describe --tags --abbrev=0)
+
+# Remove debug information (ELF) to strip the binary size
+LDFLAGS += -s -w
+
+ifneq ($(LATEST_TAG),)
+LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/ota.Version=$(LATEST_TAG)'
+endif
 ifneq ($(ENCRYPTION_KEYS),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/utils.EncryptionKeys=$(ENCRYPTION_KEYS)'
 endif
@@ -11,6 +18,9 @@ endif
 ifneq ($(CA_PATH_VALUE),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/metrics.PushGatewayCA=$(CA_PATH_VALUE)'
 endif
+
+build:
+	CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o $(APP_NAME) -a ./main.go
 
 build_encrypted: build
 
