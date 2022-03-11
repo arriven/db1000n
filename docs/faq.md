@@ -1,3 +1,5 @@
+# FAQ
+
 ???+ faq "Where can I find advanced documentation?"
 
     [Here](/db1000n/advanced-docs/advanced-and-devs/)

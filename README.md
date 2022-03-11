@@ -1,5 +1,3 @@
-[//]: # (markdownlint-disable MD046)
-
 # Quick start
 
 ## Death by 1000 needles

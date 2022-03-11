@@ -1,4 +1,4 @@
-# db1000n Helm chart
+# db1000n Helm charts
 
 ## If you want to use plain manifests, see [Manifests](/db1000n/advanced-docs/kubernetes/manifests/)
 

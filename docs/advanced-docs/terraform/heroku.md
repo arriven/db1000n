@@ -1,1 +1,6 @@
-{% include "../../../terraform/heroku/README.md" %}
+# Heroku
+
+{%
+    include "../../../terraform/heroku/README.md"
+    start="# Heroku deployment"
+%}

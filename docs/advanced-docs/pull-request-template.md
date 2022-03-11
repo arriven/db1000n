@@ -1,1 +1,6 @@
-{% include-markdown "../../.github/pull_request_template.md" %}
+# Pull request template
+
+{%
+    include-markdown "../../.github/pull_request_template.md"
+    start="# Description"
+%}

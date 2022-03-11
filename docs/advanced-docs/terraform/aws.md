@@ -1,1 +1,6 @@
-{% include "../../../terraform/aws/README.md" %}
+# AWS
+
+{%
+    include "../../../terraform/aws/README.md"
+    start="# AWS deployment"
+%}
