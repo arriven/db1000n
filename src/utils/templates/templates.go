@@ -30,10 +30,6 @@ func SetProxiesURL(url string) {
 	proxiesURL = url
 }
 
-func SetProxies(list string) {
-
-}
-
 func getProxylist() (urls []string) {
 	return getProxylistByURL(getProxylistURL())
 }
