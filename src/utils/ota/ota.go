@@ -1,3 +1,4 @@
+// Package ota [allows hot update and reload of the executable]
 package ota
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 )
 
+// DoSelfUpdate updates the app to the latest version
 func DoSelfUpdate() {
 	v, err := semver.ParseTolerant(Version)
 	if err != nil {
@@ -32,6 +34,7 @@ func DoSelfUpdate() {
 	}
 }
 
+// ConfirmAndSelfUpdate ask for user confirmation to do a self-update
 func ConfirmAndSelfUpdate() {
 	latest, found, err := selfupdate.DetectLatest(Repository)
 	if err != nil {
