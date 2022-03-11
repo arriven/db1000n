@@ -1,3 +1,5 @@
+# Advanced and devs
+
 ## For developers
 
 _Developed by [Arriven](https://github.com/Arriven)._
@@ -58,6 +60,7 @@ See [docker-vpn](docker-vpn.md) for instructions on setting it up
 ## Kubernetes
 
 Here possible ways to deploy into it
+
 - [Helm Chart](/db1000n/advanced-docs/kubernetes/helm-charts/)
 - [Manifest](/db1000n/advanced-docs/kubernetes/manifests/)
 

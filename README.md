@@ -1,12 +1,16 @@
+[//]: # (markdownlint-disable MD046)
+
+# Quick start
+
 ## Death by 1000 needles
 
 On 24th of February Russia has launched a full-blown invasion on Ukrainian territory. We're doing our best to stop it and prevent innocent lives being taken
 
-!!! attention "Attention"
-    
+!!! attention
+
     Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
 
-!!! info "For your information"
+!!! info
 
     Ви можете читати цю сторінку [Українською](/db1000n/uk/)!
 
@@ -34,11 +38,11 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 1. Launch the file inside the archive
 1. Done!
 
-!!! important "Very important!"
+!!! important
 
     Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well. If you run an app in the cloud please control your billing (only advanced users are affected)!
 
-!!! info "For your information"
+!!! info
 
     You can get warnings from your computer about the file - ignore them (or allow in System Settings). Our software is open source. It can be checked and compiled by you yourself.
 

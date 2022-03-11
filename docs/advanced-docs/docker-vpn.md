@@ -1,3 +1,5 @@
+# Docker VPN
+
 ## Setting up VPN for Docker users
 
 In case of using a dedicated VPS that has banned public IP, a container with OpenVPN client can be deployed inside the same network as db1000n is in.

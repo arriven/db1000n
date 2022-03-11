@@ -16,5 +16,5 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install poetry
-      - run: poerty update
+      - run: poetry update
       - run: mkdocs gh-deploy --force
