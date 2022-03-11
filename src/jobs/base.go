@@ -45,7 +45,7 @@ func Get(t string) Job {
 		return dnsBlastJob
 	case "sequence":
 		return sequenceJob
-	case "paralles":
+	case "parallel":
 		return parallelJob
 	case "log":
 		return logJob
