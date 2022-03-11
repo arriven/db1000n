@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Arriven/db1000n/src/slowloris"
+	"github.com/Arriven/db1000n/src/core/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
 )
 

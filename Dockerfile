@@ -15,7 +15,7 @@ RUN apk add --update curl && rm  -rf /tmp/* /var/cache/apk/*
 WORKDIR /usr/src/app
 COPY --from=builder /build/db1000n .
 
-CMD ["./db1000n", "-c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.adv.json"]
+CMD ["./db1000n", "-c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.adv.json"]
 
 FROM alpine:3.11.3
 

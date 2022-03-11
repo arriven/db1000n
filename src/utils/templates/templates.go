@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
-	"github.com/Arriven/db1000n/src/packetgen"
+	"github.com/Arriven/db1000n/src/core/packetgen"
 )
 
 var proxiesURL = "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json"

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/metrics"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 
 	utls "github.com/refraction-networking/utls"
 )

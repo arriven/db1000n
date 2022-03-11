@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,21 +26,21 @@ func CheckCountry(countriesToAvoid []string) {
 		Country string `json:"country"`
 	}
 
-	var ipCheckerUri = "https://api.myip.com/"
+	var ipCheckerURI = "https://api.myip.com/"
 
-	resp, err := http.Get(ipCheckerUri)
+	resp, err := http.Get(ipCheckerURI)
 	if err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 		return
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+	defer func() {
+		err := resp.Body.Close()
 		if err != nil {
-			log.Printf("Can't close connection to: %s", ipCheckerUri)
+			log.Printf("Can't close connection to: %s", ipCheckerURI)
 			return
 		}
-	}(resp.Body)
+	}()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

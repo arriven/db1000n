@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/Arriven/db1000n/src/metrics"
-	"github.com/Arriven/db1000n/src/packetgen"
+	"github.com/Arriven/db1000n/src/core/packetgen"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 

@@ -7,7 +7,7 @@ LATEST_TAG := $(shell git describe --tags --abbrev=0)
 LDFLAGS += -s -w
 
 ifneq ($(LATEST_TAG),)
-LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/ota.Version=$(LATEST_TAG)'
+LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/utils/ota.Version=$(LATEST_TAG)'
 endif
 ifneq ($(ENCRYPTION_KEYS),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/utils.EncryptionKeys=$(ENCRYPTION_KEYS)'

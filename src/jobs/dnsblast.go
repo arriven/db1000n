@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Arriven/db1000n/src/dnsblast"
+	"github.com/Arriven/db1000n/src/core/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
