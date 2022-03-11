@@ -1,0 +1,25 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Build with ko
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/db1000n-beta
+
+jobs:
+  push_to_registry:
+    name: Publish docker image with ko
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - uses: actions/checkout@v2
+      - uses: imjasonh/setup-ko@v0.4
+      - run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --platform all .
