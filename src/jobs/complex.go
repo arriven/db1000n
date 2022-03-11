@@ -26,8 +26,8 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	}
 
 	for _, cfg := range jobConfig.Jobs {
-		job, ok := Get(cfg.Type)
-		if !ok {
+		job := Get(cfg.Type)
+		if job == nil {
 			return nil, fmt.Errorf("unknown job %q", cfg.Type)
 		}
 		data, err := job(ctx, globalConfig, cfg.Args, debug)
@@ -55,8 +55,8 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 
 	var wg sync.WaitGroup
 	for i := range jobConfig.Jobs {
-		job, ok := Get(jobConfig.Jobs[i].Type)
-		if !ok {
+		job := Get(jobConfig.Jobs[i].Type)
+		if job == nil {
 			log.Printf("Unknown job %q", jobConfig.Jobs[i].Type)
 
 			continue
