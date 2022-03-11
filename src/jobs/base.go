@@ -42,7 +42,7 @@ func Get(t string) Job {
 	case "packetgen":
 		return packetgenJob
 	case "dns-blast":
-		return packetgenJob
+		return dnsBlastJob
 	case "sequence":
 		return sequenceJob
 	case "paralles":
