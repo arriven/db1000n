@@ -10,6 +10,7 @@ on:
     paths:
       - "**.md"
       - ".github/workflows/markdownlint.yaml"
+      - "db1000n.rb"
 permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
@@ -27,4 +28,4 @@ jobs:
       - name: Install mdl
         run: gem install mdl
       - name: Run markdownlint
-        run: mdl .
+        run: mdl -s ./db1000n.rb .

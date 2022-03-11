@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+
+site_name: Death by 1000 needles
+
+site_url: https://arriven.github.io/db1000n
+
+repo_url: https://github.com/Arriven/db1000n
+
+repo_name: Arriven/db1000n
+
+copyright: Copyright &copy; 2022 Arriven
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - search.suggest
+    - search.highlight
+    - search.share
+    - navigation.tracking
+    - navigation.expand
+    - navigation.top
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: red
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: yellow
+      accent: red
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.tabbed
+  - attr_list
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      linenums: false
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - admonition
+  - toc:
+      baselevel: 2
+      permalink: true
+      slugify: !!python/name:pymdownx.slugs.uslugify
+  - meta
+
+plugins:
+  - include-markdown
+  - git-latest-version-tag
+  - search:
+      lang:
+        - en
+        - ru
+  - i18n:
+      default_language: en
+      material_alternate: true
+      languages:
+        default:
+          name: Default (en)
+          build: true
+        en:
+          name: English
+          build: true
+        uk:
+          name: Українська
+          build: true
+      nav_translations:
+        en:
+          Home: Quick start
+          Index: Quick start
+          Aws: AWS
+          Gcp: GCP
+        uk:
+          Index: Швидкий старт
+          Faq: Часті питання
+          License: Ліцензія
+          Aws: AWS
+          Gcp: GCP
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Arriven/db1000n
+      name: GitHub repo
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/ddos_separ
+      name: Telegram group
+    - icon: fontawesome/brands/instagram
+      link: https://instagram.com/ddos_attack_separ
+      name: Instagram
+    - icon: fontawesome/brands/facebook
+      link: https://www.facebook.com/ddos.attack.separ
+      name: Facebook
+  alternate:
+    - name: default
+      link: ./
+      lang: en
+    - name: English
+      link: ./en/
+      lang: en
+    - name: Українська
+      link: ./uk/
+      lang: uk
