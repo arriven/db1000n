@@ -92,8 +92,8 @@ func (r *Runner) Run() {
 					continue
 				}
 
-				job, ok := jobs.Get(cfg.Jobs[i].Type)
-				if !ok {
+				job := jobs.Get(cfg.Jobs[i].Type)
+				if job == nil {
 					log.Printf("Unknown job %q", cfg.Jobs[i].Type)
 
 					continue
