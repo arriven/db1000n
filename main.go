@@ -32,6 +32,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Arriven/db1000n/ota"
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/metrics"
 	"github.com/Arriven/db1000n/src/runner"
@@ -55,6 +56,8 @@ func main() {
 	var configFormat string
 	var prometheusPushGateways string
 	var prometheusOn bool
+	var doSelfUpdate bool
+
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "refresh-interval", time.Minute, "refresh timeout for updating the config")
@@ -67,11 +70,18 @@ func main() {
 	flag.StringVar(&configFormat, "format", "json", "config format")
 	flag.BoolVar(&prometheusOn, "prometheus_on", false, "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", "", "Comma separated list of prometheus push gateways")
+	flag.BoolVar(&doSelfUpdate, "enable-self-update", false, "Enable the application automatic updates on the startup")
 	flag.Parse()
+
+	log.Printf("DB1000n [Version: %s]\n", ota.Version)
 
 	if help {
 		flag.CommandLine.Usage()
 		return
+	}
+
+	if doSelfUpdate {
+		ota.DoSelfUpdate()
 	}
 
 	if debug && pprof == "" {
