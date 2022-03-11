@@ -1,3 +1,4 @@
+defaultBaseImage: gcr.io/distroless/static
 builds:
   - id: db1000n
     dir: . # default is .
