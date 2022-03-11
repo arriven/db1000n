@@ -4,10 +4,12 @@
       "type": "http",
       "filter": "{{ eq (mod . 2) 0 }}",
       "args": {
-        "method": "GET",
-        "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
-        "headers": {
-          "Authorization": "wtf"
+        "request": {
+          "method": "GET",
+          "path": "http://localhost:8080/test?queryparam=test&s={{ random_uuid }}",
+          "headers": {
+            "Authorization": "wtf"
+          }
         },
         "client": {
           "proxy_urls": "{{ join get_proxylist \",\" }}"
@@ -36,9 +38,11 @@
     {
       "type": "http",
       "args": {
-        "method": "GET",
-        "path": "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
-        "headers": {}
+        "request": {
+          "method": "GET",
+          "path": "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
+          "headers": {}
+        }
       }
     },
     {

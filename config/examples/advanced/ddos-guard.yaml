@@ -14,37 +14,39 @@ jobs:
         - type: http-request
           name: initial
           args:
-            method: GET
-            path: https://noxx.is
-            headers:
-              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
-              Accept: "text/html"
-              Accept-Language: "en-US"
-              Connection: "keep-alive"
-              Sec-Fetch-Dest: "document"
-              Sec-Fetch-Mode: "navigate"
-              Sec-Fetch-Site: "none"
-              Sec-Fetch-User: "?1"
-              TE: "trailers"
-              DNT: "1"
+            request:
+              method: GET
+              path: https://noxx.is
+              headers:
+                User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+                Accept: "text/html"
+                Accept-Language: "en-US"
+                Connection: "keep-alive"
+                Sec-Fetch-Dest: "document"
+                Sec-Fetch-Mode: "navigate"
+                Sec-Fetch-Site: "none"
+                Sec-Fetch-User: "?1"
+                TE: "trailers"
+                DNT: "1"
         - type: log
           args:
             text: 'cookies: {{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
         - type: http-request
           name: check
           args:
-            method: GET
-            path: "https://check.ddos-guard.net/check.js"
-            headers:
-              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
-              Accept: "*/*"
-              Accept-Language: "en-US,en;q=0.5"
-              Accept-Encoding: "gzip, deflate"
-              Referer: https://noxx.is
-              Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
-              Sec-Fetch-Dest: "script"
-              Sec-Fetch-Mode: "no-cors"
-              Sec-Fetch-Site: "cross-site"
+            request:
+              method: GET
+              path: "https://check.ddos-guard.net/check.js"
+              headers:
+                User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+                Accept: "*/*"
+                Accept-Language: "en-US,en;q=0.5"
+                Accept-Encoding: "gzip, deflate"
+                Referer: https://noxx.is
+                Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
+                Sec-Fetch-Dest: "script"
+                Sec-Fetch-Mode: "no-cors"
+                Sec-Fetch-Site: "cross-site"
         - type: set-value
           name: check-body
           args:
@@ -59,19 +61,20 @@ jobs:
         - type: http-request
           name: final-cookies-request
           args:
-            method: GET
-            path: 'https://ddos-guard.net/.well-known/ddos-guard/id/{{ .Value (ctx_key "data.id") }}'
-            headers:
-              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
-              Accept: "image/webp,*/*"
-              Accept-Language: "en-US,en;q=0.5"
-              Accept-Encoding: "gzip, deflate"
-              Cache-Control: "no-cache"
-              Referer: https://noxx.is
-              Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
-              Sec-Fetch-Dest: "script"
-              Sec-Fetch-Mode: "no-cors"
-              Sec-Fetch-Site: "cross-site"
+            request:
+              method: GET
+              path: 'https://ddos-guard.net/.well-known/ddos-guard/id/{{ .Value (ctx_key "data.id") }}'
+              headers:
+                User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+                Accept: "image/webp,*/*"
+                Accept-Language: "en-US,en;q=0.5"
+                Accept-Encoding: "gzip, deflate"
+                Cache-Control: "no-cache"
+                Referer: https://noxx.is
+                Cookie: '{{ cookie_string (index (.Value (ctx_key "data.initial")) "response" "cookies") }}'
+                Sec-Fetch-Dest: "script"
+                Sec-Fetch-Mode: "no-cors"
+                Sec-Fetch-Site: "cross-site"
         - type: set-value
           name: final-cookies
           args:
@@ -82,12 +85,13 @@ jobs:
         - type: http-request
           name: actual-request
           args:
-            method: GET
-            path: https://noxx.is
-            headers:
-              User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
-              Referer: https://noxx.is
-              Cookie: '{{ .Value (ctx_key "data.final-cookies") }}'
+            request:
+              method: GET
+              path: https://noxx.is
+              headers:
+                User-Agent: '{{ .Value (ctx_key "data.useragent") }}'
+                Referer: https://noxx.is
+                Cookie: '{{ .Value (ctx_key "data.final-cookies") }}'
         - type: log
           args:
             text: 'body: {{ index (.Value (ctx_key "data.actual-request")) "response" "body" }}'
