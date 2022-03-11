@@ -19,7 +19,7 @@ on:
       - ".github/workflows/ko-build.yaml"
 
 env:
-  KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/db1000n-beta
+  DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/db1000n-beta
 
 jobs:
   push_to_registry:
@@ -33,4 +33,4 @@ jobs:
         uses: imjasonh/setup-ko@v0.4
 
       - name: Build and push Docker image
-        run: ko publish --bare --platform all .
+        run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --platform all .
