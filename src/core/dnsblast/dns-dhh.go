@@ -27,7 +27,7 @@ type DistinctHeavyHitterGenerator struct {
 
 // NewDistinctHeavyHitterGenerator creates an endless stream of fake domain names
 // using the random subdomain.
-func NewDistinctHeavyHitterGenerator(seedDomains []string) (*DistinctHeavyHitterGenerator, error) {
+func NewDistinctHeavyHitterGenerator(ctx context.Context, seedDomains []string) (*DistinctHeavyHitterGenerator, error) {
 	if len(seedDomains) == 0 {
 		return nil, errors.New("no root base domain seeds provided")
 	}
@@ -38,7 +38,7 @@ func NewDistinctHeavyHitterGenerator(seedDomains []string) (*DistinctHeavyHitter
 		randomizerDictionary: []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	generator.cancelGeneration = cancel
 
 	go generator.ignite(ctx, seedDomains)

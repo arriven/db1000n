@@ -101,7 +101,7 @@ func TestBlast(t *testing.T) {
 
 func TestGetSeedDomain(t *testing.T) {
 	seedDomain := `example.com`
-	generator, err := NewDistinctHeavyHitterGenerator([]string{seedDomain})
+	generator, err := NewDistinctHeavyHitterGenerator(context.Background(), []string{seedDomain})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -120,7 +120,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 		nextLoopTicker    = time.NewTicker(parameters.Delay)
 	)
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
-	dhhGenerator, err := NewDistinctHeavyHitterGenerator(parameters.SeedDomains)
+	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
 	if err != nil {
 		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
 		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %s", err)
