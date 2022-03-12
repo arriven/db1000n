@@ -69,8 +69,8 @@ func main() {
 	doRestartOnUpdate := flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true), "Allows application to restart upon successful update (ignored if auto-update is disabled)")
 	skipUpdateCheckOnStart := flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false), "Allows to skip the update check at the startup (usually set automatically by the previous version)")
 	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency", utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", DefaultUpdateCheckFrequency), "How often to run auto-update checks")
-	strictCountryCheck := flag.BoolVar("strict-country-check", false, "enable strict country check; will also exit if IP can't be determined")
-	countryList := flag.StringVar("country-list", "Ukraine", "comma-separated list of countries")
+	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false), "enable strict country check; will also exit if IP can't be determined")
+	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
 
 	flag.Parse()
 
@@ -95,17 +95,17 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
-	countries := strings.Split(countryList, ",")
-	if !utils.CheckCountry(countries) {
-		if strictCountryCheck {
+	countries := strings.Split(*countryList, ",")
+	if !utils.CheckCountry(countries) && *strictCountryCheck {
+		if !utils.CheckCountry(countries) {
+			log.Fatal("Strict country check mode is enabled, exiting")
+
 			return
 		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	go utils.CheckCountry(ctx, []string{"Ukraine"})
 
 	if *prometheusOn {
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
