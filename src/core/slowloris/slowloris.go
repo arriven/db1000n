@@ -108,7 +108,12 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 		return nil
 	}
 
-	tcpConn := conn.(*net.TCPConn)
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		// This should never happen
+		return nil
+	}
+
 	if err = tcpConn.SetReadBuffer(128); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP read buffer: %v", err)

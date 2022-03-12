@@ -1656,7 +1656,7 @@ linters:
     # - exhaustivestruct
     - exportloopref
     - forbidigo
-    # - forcetypeassert
+    - forcetypeassert
     # - funlen
     # - gci
     # - gochecknoglobals
