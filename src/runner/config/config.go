@@ -13,10 +13,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils"
+	"gopkg.in/yaml.v3"
 
 	"github.com/Arriven/db1000n/src/jobs"
-	"gopkg.in/yaml.v3"
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // Config for all jobs to run

@@ -36,10 +36,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
+
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // common values for prometheus metrics

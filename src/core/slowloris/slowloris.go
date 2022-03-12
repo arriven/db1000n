@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils/metrics"
-
 	utls "github.com/refraction-networking/utls"
+
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
 // Config holds all the configuration values for slowloris

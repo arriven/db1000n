@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/corpix/uarand"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
+
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // RequestConfig is a struct representing the config of a single request
@@ -96,7 +97,7 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 			log.Printf("List of proxies: %s", proxylist)
 		}
 
-		var proxyURLs = strings.Split(proxylist, ",")
+		proxyURLs := strings.Split(proxylist, ",")
 
 		if debug {
 			log.Printf("proxyURLs: %v", proxyURLs)

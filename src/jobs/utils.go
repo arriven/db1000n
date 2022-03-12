@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
-	"github.com/mitchellh/mapstructure"
 )
 
 func logJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
