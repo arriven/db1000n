@@ -1695,9 +1695,9 @@ linters:
     - nolintlint
     # - paralleltest
     - prealloc
-    # - predeclared
+    - predeclared
     - promlinter
-    # - revive
+    - revive
     - rowserrcheck
     # - scopelint # deprecated
     - sqlclosecheck
@@ -1710,15 +1710,15 @@ linters:
     - thelper
     - tparallel
     - typecheck
-    # - unconvert
+    - unconvert
     - unparam
     - unused
     - varcheck
     # - varnamelen
     - wastedassign
-    # - whitespace
+    - whitespace
     # - wrapcheck
-    # - wsl
+    - wsl
 #
 #   # Enable presets.
 #   # https://golangci-lint.run/usage/linters

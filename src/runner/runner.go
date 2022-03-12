@@ -54,10 +54,12 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context) {
 	clientID := uuid.New()
+
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 	defer refreshTimer.Stop()
 
 	var cancel context.CancelFunc
+
 	for {
 		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig, r.configFormat); cfg != nil {
 			if cancel != nil {
@@ -144,14 +146,16 @@ func dumpMetrics(clientID string, debug bool) {
 
 	bytesGenerated := metrics.Default.Read(metrics.Traffic)
 	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
-	err := utils.ReportStatistics(int64(bytesGenerated), clientID)
-	if err != nil && debug {
+
+	if err := utils.ReportStatistics(int64(bytesGenerated), clientID); err != nil && debug {
 		log.Println("error reporting statistics:", err)
 	}
+
 	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
 		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
+
 		if bytesProcessed > 0 {
 			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
 		}

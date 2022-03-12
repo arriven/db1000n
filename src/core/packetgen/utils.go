@@ -47,8 +47,10 @@ func RandomIP() string {
 
 // RandomPort returns a random port to spoof packets
 func RandomPort() int {
-	const minPort = 1024
-	const maxPort = 65535
+	const (
+		minPort = 1024
+		maxPort = 65535
+	)
 
 	return rand.Intn(maxPort-minPort) + minPort
 }
@@ -57,11 +59,10 @@ func RandomPort() int {
 func RandomMacAddr() net.HardwareAddr {
 	const macSizeBytes = 6
 
-	buf := make([]byte, macSizeBytes)
-	rand.Read(buf)
-	var addr net.HardwareAddr = buf
+	addr := make(net.HardwareAddr, macSizeBytes)
+	rand.Read(addr)
 
-	return net.HardwareAddr(addr.String())
+	return addr
 }
 
 // LocalMacAddres returns first valid mac address

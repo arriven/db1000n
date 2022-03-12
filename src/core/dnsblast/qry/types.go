@@ -1,9 +1,7 @@
 // Package qry [general utility functions for the dnsblast package]
 package qry
 
-import (
-	"github.com/miekg/dns"
-)
+import "github.com/miekg/dns"
 
 // ResponseCode convert numerical response code value to string
 func ResponseCode(rc int) string {

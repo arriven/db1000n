@@ -37,6 +37,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	host := templates.ParseAndExecute(jobConfig.Host, nil)
+
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
 		log.Printf("Error parsing port: %v", err)
@@ -93,7 +94,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 			return nil, err
 		}
 
-		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
+		n, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
 			metrics.IncPacketgen(
@@ -104,13 +105,14 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 			return nil, err
 		}
+
 		metrics.IncPacketgen(
 			host,
 			hostPort,
 			protocolLabelValue,
 			metrics.StatusSuccess)
 
-		trafficMonitor.Add(uint64(len))
+		trafficMonitor.Add(uint64(n))
 	}
 
 	return nil, nil

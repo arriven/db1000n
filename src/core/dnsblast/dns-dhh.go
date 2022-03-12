@@ -85,6 +85,7 @@ const (
 func (rcv *DistinctHeavyHitterGenerator) generateSubdomain() string {
 	n := subdomainMinLength + rcv.randomizer.Intn(subdomainMaxLength-subdomainMinLength)
 	b := make([]rune, n)
+
 	for i := range b {
 		b[i] = rcv.randomizerDictionary[rcv.randomizer.Intn(len(rcv.randomizerDictionary))]
 	}

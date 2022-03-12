@@ -72,6 +72,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 		if wg != nil {
 			wg.Add(1)
 		}
+
 		go func(nameserver string, parameters *StressTestParameters) {
 			if wg != nil {
 				defer wg.Done()
@@ -122,7 +123,9 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 		keepAliveReminder = 256
 		nextLoopTicker    = time.NewTicker(parameters.Delay)
 	)
+
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
+
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
 	if err != nil {
 		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
@@ -219,9 +222,9 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 
 // SimpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
 func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters) {
-	question := new(dns.Msg).
-		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
+	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 	seedDomain := getSeedDomain(parameters.QName)
+
 	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
 		log.Printf("[DNS BLAST] failed to dial remote host [host=%s] to do the DNS query: %s",

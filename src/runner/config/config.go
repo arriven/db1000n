@@ -85,9 +85,11 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 	if err != nil {
 		if current != nil {
 			log.Println("Could not load new config, proceeding with the last known good one")
+
 			newRawConfig = current
 		} else {
 			log.Println("Could not load new config, proceeding with the backup one")
+
 			newRawConfig = backup
 		}
 	}
@@ -99,6 +101,7 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 	}
 
 	log.Println("New config received, applying")
+
 	if utils.IsEncrypted(newRawConfig) {
 		decryptedConfig, err := utils.Decrypt(newRawConfig)
 		if err != nil {
@@ -108,10 +111,12 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 		}
 
 		log.Println("Decrypted config")
+
 		newRawConfig = decryptedConfig
 	}
 
 	var config Config
+
 	switch format {
 	case "", "json":
 		if err := json.Unmarshal(newRawConfig, &config); err != nil {

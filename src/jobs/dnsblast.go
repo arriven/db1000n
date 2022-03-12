@@ -31,8 +31,7 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	defer utils.PanicHandler()
 
 	var jobConfig dnsBlastConfig
-	err = utils.Decode(args, &jobConfig)
-	if err != nil {
+	if err = utils.Decode(args, &jobConfig); err != nil {
 		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %w", err)
 	}
 
@@ -56,7 +55,6 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	isTCPTLSProto := jobConfig.Protocol == dnsblast.TCPTLSProtoName
 
 	switch {
-
 	case jobConfig.Protocol == "":
 		jobConfig.Protocol = defaultProto
 
