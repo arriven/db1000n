@@ -1695,7 +1695,7 @@ linters:
     - nolintlint
     # - paralleltest
     - prealloc
-    # - predeclared
+    - predeclared
     - promlinter
     # - revive
     - rowserrcheck
