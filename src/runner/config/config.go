@@ -53,9 +53,12 @@ func fetchSingle(path string) ([]byte, error) {
 		return res, nil
 	}
 
+	const requestTimeout = 20 * time.Second
+
 	client := http.Client{
-		Timeout: 20 * time.Second,
+		Timeout: requestTimeout,
 	}
+
 	resp, err := client.Get(configURL.String())
 	if err != nil {
 		return nil, err

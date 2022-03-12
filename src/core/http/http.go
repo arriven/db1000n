@@ -58,7 +58,9 @@ type ClientConfig struct {
 
 // NewClient produces a client from a structure
 func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) {
-	timeout := 90 * time.Second
+	const defaultTimeout = 90 * time.Second
+
+	timeout := defaultTimeout
 	if clientConfig.Timeout != nil {
 		timeout = *clientConfig.Timeout
 	}

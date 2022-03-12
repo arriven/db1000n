@@ -1668,7 +1668,7 @@ linters:
     - goheader
     - goimports
     # - golint # deprecated
-    # - gomnd
+    - gomnd
     # - gomoddirectives
     - gomodguard
     - goprintffuncname

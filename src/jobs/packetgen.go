@@ -61,7 +61,10 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	if _, ok := jobConfig.Packet["udp"]; ok {
 		protocolLabelValue = "udp"
 	}
-	hostPort := host + ":" + strconv.FormatInt(int64(port), 10)
+
+	const base10 = 10
+
+	hostPort := host + ":" + strconv.FormatInt(int64(port), base10)
 
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {

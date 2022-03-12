@@ -139,10 +139,12 @@ type IPPacketConfig struct {
 
 // buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
 func buildIPPacket(c IPPacketConfig) *layers.IPv4 {
+	const ipv4 = 4
+
 	return &layers.IPv4{
 		SrcIP:    net.ParseIP(c.SrcIP).To4(),
 		DstIP:    net.ParseIP(c.DstIP).To4(),
-		Version:  4,
+		Version:  ipv4,
 		Protocol: layers.IPProtocolTCP,
 	}
 }

@@ -140,6 +140,9 @@ func ValidatePrometheusPushGateways(value string) bool {
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
 func ExportPrometheusMetrics(ctx context.Context, gateways string) {
+	// We don't expect that rendering metrics should take a lot of time and needs long timeout
+	const timeout = 30 * time.Second
+
 	registerMetrics()
 
 	http.Handle("/metrics", promhttp.HandlerFor(
@@ -147,9 +150,7 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 		promhttp.HandlerOpts{
 			// Opt into OpenMetrics to support exemplars.
 			EnableOpenMetrics: true,
-			// we don't expect that rendering metrics should take a lot of time
-			// and needs long timeout
-			Timeout: time.Second * 30,
+			Timeout:           timeout,
 		},
 	))
 
@@ -183,14 +184,19 @@ func getBasicAuth() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
 	decryptedData, err := utils.Decrypt(encryptedData)
 	if err != nil {
 		return "", "", err
 	}
+
+	const numBasicAuthParts = 2
+
 	parts := bytes.Split(decryptedData, []byte{':'})
-	if len(parts) != 2 {
+	if len(parts) != numBasicAuthParts {
 		return "", "", errors.New("invalid basic auth credential format")
 	}
+
 	return string(parts[0]), string(parts[1]), nil
 }
 

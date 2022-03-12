@@ -31,8 +31,10 @@ type SlowLoris struct {
 	Config *Config
 }
 
+const sharedReadBufSize = 4096
+
 var (
-	sharedReadBuf  = make([]byte, 4096)
+	sharedReadBuf  = make([]byte, sharedReadBufSize)
 	sharedWriteBuf = []byte("A")
 )
 
@@ -114,13 +116,15 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 		return nil
 	}
 
-	if err = tcpConn.SetReadBuffer(128); err != nil {
+	const bufferSize = 128
+
+	if err = tcpConn.SetReadBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP read buffer: %v", err)
 		return nil
 	}
 
-	if err = tcpConn.SetWriteBuffer(128); err != nil {
+	if err = tcpConn.SetWriteBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP write buffer: %v", err)
 		return nil

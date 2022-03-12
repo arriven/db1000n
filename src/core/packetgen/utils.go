@@ -38,8 +38,10 @@ func RandomPayload(length int) string {
 
 // RandomIP returns a random ip to spoof packets
 func RandomIP() string {
-	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(255)+1, rand.Intn(255)+1,
-		rand.Intn(255)+1, rand.Intn(255)+1)
+	const maxByte = 255
+
+	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(maxByte)+1, rand.Intn(maxByte)+1,
+		rand.Intn(maxByte)+1, rand.Intn(maxByte)+1)
 }
 
 // RandomPort returns a random port to spoof packets
@@ -51,7 +53,9 @@ func RandomPort() int {
 
 // RandomMacAddr returns a random mac address to spoof packets
 func RandomMacAddr() net.HardwareAddr {
-	buf := make([]byte, 6)
+	const macSizeBytes = 6
+
+	buf := make([]byte, macSizeBytes)
 	rand.Read(buf)
 	var addr net.HardwareAddr = buf
 	return net.HardwareAddr(addr.String())
