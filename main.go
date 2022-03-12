@@ -53,7 +53,6 @@ func main() {
 	var scaleFactor int
 	var debug, help bool
 	var pprof string
-	var metricsPath string
 	var configFormat string
 	var prometheusPushGateways string
 	var prometheusOn bool
@@ -66,7 +65,6 @@ func main() {
 	flag.BoolVar(&debug, "debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 	flag.StringVar(&pprof, "pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
-	flag.StringVar(&metricsPath, "metrics-url", utils.GetEnvStringDefault("METRICS_URL", ""), "path where to dump usage metrics, can be URL or file, empty to disable")
 	flag.StringVar(&proxiesURL, "proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
 	flag.StringVar(&systemProxy, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
 	flag.StringVar(&configFormat, "format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
@@ -116,7 +114,6 @@ func main() {
 		ConfigPaths:        configPaths,
 		BackupConfig:       []byte(backupConfig),
 		RefreshTimeout:     refreshTimeout,
-		MetricsPath:        metricsPath,
 		Format:             configFormat,
 		Global:             jobs.GlobalConfig{ProxyURL: systemProxy, ScaleFactor: scaleFactor},
 		PrometheusOn:       prometheusOn,

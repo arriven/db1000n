@@ -35,7 +35,6 @@ type Runner struct {
 	configPaths    []string
 	backupConfig   []byte
 	refreshTimeout time.Duration
-	metricsPath    string
 	configFormat   string
 
 	currentRawConfig []byte // currently applied config
@@ -52,7 +51,6 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 		configPaths:    strings.Split(cfg.ConfigPaths, ","),
 		backupConfig:   cfg.BackupConfig,
 		refreshTimeout: cfg.RefreshTimeout,
-		metricsPath:    cfg.MetricsPath,
 		configFormat:   cfg.Format,
 
 		debug: debug,
@@ -141,7 +139,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.metricsPath, "traffic", clientID.String(), r.debug)
+		dumpMetrics(clientID.String(), r.debug)
 	}
 
 	if cancel != nil {
@@ -154,7 +152,7 @@ func (r *Runner) Run() {
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
 
-func dumpMetrics(path, name, clientID string, debug bool) {
+func dumpMetrics(clientID string, debug bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("caught panic: %v", err)
