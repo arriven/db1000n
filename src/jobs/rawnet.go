@@ -42,7 +42,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return nil, err
 	}
 
-	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	bodyTpl, err := templates.Parse(jobConfig.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
@@ -122,7 +122,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return nil, err
 	}
 
-	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	bodyTpl, err := templates.Parse(jobConfig.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}

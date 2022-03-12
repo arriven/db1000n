@@ -1710,7 +1710,7 @@ linters:
     - thelper
     - tparallel
     - typecheck
-    # - unconvert
+    - unconvert
     - unparam
     - unused
     - varcheck
