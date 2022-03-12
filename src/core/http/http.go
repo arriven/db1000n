@@ -34,14 +34,17 @@ func InitRequest(c RequestConfig, req *fasthttp.Request) int {
 	req.SetBodyString(c.Body)
 	// Add random user agent and configured headers
 	req.Header.Set("user-agent", uarand.GetRandom())
+
 	for key, value := range c.Headers {
 		req.Header.Set(key, value)
 		dataSize += len(key) + len(value)
 	}
+
 	for key, value := range c.Cookies {
 		req.Header.SetCookie(key, value)
 		dataSize += len(key) + len(value)
 	}
+
 	return dataSize
 }
 
@@ -136,6 +139,7 @@ func fastHTTPProxyDial(proxyFunc func() string, backup fasthttp.DialFunc) fastht
 		if proxy == "" {
 			return backup(addr)
 		}
+
 		return fasthttpproxy.FasthttpSocksDialer(proxy)(addr)
 	}
 }

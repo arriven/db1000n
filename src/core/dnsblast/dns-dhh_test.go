@@ -15,6 +15,7 @@ func TestDistinctHeavyHitterGenerator(t *testing.T) {
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(context.Background(), seedDomains)
 	if err != nil {
 		t.Errorf("failed to create a DHH domain generator")
+
 		return
 	}
 
@@ -24,6 +25,7 @@ func TestDistinctHeavyHitterGenerator(t *testing.T) {
 		if !ok {
 			break
 		}
+
 		t.Logf("new domain: %s", newDomain)
 
 		if subDomainsGeneratedNumber++; subDomainsGeneratedNumber == dhhGeneratorBufferSize {

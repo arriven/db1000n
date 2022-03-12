@@ -39,10 +39,13 @@ func getProxylistByURL(url string) (urls []string) {
 	if err != nil {
 		return nil
 	}
+
 	defer resp.Body.Close()
+
 	if err = json.NewDecoder(resp.Body).Decode(&urls); err != nil {
 		return nil
 	}
+
 	return urls
 }
 
@@ -82,6 +85,7 @@ func cookieString(cookies map[string]string) string {
 	for key, value := range cookies {
 		s = fmt.Sprintf("%s %s=%s;", s, key, value)
 	}
+
 	return strings.Trim(strings.TrimSpace(s), ";")
 	// header := &fasthttp.RequestHeader{}
 	// for key, value := range cookies {
@@ -128,6 +132,7 @@ func Execute(tpl *template.Template, data interface{}) string {
 	var res strings.Builder
 	if err := tpl.Execute(&res, data); err != nil {
 		log.Printf("Error executing template: %v", err)
+
 		return ""
 	}
 
@@ -139,12 +144,14 @@ func ParseAndExecute(input string, data interface{}) string {
 	tpl, err := Parse(input)
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
+
 		return input
 	}
 
 	var output strings.Builder
 	if err = tpl.Execute(&output, data); err != nil {
 		log.Printf("Error executing template: %v", err)
+
 		return input
 	}
 
@@ -156,8 +163,10 @@ func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) ma
 	tpl, err := ParseMapStruct(input)
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
+
 		return input
 	}
+
 	return tpl.Execute(data)
 }
 
@@ -176,17 +185,20 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			result[key] = tpl
 		case map[string]interface{}:
 			tpl, err := ParseMapStruct(v)
 			if err != nil {
 				return nil, err
 			}
+
 			result[key] = tpl
 		default:
 			result[key] = v
 		}
 	}
+
 	return &MapStruct{tpl: result}, nil
 }
 
@@ -203,5 +215,6 @@ func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
 			result[key] = v
 		}
 	}
+
 	return result
 }

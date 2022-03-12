@@ -63,6 +63,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 				log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			}
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+
 			continue
 		}
 

@@ -30,6 +30,7 @@ func fetch(paths []string) ([]byte, error) {
 		res, err := fetchSingle(paths[i])
 		if err != nil {
 			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
+
 			continue
 		}
 
@@ -102,25 +103,31 @@ func Update(paths []string, current, backup []byte, format string) (*Config, []b
 		decryptedConfig, err := utils.Decrypt(newRawConfig)
 		if err != nil {
 			log.Println("Can't decrypt config")
+
 			return nil, nil
 		}
+
 		log.Println("Decrypted config")
 		newRawConfig = decryptedConfig
 	}
+
 	var config Config
 	switch format {
 	case "", "json":
 		if err := json.Unmarshal(newRawConfig, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+
 			return nil, nil
 		}
 	case "yaml":
 		if err := yaml.Unmarshal(newRawConfig, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+
 			return nil, nil
 		}
 	default:
 		log.Printf("Unknown config format: %v", format)
 	}
+
 	return &config, newRawConfig
 }

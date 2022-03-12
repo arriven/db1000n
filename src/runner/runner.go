@@ -76,6 +76,7 @@ func (r *Runner) Run(ctx context.Context) {
 			if cancel != nil {
 				cancel()
 			}
+
 			return
 		}
 
@@ -91,6 +92,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 	for i := range cfg.Jobs {
 		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
 			log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+
 			continue
 		}
 
@@ -129,6 +131,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 	}
 
 	log.Printf("%d job instances (re)started", jobInstancesCount)
+
 	return cancel
 }
 

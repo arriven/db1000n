@@ -33,6 +33,7 @@ import (
 func RandomPayload(length int) string {
 	payload := make([]byte, length)
 	rand.Read(payload)
+
 	return string(payload)
 }
 
@@ -48,6 +49,7 @@ func RandomIP() string {
 func RandomPort() int {
 	const minPort = 1024
 	const maxPort = 65535
+
 	return rand.Intn(maxPort-minPort) + minPort
 }
 
@@ -58,6 +60,7 @@ func RandomMacAddr() net.HardwareAddr {
 	buf := make([]byte, macSizeBytes)
 	rand.Read(buf)
 	var addr net.HardwareAddr = buf
+
 	return net.HardwareAddr(addr.String())
 }
 
@@ -67,12 +70,14 @@ func LocalMacAddres() string {
 	if err != nil {
 		return ""
 	}
+
 	for _, ifa := range ifas {
 		a := ifa.HardwareAddr.String()
 		if a != "" {
 			return a
 		}
 	}
+
 	return ""
 }
 
@@ -82,6 +87,7 @@ func LocalIP() string {
 	if err != nil {
 		return ""
 	}
+
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -90,6 +96,7 @@ func LocalIP() string {
 			}
 		}
 	}
+
 	return ""
 }
 

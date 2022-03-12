@@ -1690,7 +1690,7 @@ linters:
     - nestif
     - nilerr
     # - nilnil
-    # - nlreturn
+    - nlreturn
     # - noctx
     - nolintlint
     # - paralleltest

@@ -31,12 +31,15 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		if job == nil {
 			return nil, fmt.Errorf("unknown job %q", cfg.Type)
 		}
+
 		data, err := job(ctx, globalConfig, cfg.Args, debug)
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
+
 		ctx = context.WithValue(ctx, templates.ContextKey("data."+cfg.Name), data)
 	}
+
 	return nil, nil
 }
 
@@ -79,6 +82,8 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 			}(i)
 		}
 	}
+
 	wg.Wait()
+
 	return nil, nil
 }

@@ -64,6 +64,7 @@ func (rcv *DistinctHeavyHitterGenerator) ignite(ctx context.Context, rootDomains
 		select {
 		case <-ctx.Done():
 			close(rcv.buffer)
+
 			return
 		default:
 			rcv.buffer <- rcv.generateSubdomain() + "." + rootDomains[currentDomainIndex] + "."
@@ -87,5 +88,6 @@ func (rcv *DistinctHeavyHitterGenerator) generateSubdomain() string {
 	for i := range b {
 		b[i] = rcv.randomizerDictionary[rcv.randomizer.Intn(len(rcv.randomizerDictionary))]
 	}
+
 	return string(b)
 }

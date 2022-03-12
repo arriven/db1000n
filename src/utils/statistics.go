@@ -14,6 +14,7 @@ var (
 func ReportStatistics(traffic int64, clientID string) error {
 	delta := traffic - previousTraffic
 	previousTraffic = traffic
+
 	return trackEvent(delta, clientID)
 }
 

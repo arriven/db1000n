@@ -91,6 +91,7 @@ func TestBlast(t *testing.T) {
 			err := Start(blastContext, nil, config)
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
+
 				return
 			}
 
@@ -105,12 +106,14 @@ func TestGetSeedDomain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	count := 10
 	for subdomain := range generator.Next() {
 		resultSeedDomain := getSeedDomain(subdomain)
 		if resultSeedDomain != seedDomain {
 			t.Fatalf("Expect \"%s\", took \"%s\"\n", seedDomain, resultSeedDomain)
 		}
+
 		count--
 		if count == 0 {
 			break

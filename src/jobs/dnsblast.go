@@ -87,6 +87,8 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		ParallelQueries: jobConfig.ParallelQueries,
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 	})
+
 	wg.Wait()
+
 	return nil, err
 }

@@ -67,16 +67,17 @@ func (ms *Storage) Read(name string) uint64 {
 			if value, ok := v.(uint64); ok {
 				sum += value
 			}
+
 			return true
 		})
 	}
+
 	return sum
 }
 
 // NewWriter creates a writer for accumulated writes to the storage
 func (ms *Storage) NewWriter(name, jobID string) *Writer {
-	writer := &Writer{ms: ms, jobID: jobID, name: name, value: 0}
-	return writer
+	return &Writer{ms: ms, jobID: jobID, name: name, value: 0}
 }
 
 // Writer is a helper to accumulate writes to a storage on a regular basis
