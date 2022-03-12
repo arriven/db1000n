@@ -225,11 +225,7 @@ func pushMetrics(ctx context.Context, gateways []string) {
 	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "default_push")
 
 	gateway := gateways[rand.Int()%len(gateways)]
-	tickerPeriodEnv := utils.GetEnvStringDefault("PROMETHEUS_PUSH_PERIOD", "1m")
-	tickerPeriod, err := time.ParseDuration(tickerPeriodEnv)
-	if err != nil {
-		log.Println("Invalid value for <PROMETHEUS_PUSH_PERIOD> env variable. Read docs: https://pkg.go.dev/time#ParseDuration")
-	}
+	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
 	ticker := time.NewTicker(tickerPeriod)
 	tlsConfig, err := getTLSConfig()
 	if err != nil {
