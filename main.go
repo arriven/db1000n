@@ -23,6 +23,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -110,14 +111,16 @@ func main() {
 
 	go utils.CheckCountry([]string{"Ukraine"})
 
+	if prometheusOn {
+		go metrics.ExportPrometheusMetrics(context.Background(), prometheusPushGateways)
+	}
+
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:        configPaths,
-		BackupConfig:       []byte(backupConfig),
-		RefreshTimeout:     refreshTimeout,
-		Format:             configFormat,
-		Global:             jobs.GlobalConfig{ProxyURL: systemProxy, ScaleFactor: scaleFactor},
-		PrometheusOn:       prometheusOn,
-		PrometheusGateways: prometheusPushGateways,
+		ConfigPaths:    configPaths,
+		BackupConfig:   []byte(backupConfig),
+		RefreshTimeout: refreshTimeout,
+		Format:         configFormat,
+		Global:         jobs.GlobalConfig{ProxyURL: systemProxy, ScaleFactor: scaleFactor},
 	}, debug)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
