@@ -1697,7 +1697,7 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-    # - revive
+    - revive
     - rowserrcheck
     # - scopelint # deprecated
     - sqlclosecheck

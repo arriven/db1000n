@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	previousTraffic int64 = 0
-	client                = v1.NewClient("UA-222030361-1", "customUserAgent")
+	previousTraffic int64
+	client          = v1.NewClient("UA-222030361-1", "customUserAgent")
 )
 
 // ReportStatistics sends basic usage events to google analytics
