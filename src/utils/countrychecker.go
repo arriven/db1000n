@@ -26,7 +26,7 @@ func CheckCountry(countriesToAvoid []string) {
 		Country string `json:"country"`
 	}
 
-	var ipCheckerURI = "https://api.myip.com/"
+	ipCheckerURI := "https://api.myip.com/"
 
 	resp, err := http.Get(ipCheckerURI)
 	if err != nil {

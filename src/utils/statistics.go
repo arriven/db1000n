@@ -5,8 +5,10 @@ import (
 	"github.com/mjpitz/go-ga/client/v1/gatypes"
 )
 
-var previousTraffic int64 = 0
-var client = v1.NewClient("UA-222030361-1", "customUserAgent")
+var (
+	previousTraffic int64 = 0
+	client                = v1.NewClient("UA-222030361-1", "customUserAgent")
+)
 
 // ReportStatistics sends basic usage events to google analytics
 func ReportStatistics(traffic int64, clientID string) error {
