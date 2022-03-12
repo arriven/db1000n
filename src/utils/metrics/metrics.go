@@ -65,7 +65,7 @@ func (ms *Storage) Read(name string) uint64 {
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Range(func(k, v interface{}) bool {
 			if value, ok := v.(uint64); ok {
-				sum = sum + value
+				sum += value
 			}
 			return true
 		})
@@ -89,7 +89,7 @@ type Writer struct {
 
 // Add used to increase metric value by a specific amount
 func (w *Writer) Add(value uint64) {
-	w.value = w.value + value
+	w.value += value
 }
 
 // Set used to set metric to a specific value

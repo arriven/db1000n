@@ -78,7 +78,7 @@ func ctxKey(key string) ContextKey {
 }
 
 func cookieString(cookies map[string]string) string {
-	var s = ""
+	s := ""
 	for key, value := range cookies {
 		s = fmt.Sprintf("%s %s=%s;", s, key, value)
 	}
@@ -120,7 +120,7 @@ func Parse(input string) (*template.Template, error) {
 		"ctx_key":              ctxKey,
 		"split":                strings.Split,
 		"cookie_string":        cookieString,
-	}).Parse(strings.Replace(input, "\\", "", -1))
+	}).Parse(strings.ReplaceAll(input, "\\", ""))
 }
 
 // Execute template, returns empty string in case of errors
