@@ -102,6 +102,9 @@ func (r *Runner) Run() {
 				if cfg.Jobs[i].Count < 1 {
 					cfg.Jobs[i].Count = 1
 				}
+				if r.config.Global.ScaleFactor > 0 {
+					cfg.Jobs[i].Count = cfg.Jobs[i].Count * r.config.Global.ScaleFactor
+				}
 				cfgMap := make(map[string]interface{})
 				err := utils.Decode(cfg.Jobs[i], &cfgMap)
 				if err != nil {

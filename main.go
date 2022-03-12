@@ -50,6 +50,7 @@ func main() {
 	var systemProxy string
 	var backupConfig string
 	var refreshTimeout time.Duration
+	var scaleFactor int
 	var debug, help bool
 	var pprof string
 	var metricsPath string
@@ -61,6 +62,7 @@ func main() {
 	flag.StringVar(&configPaths, "c", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json", "path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	flag.DurationVar(&refreshTimeout, "refresh-interval", time.Minute, "refresh timeout for updating the config")
+	flag.IntVar(&scaleFactor, "scale", 1, "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
 	flag.BoolVar(&debug, "debug", false, "enable debug level logging")
 	flag.StringVar(&pprof, "pprof", "", "enable pprof")
 	flag.BoolVar(&help, "h", false, "print help message and exit")
@@ -116,7 +118,7 @@ func main() {
 		RefreshTimeout:     refreshTimeout,
 		MetricsPath:        metricsPath,
 		Format:             configFormat,
-		Global:             jobs.GlobalConfig{ProxyURL: systemProxy},
+		Global:             jobs.GlobalConfig{ProxyURL: systemProxy, ScaleFactor: scaleFactor},
 		PrometheusOn:       prometheusOn,
 		PrometheusGateways: prometheusPushGateways,
 	}, debug)
