@@ -169,8 +169,8 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	if gateways != "" {
 		go pushMetrics(ctx, strings.Split(gateways, ","))
 	}
-	err := server.ListenAndServe()
-	if err != nil {
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal()
 	}
 }

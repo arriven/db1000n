@@ -1676,7 +1676,7 @@ linters:
     - gosimple
     - govet
     - grouper
-    # - ifshort
+    - ifshort
     - importas
     - ineffassign
     # - interfacer # deprecated

@@ -42,8 +42,7 @@ func ConfirmAndSelfUpdate() {
 		return
 	}
 
-	v := semver.MustParse(Version)
-	if !found || latest.Version.LTE(v) {
+	if v := semver.MustParse(Version); !found || latest.Version.LTE(v) {
 		log.Println("Current version is the latest")
 		return
 	}
