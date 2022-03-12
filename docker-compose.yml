@@ -104,6 +104,8 @@ services:
     network_mode: "service:ovpn_01"
     labels:
         autoheal: "true"
+    # set single country to check IP against and exit container if IP matches country OR IP cannot be determined
+    entrypoint: "./db1000n --strict-country-check --country-list='Country'"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -119,6 +121,8 @@ services:
     network_mode: "service:ovpn_02"
     labels:
         autoheal: "true"
+    # set multiple countries to check IP against and exit container if IP matches country OR IP cannot be determined
+    entrypoint: "./db1000n --strict-country-check --country-list='Country, Another Country'"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -134,6 +138,8 @@ services:
     network_mode: "service:ovpn_03"
     labels:
         autoheal: "true"
+    # set single country to check IP against but do not exit container if IP matches country
+    entrypoint: "./db1000n --strict-country-check --country-list='Country'"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s

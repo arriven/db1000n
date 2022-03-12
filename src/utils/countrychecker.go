@@ -1,12 +1,14 @@
 package utils
 
 import (
-	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os/exec"
 	"runtime"
+	"strings"
+	"time"
 )
 
 func openBrowser(url string) {
@@ -21,41 +23,50 @@ func openBrowser(url string) {
 }
 
 // CheckCountry allows to check which country the app is running from
-func CheckCountry(ctx context.Context, countriesToAvoid []string) {
-	const ipCheckerURI = "https://api.myip.com/"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
-	if err != nil {
-		return
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
-
-		return
-	}
-
-	defer resp.Body.Close()
-
-	var ipInfo struct {
+func CheckCountry(countriesToAvoid []string) bool {
+	type IPInfo struct {
 		Country string `json:"country"`
+		IP      string `json:"ip"`
 	}
 
-	if err = json.NewDecoder(resp.Body).Decode(&ipInfo); err != nil {
-		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
+	ipInfo := IPInfo{}
+	var ipCheckerURI = "https://api.myip.com/"
 
-		return
+	retries := 1
+	for ipInfo.IP == "" && retries <= 3 {
+		log.Printf("Checking IP address, attempt #%d", retries)
+		resp, err := http.Get(ipCheckerURI)
+		if err != nil {
+			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+		} else {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+			} else {
+				err = json.Unmarshal(body, &ipInfo)
+
+				if err != nil {
+					log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+				}
+			}
+		}
+
+		time.Sleep(1 * time.Second)
+		retries += 1
+	}
+
+	if retries == 4 {
+		return false
 	}
 
 	for _, country := range countriesToAvoid {
-		if ipInfo.Country == country {
+		if ipInfo.Country == strings.TrimSpace(country) {
 			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
 			openBrowser("https://arriven.github.io/db1000n/vpn/")
-
-			return
+			return false
 		}
 	}
 
-	log.Printf("Current country: %s", ipInfo.Country)
+	log.Printf("Current country: %s (%s)", ipInfo.Country, ipInfo.IP)
+	return true
 }
