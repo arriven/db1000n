@@ -51,7 +51,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
 		metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
-		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %s",
+		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %w",
 			config.RootDomain, err)
 	}
 
@@ -123,7 +123,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
 	if err != nil {
 		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
-		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %s", err)
+		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %w", err)
 	}
 
 	defer dhhGenerator.Cancel()

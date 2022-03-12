@@ -22,7 +22,7 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Jobs []Config
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
 	for _, cfg := range jobConfig.Jobs {
@@ -50,7 +50,7 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		Jobs []Config
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
 	var wg sync.WaitGroup

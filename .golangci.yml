@@ -1651,7 +1651,7 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    # - errorlint
+    - errorlint
     - exhaustive
     # - exhaustivestruct
     - exportloopref

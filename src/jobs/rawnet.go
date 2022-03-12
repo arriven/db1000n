@@ -44,7 +44,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 	bodyTpl, err := templates.Parse(string(jobConfig.Body))
 	if err != nil {
-		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -123,7 +123,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 	bodyTpl, err := templates.Parse(string(jobConfig.Body))
 	if err != nil {
-		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())

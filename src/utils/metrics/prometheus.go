@@ -159,7 +159,7 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
 		err := server.Shutdown(ctx)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Println("failure shutting down prometheus server:", err)
 		}
 	}(ctx, server)
@@ -264,7 +264,8 @@ func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
 		DNSBlastProtocolLabel:   protocol,
-		StatusLabel:             status}).Inc()
+		StatusLabel:             status,
+	}).Inc()
 }
 
 // IncHTTP increments counter of sent http queries

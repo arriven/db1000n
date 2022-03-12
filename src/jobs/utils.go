@@ -15,7 +15,7 @@ func logJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		Text string
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 	log.Println(templates.ParseAndExecute(jobConfig.Text, ctx))
 	return nil, nil
@@ -26,7 +26,7 @@ func setVarJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug 
 		Value string
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 	return templates.ParseAndExecute(jobConfig.Value, ctx), nil
 }
@@ -36,7 +36,7 @@ func checkJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug b
 		Value string
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 	if templates.ParseAndExecute(jobConfig.Value, ctx) != "true" {
 		return nil, fmt.Errorf("validation failed %v", jobConfig.Value)
@@ -55,7 +55,7 @@ func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bo
 		Job Config
 	}
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("error parsing job config: %v", err)
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
 	for jobConfig.Next(ctx) {
