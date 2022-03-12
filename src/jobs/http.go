@@ -68,12 +68,12 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
 	}
 
-	headers := make(map[string]string)
+	headers, cookies := make(map[string]string), make(map[string]string)
+
 	resp.Header.VisitAll(func(key []byte, value []byte) {
 		headers[string(key)] = string(value)
 	})
 
-	cookies := make(map[string]string)
 	resp.Header.VisitAllCookie(func(key []byte, value []byte) {
 		c := fasthttp.AcquireCookie()
 		defer fasthttp.ReleaseCookie(c)
@@ -157,6 +157,7 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		dataSize := http.InitRequest(requestConfig, req)
 
 		trafficMonitor.Add(uint64(dataSize))
+
 		if err := sendFastHTTPRequest(client, req, nil, debug); err != nil {
 			if debug {
 				log.Printf("Error sending request %v: %v", req, err)

@@ -48,6 +48,7 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	shouldStop := make(chan bool)
+
 	go func() {
 		<-ctx.Done()
 		close(shouldStop)

@@ -101,17 +101,19 @@ func TestBlast(t *testing.T) {
 }
 
 func TestGetSeedDomain(t *testing.T) {
-	seedDomain := `example.com`
+	const seedDomain = `example.com`
+
 	generator, err := NewDistinctHeavyHitterGenerator(context.Background(), []string{seedDomain})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	count := 10
+
 	for subdomain := range generator.Next() {
 		resultSeedDomain := getSeedDomain(subdomain)
 		if resultSeedDomain != seedDomain {
-			t.Fatalf("Expect \"%s\", took \"%s\"\n", seedDomain, resultSeedDomain)
+			t.Fatalf("Want %q, got %q", seedDomain, resultSeedDomain)
 		}
 
 		count--

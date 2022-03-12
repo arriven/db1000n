@@ -52,13 +52,16 @@ func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader 
 		udpPacket *layers.UDP
 		tcpPacket *layers.TCP
 	)
+
 	ipPacket := buildIPPacket(c.IP)
-	if c.UDP != nil {
+
+	switch {
+	case c.UDP != nil:
 		udpPacket = buildUDPPacket(*c.UDP)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			return nil, nil, err
 		}
-	} else if c.TCP != nil {
+	case c.TCP != nil:
 		tcpPacket = buildTCPPacket(*c.TCP)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			return nil, nil, err
@@ -102,11 +105,8 @@ func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader 
 
 // OpenRawConnection opens a raw ip network connection based on the provided config
 func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
-	var (
-		packetConn net.PacketConn
-		err        error
-	)
-	if packetConn, err = net.ListenPacket(c.Name, c.Address); err != nil {
+	packetConn, err := net.ListenPacket(c.Name, c.Address)
+	if err != nil {
 		return nil, err
 	}
 
@@ -115,12 +115,7 @@ func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
 
 // SendPacket is used to generate and send the packet over the network
 func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, destinationPort int) (int, error) {
-	var (
-		payloadBuf gopacket.SerializeBuffer
-		ipHeader   *ipv4.Header
-		err        error
-	)
-	payloadBuf, ipHeader, err = BuildPacket(c)
+	payloadBuf, ipHeader, err := BuildPacket(c)
 	if err != nil {
 		return 0, err
 	}

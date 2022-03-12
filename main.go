@@ -45,69 +45,57 @@ import (
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
-
-	var configPaths string
-	var proxiesURL string
-	var systemProxy string
-	var backupConfig string
-	var refreshTimeout time.Duration
-	var scaleFactor int
-	var debug, help bool
-	var pprof string
-	var configFormat string
-	var prometheusPushGateways string
-	var prometheusOn bool
-	var doSelfUpdate bool
-
-	flag.StringVar(&configPaths, "c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&backupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
-	flag.DurationVar(&refreshTimeout, "refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute), "refresh timeout for updating the config")
-	flag.IntVar(&scaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
-	flag.BoolVar(&debug, "debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
-	flag.StringVar(&pprof, "pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
-	flag.BoolVar(&help, "h", false, "print help message and exit")
-	flag.StringVar(&proxiesURL, "proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
-	flag.StringVar(&systemProxy, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
-	flag.StringVar(&configFormat, "format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
-	flag.BoolVar(&prometheusOn, "prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", false), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
-	flag.StringVar(&prometheusPushGateways, "prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""), "Comma separated list of prometheus push gateways")
-	flag.BoolVar(&doSelfUpdate, "enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
-	flag.Parse()
-
 	log.Printf("DB1000n [Version: %s]\n", ota.Version)
 
-	if help {
+	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
+	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
+	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute), "refresh timeout for updating the config")
+	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
+	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
+	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
+	help := flag.Bool("h", false, "print help message and exit")
+	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
+	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
+	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
+	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", false), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
+	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""), "Comma separated list of prometheus push gateways")
+	doSelfUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
+
+	flag.Parse()
+
+	if *help {
 		flag.CommandLine.Usage()
 
 		return
 	}
 
-	if doSelfUpdate {
+	if *doSelfUpdate {
 		ota.DoSelfUpdate()
 	}
 
-	if debug && pprof == "" {
-		pprof = ":8080"
+	if *debug && *pprof == "" {
+		*pprof = ":8080"
 	}
 
-	if pprof != "" {
+	if *pprof != "" {
 		mux := http.NewServeMux()
 		mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
 		mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
 		mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
 		mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 		mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
+
 		go func() {
-			log.Println(http.ListenAndServe(pprof, mux))
+			log.Println(http.ListenAndServe(*pprof, mux))
 		}()
 	}
 
-	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
+	if !metrics.ValidatePrometheusPushGateways(*prometheusPushGateways) {
 		log.Fatal("Invalid value for --prometheus_gateways")
 	}
 
-	if proxiesURL != "" {
-		templates.SetProxiesURL(proxiesURL)
+	if *proxiesURL != "" {
+		templates.SetProxiesURL(*proxiesURL)
 	}
 
 	go utils.CheckCountry([]string{"Ukraine"})
@@ -115,17 +103,17 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if prometheusOn {
-		go metrics.ExportPrometheusMetrics(ctx, prometheusPushGateways)
+	if *prometheusOn {
+		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
 	}
 
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:    configPaths,
-		BackupConfig:   []byte(backupConfig),
-		RefreshTimeout: refreshTimeout,
-		Format:         configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: systemProxy, ScaleFactor: scaleFactor},
-	}, debug)
+		ConfigPaths:    *configPaths,
+		BackupConfig:   []byte(*backupConfig),
+		RefreshTimeout: *refreshTimeout,
+		Format:         *configFormat,
+		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor},
+	}, *debug)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}

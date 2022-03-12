@@ -49,6 +49,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+
 	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
@@ -62,6 +63,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 			if debug {
 				log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			}
+
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 			continue
@@ -73,6 +75,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 		if err != nil {
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+
 			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
 			}
@@ -80,6 +83,7 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 			if debug {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
 			}
+
 			processedTrafficMonitor.Add(uint64(len(body)))
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 		}
@@ -116,6 +120,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		if debug {
 			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
 		}
+
 		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return nil, err

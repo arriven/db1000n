@@ -96,6 +96,7 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 	}
 
 	proxy := func() string { return "" }
+
 	proxylist := templates.ParseAndExecute(clientConfig.ProxyURLs, nil)
 	if proxylist != "" {
 		if debug {

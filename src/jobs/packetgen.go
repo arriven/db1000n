@@ -37,6 +37,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	host := templates.ParseAndExecute(jobConfig.Host, nil)
+
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
 		log.Printf("Error parsing port: %v", err)

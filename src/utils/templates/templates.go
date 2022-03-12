@@ -87,11 +87,6 @@ func cookieString(cookies map[string]string) string {
 	}
 
 	return strings.Trim(strings.TrimSpace(s), ";")
-	// header := &fasthttp.RequestHeader{}
-	// for key, value := range cookies {
-	// 	header.SetCookie(key, value)
-	// }
-	// return header.C
 }
 
 // Parse a template
@@ -178,6 +173,7 @@ type MapStruct struct {
 // ParseMapStruct is like Parse but takes mapstructure as input
 func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 	result := make(map[string]interface{})
+
 	for key, value := range input {
 		switch v := value.(type) {
 		case string:
@@ -205,6 +201,7 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 // Execute same as regular Execute
 func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
+
 	for key, value := range tpl.tpl {
 		switch v := value.(type) {
 		case *template.Template:

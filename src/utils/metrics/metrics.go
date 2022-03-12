@@ -61,7 +61,8 @@ func (ms *Storage) Write(name, jobID string, value uint64) {
 }
 
 func (ms *Storage) Read(name string) uint64 {
-	sum := uint64(0)
+	var sum uint64
+
 	if tracker, ok := ms.trackers[name]; ok {
 		tracker.metrics.Range(func(k, v interface{}) bool {
 			if value, ok := v.(uint64); ok {
@@ -107,6 +108,7 @@ func (w *Writer) Flush() {
 func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
 	ticker := time.NewTicker(uint64erval)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

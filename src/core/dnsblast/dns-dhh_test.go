@@ -20,6 +20,7 @@ func TestDistinctHeavyHitterGenerator(t *testing.T) {
 	}
 
 	subDomainsGeneratedNumber := 0
+
 	for {
 		newDomain, ok := <-dhhGenerator.Next()
 		if !ok {

@@ -1718,7 +1718,7 @@ linters:
     - wastedassign
     - whitespace
     # - wrapcheck
-    # - wsl
+    - wsl
 #
 #   # Enable presets.
 #   # https://golangci-lint.run/usage/linters

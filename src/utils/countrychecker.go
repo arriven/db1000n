@@ -36,8 +36,7 @@ func CheckCountry(countriesToAvoid []string) {
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			log.Printf("Can't close connection to: %s", ipCheckerURI)
 
 			return
@@ -52,8 +51,8 @@ func CheckCountry(countriesToAvoid []string) {
 	}
 
 	ipInfo := IPInfo{}
-	err = json.Unmarshal(body, &ipInfo)
-	if err != nil {
+
+	if err = json.Unmarshal(body, &ipInfo); err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 
 		return
