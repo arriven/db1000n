@@ -105,7 +105,9 @@ services:
     labels:
         autoheal: "true"
     # set single country to check IP against and exit container if IP matches country OR IP cannot be determined
-    entrypoint: "./db1000n --strict-country-check --country-list='Country'"
+    environment:
+      STRICT_COUNTRY_CHECK: "true"
+      COUNTRY_LIST: "Country"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -122,7 +124,9 @@ services:
     labels:
         autoheal: "true"
     # set multiple countries to check IP against and exit container if IP matches country OR IP cannot be determined
-    entrypoint: "./db1000n --strict-country-check --country-list='Country, Another Country'"
+    environment:
+      STRICT_COUNTRY_CHECK: "true"
+      COUNTRY_LIST: "Country, Another Country"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -139,7 +143,9 @@ services:
     labels:
         autoheal: "true"
     # set single country to check IP against but do not exit container if IP matches country
-    entrypoint: "./db1000n --strict-country-check --country-list='Country'"
+    environment:
+      STRICT_COUNTRY_CHECK: "false"
+      COUNTRY_LIST: "Country"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
