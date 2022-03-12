@@ -86,7 +86,7 @@ func (r *Runner) Run(ctx context.Context) {
 }
 
 func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.UUID) (cancel context.CancelFunc) {
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
 
