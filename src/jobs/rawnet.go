@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -21,7 +20,7 @@ type rawNetJobConfig struct {
 	BasicJobConfig
 
 	Address string
-	Body    json.RawMessage
+	Body    string
 }
 
 func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {

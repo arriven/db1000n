@@ -30,10 +30,10 @@ import (
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
-func RandomPayload(length int) []byte {
+func RandomPayload(length int) string {
 	payload := make([]byte, length)
 	rand.Read(payload)
-	return payload
+	return string(payload)
 }
 
 // RandomIP returns a random ip to spoof packets

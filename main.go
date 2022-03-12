@@ -111,8 +111,11 @@ func main() {
 
 	go utils.CheckCountry([]string{"Ukraine"})
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if prometheusOn {
-		go metrics.ExportPrometheusMetrics(context.Background(), prometheusPushGateways)
+		go metrics.ExportPrometheusMetrics(ctx, prometheusPushGateways)
 	}
 
 	r, err := runner.New(&runner.Config{
@@ -132,8 +135,8 @@ func main() {
 		signal.Notify(sigs, syscall.SIGTERM)
 		<-sigs
 		log.Println("Terminating")
-		r.Stop()
+		cancel()
 	}()
 
-	r.Run()
+	r.Run(ctx)
 }

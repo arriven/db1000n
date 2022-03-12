@@ -5,7 +5,6 @@ import (
 	"context"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,8 +36,6 @@ type Runner struct {
 	currentRawConfig []byte // currently applied config
 
 	debug bool
-
-	stop chan interface{}
 }
 
 // New runner according to the config
@@ -51,100 +48,89 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 		configFormat:   cfg.Format,
 
 		debug: debug,
-
-		stop: make(chan interface{}),
 	}, nil
 }
 
 // Run the runner and block until Stop() is called
-func (r *Runner) Run() {
+func (r *Runner) Run(ctx context.Context) {
 	clientID := uuid.New()
 	refreshTimer := time.NewTicker(r.refreshTimeout)
+	defer refreshTimer.Stop()
 
 	var (
-		stop   bool
-		ctx    context.Context
 		cancel context.CancelFunc
-		wg     sync.WaitGroup
 	)
-
-	for !stop {
+	for {
 		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig, r.configFormat); cfg != nil {
 			if cancel != nil {
 				cancel()
 			}
 
-			ctx, cancel = context.WithCancel(context.Background())
-
-			var jobInstancesCount int
-
-			for i := range cfg.Jobs {
-				if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
-					log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
-					continue
-				}
-
-				job := jobs.Get(cfg.Jobs[i].Type)
-				if job == nil {
-					log.Printf("Unknown job %q", cfg.Jobs[i].Type)
-
-					continue
-				}
-
-				if cfg.Jobs[i].Count < 1 {
-					cfg.Jobs[i].Count = 1
-				}
-				if r.config.Global.ScaleFactor > 0 {
-					cfg.Jobs[i].Count = cfg.Jobs[i].Count * r.config.Global.ScaleFactor
-				}
-				cfgMap := make(map[string]interface{})
-				err := utils.Decode(cfg.Jobs[i], &cfgMap)
-				if err != nil {
-					log.Fatal("failed to encode cfg map")
-				}
-				ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
-
-				for j := 0; j < cfg.Jobs[i].Count; j++ {
-					wg.Add(1)
-
-					go func(i int) {
-						_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
-						if err != nil {
-							log.Println("error running job:", err)
-						}
-						wg.Done()
-					}(i)
-
-					jobInstancesCount++
-				}
-			}
+			cancel = r.runJobs(ctx, cfg, clientID)
 
 			r.currentRawConfig = raw
-
-			log.Printf("%d job instances (re)started", jobInstancesCount)
 		}
 
 		// Wait for refresh timer or stop signal
 		select {
 		case <-refreshTimer.C:
-		case <-r.stop:
-			refreshTimer.Stop()
-
-			stop = true
+		case <-ctx.Done():
+			if cancel != nil {
+				cancel()
+			}
+			return
 		}
 
 		dumpMetrics(clientID.String(), r.debug)
 	}
-
-	if cancel != nil {
-		cancel()
-	}
-
-	wg.Wait()
 }
 
-// Stop runner asynchronously
-func (r *Runner) Stop() { close(r.stop) }
+func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.UUID) (cancel context.CancelFunc) {
+	ctx, cancel = context.WithCancel(ctx)
+
+	var jobInstancesCount int
+
+	for i := range cfg.Jobs {
+		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
+			log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+			continue
+		}
+
+		job := jobs.Get(cfg.Jobs[i].Type)
+		if job == nil {
+			log.Printf("Unknown job %q", cfg.Jobs[i].Type)
+
+			continue
+		}
+
+		if cfg.Jobs[i].Count < 1 {
+			cfg.Jobs[i].Count = 1
+		}
+		if r.config.Global.ScaleFactor > 0 {
+			cfg.Jobs[i].Count = cfg.Jobs[i].Count * r.config.Global.ScaleFactor
+		}
+		cfgMap := make(map[string]interface{})
+		err := utils.Decode(cfg.Jobs[i], &cfgMap)
+		if err != nil {
+			log.Fatal("failed to encode cfg map")
+		}
+		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
+
+		for j := 0; j < cfg.Jobs[i].Count; j++ {
+			go func(i int) {
+				_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+				if err != nil {
+					log.Println("error running job:", err)
+				}
+			}(i)
+
+			jobInstancesCount++
+		}
+	}
+
+	log.Printf("%d job instances (re)started", jobInstancesCount)
+	return cancel
+}
 
 func dumpMetrics(clientID string, debug bool) {
 	defer func() {

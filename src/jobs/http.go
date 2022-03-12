@@ -125,14 +125,13 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
-
+	log.Printf("Attacking %v", jobConfig.Request["path"])
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
 		if err := utils.Decode(requestTpl.Execute(ctx), &requestConfig); err != nil {
 			log.Printf("Error executing request template: %v", err)
 			return nil, err
 		}
-		log.Printf("Sent single http request to %v", requestConfig.Path)
 		dataSize := http.InitRequest(requestConfig, req)
 
 		trafficMonitor.Add(uint64(dataSize))
