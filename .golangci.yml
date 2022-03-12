@@ -1716,7 +1716,7 @@ linters:
     - varcheck
     # - varnamelen
     - wastedassign
-    # - whitespace
+    - whitespace
     # - wrapcheck
     # - wsl
 #

@@ -56,7 +56,6 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	isTCPTLSProto := jobConfig.Protocol == dnsblast.TCPTLSProtoName
 
 	switch {
-
 	case jobConfig.Protocol == "":
 		jobConfig.Protocol = defaultProto
 

@@ -76,7 +76,6 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
 			}
-
 		} else {
 			if debug {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
