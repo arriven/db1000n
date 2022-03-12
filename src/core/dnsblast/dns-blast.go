@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils"
-	"github.com/Arriven/db1000n/src/utils/metrics"
-
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
+
+	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
 // Useful contants
@@ -51,7 +51,8 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
 		metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
-		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %s",
+
+		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %w",
 			config.RootDomain, err)
 	}
 
@@ -75,6 +76,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 			if wg != nil {
 				defer wg.Done()
 			}
+
 			defer utils.PanicHandler()
 
 			if err := blaster.ExecuteStressTest(ctx, nameserver, parameters); err != nil {
@@ -82,6 +84,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 				log.Printf("[DNS BLAST] stress test finished with error "+
 					"[nameserver=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]: %s",
 					nameserver, parameters.Protocol, parameters.SeedDomains, parameters.Delay, parameters.ParallelQueries, err)
+
 				return
 			}
 		}(nameserver, stressTestParameters)
@@ -120,10 +123,11 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 		nextLoopTicker    = time.NewTicker(parameters.Delay)
 	)
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
-	dhhGenerator, err := NewDistinctHeavyHitterGenerator(parameters.SeedDomains)
+	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
 	if err != nil {
 		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
-		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %s", err)
+
+		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %w", err)
 	}
 
 	defer dhhGenerator.Cancel()
@@ -141,6 +145,7 @@ blastLoop:
 		select {
 		case <-ctx.Done():
 			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
+
 			break blastLoop
 		default:
 			// Keep going
@@ -159,6 +164,7 @@ blastLoop:
 		select {
 		case <-ctx.Done():
 			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
+
 			break blastLoop
 		case <-nextLoopTicker.C:
 			continue blastLoop
@@ -199,9 +205,11 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 	if sharedDNSClient.Net == TCPTLSProtoName {
 		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 	}
+
 	defer co.Close()
 
 	_, rtt, err := sharedDNSClient.ExchangeWithConn(question, co)
+
 	return &Response{
 		WithErr: err != nil,
 		Err:     err,
@@ -219,20 +227,25 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, pa
 		log.Printf("[DNS BLAST] failed to dial remote host [host=%s] to do the DNS query: %s",
 			parameters.HostAndPort, err)
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
+
 		return
 	}
+
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
 	if sharedDNSClient.Net == TCPTLSProtoName {
 		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 	}
+
 	defer co.Close()
 
 	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
 	if err != nil {
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
 		log.Printf("[DNS BLAST] failed to complete the DNS query: %s", err)
+
 		return
 	}
+
 	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess)
 }
 

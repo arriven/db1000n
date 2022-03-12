@@ -29,25 +29,33 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
+
 		return nil, err
 	}
+
 	var clientConfig http.ClientConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
 		log.Printf("Error parsing client config: %v", err)
+
 		return nil, err
 	}
+
 	if globalConfig.ProxyURL != "" {
 		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
+
 	client := http.NewClient(clientConfig, debug)
 
 	var requestConfig http.RequestConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Request, ctx), &requestConfig); err != nil {
 		log.Printf("Error parsing request config: %v", err)
+
 		return nil, err
 	}
+
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
+
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
@@ -55,21 +63,22 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	dataSize := http.InitRequest(requestConfig, req)
 
 	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
-	err = sendFastHTTPRequest(client, req, resp, debug)
-	if err == nil {
+
+	if err = sendFastHTTPRequest(client, req, resp, debug); err == nil {
 		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
 	}
+
 	headers := make(map[string]string)
 	resp.Header.VisitAll(func(key []byte, value []byte) {
 		headers[string(key)] = string(value)
 	})
+
 	cookies := make(map[string]string)
 	resp.Header.VisitAllCookie(func(key []byte, value []byte) {
 		c := fasthttp.AcquireCookie()
 		defer fasthttp.ReleaseCookie(c)
 
-		err := c.ParseBytes(value)
-		if err != nil {
+		if err := c.ParseBytes(value); err != nil {
 			return
 		}
 
@@ -77,19 +86,21 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 			if debug {
 				log.Println("cookie from request expired:", string(key))
 			}
+
 			return
 		}
 		cookies[string(key)] = string(c.Value())
 	})
-	response := make(map[string]interface{})
-	response["body"] = string(resp.Body())
-	response["status_code"] = resp.StatusCode()
-	response["headers"] = headers
-	response["cookies"] = cookies
-	result := make(map[string]interface{})
-	result["response"] = response
-	result["error"] = err
-	return result, nil
+
+	return map[string]interface{}{
+		"response": map[string]interface{}{
+			"body":        string(resp.Body()),
+			"status_code": resp.StatusCode(),
+			"headers":     headers,
+			"cookies":     cookies,
+		},
+		"error": err,
+	}, nil
 }
 
 func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
@@ -100,38 +111,49 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing job config: %v", err)
+
 		return nil, err
 	}
+
 	var clientConfig http.ClientConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
 		log.Printf("Error parsing client config: %v", err)
+
 		return nil, err
 	}
+
 	if globalConfig.ProxyURL != "" {
 		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
+
 	client := http.NewClient(clientConfig, debug)
 
 	requestTpl, err := templates.ParseMapStruct(jobConfig.Request)
 	if err != nil {
 		log.Printf("Error parsing request config: %v", err)
+
 		return nil, err
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+
 	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
+
 	log.Printf("Attacking %v", jobConfig.Request["path"])
+
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
 		if err := utils.Decode(requestTpl.Execute(ctx), &requestConfig); err != nil {
 			log.Printf("Error executing request template: %v", err)
+
 			return nil, err
 		}
+
 		dataSize := http.InitRequest(requestConfig, req)
 
 		trafficMonitor.Add(uint64(dataSize))

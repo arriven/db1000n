@@ -128,6 +128,7 @@ func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, d
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
 		return 0, err
 	}
+
 	return len(payloadBuf.Bytes()), nil
 }
 
@@ -139,10 +140,12 @@ type IPPacketConfig struct {
 
 // buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
 func buildIPPacket(c IPPacketConfig) *layers.IPv4 {
+	const ipv4 = 4
+
 	return &layers.IPv4{
 		SrcIP:    net.ParseIP(c.SrcIP).To4(),
 		DstIP:    net.ParseIP(c.DstIP).To4(),
-		Version:  4,
+		Version:  ipv4,
 		Protocol: layers.IPProtocolTCP,
 	}
 }
@@ -215,6 +218,7 @@ type EthernetPacketConfig struct {
 func buildEthernetPacket(c EthernetPacketConfig) *layers.Ethernet {
 	srcMac := net.HardwareAddr(c.SrcMAC)
 	dstMac := net.HardwareAddr(c.DstMAC)
+
 	return &layers.Ethernet{
 		SrcMAC: net.HardwareAddr{srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]},
 		DstMAC: net.HardwareAddr{dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]},

@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/corpix/uarand"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
+
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // RequestConfig is a struct representing the config of a single request
@@ -33,14 +34,17 @@ func InitRequest(c RequestConfig, req *fasthttp.Request) int {
 	req.SetBodyString(c.Body)
 	// Add random user agent and configured headers
 	req.Header.Set("user-agent", uarand.GetRandom())
+
 	for key, value := range c.Headers {
 		req.Header.Set(key, value)
 		dataSize += len(key) + len(value)
 	}
+
 	for key, value := range c.Cookies {
 		req.Header.SetCookie(key, value)
 		dataSize += len(key) + len(value)
 	}
+
 	return dataSize
 }
 
@@ -57,7 +61,9 @@ type ClientConfig struct {
 
 // NewClient produces a client from a structure
 func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) {
-	timeout := 90 * time.Second
+	const defaultTimeout = 90 * time.Second
+
+	timeout := defaultTimeout
 	if clientConfig.Timeout != nil {
 		timeout = *clientConfig.Timeout
 	}
@@ -96,7 +102,7 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 			log.Printf("List of proxies: %s", proxylist)
 		}
 
-		var proxyURLs = strings.Split(proxylist, ",")
+		proxyURLs := strings.Split(proxylist, ",")
 
 		if debug {
 			log.Printf("proxyURLs: %v", proxyURLs)
@@ -133,6 +139,7 @@ func fastHTTPProxyDial(proxyFunc func() string, backup fasthttp.DialFunc) fastht
 		if proxy == "" {
 			return backup(addr)
 		}
+
 		return fasthttpproxy.FasthttpSocksDialer(proxy)(addr)
 	}
 }

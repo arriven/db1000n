@@ -91,6 +91,7 @@ func TestBlast(t *testing.T) {
 			err := Start(blastContext, nil, config)
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
+
 				return
 			}
 
@@ -101,16 +102,18 @@ func TestBlast(t *testing.T) {
 
 func TestGetSeedDomain(t *testing.T) {
 	seedDomain := `example.com`
-	generator, err := NewDistinctHeavyHitterGenerator([]string{seedDomain})
+	generator, err := NewDistinctHeavyHitterGenerator(context.Background(), []string{seedDomain})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	count := 10
 	for subdomain := range generator.Next() {
 		resultSeedDomain := getSeedDomain(subdomain)
 		if resultSeedDomain != seedDomain {
 			t.Fatalf("Expect \"%s\", took \"%s\"\n", seedDomain, resultSeedDomain)
 		}
+
 		count--
 		if count == 0 {
 			break

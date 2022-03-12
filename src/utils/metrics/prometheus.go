@@ -36,10 +36,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
+
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // common values for prometheus metrics
@@ -133,12 +134,16 @@ func ValidatePrometheusPushGateways(value string) bool {
 			result = false
 		}
 	}
+
 	return result
 }
 
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
 func ExportPrometheusMetrics(ctx context.Context, gateways string) {
+	// We don't expect that rendering metrics should take a lot of time and needs long timeout
+	const timeout = 30 * time.Second
+
 	registerMetrics()
 
 	http.Handle("/metrics", promhttp.HandlerFor(
@@ -146,9 +151,7 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 		promhttp.HandlerOpts{
 			// Opt into OpenMetrics to support exemplars.
 			EnableOpenMetrics: true,
-			// we don't expect that rendering metrics should take a lot of time
-			// and needs long timeout
-			Timeout: time.Second * 30,
+			Timeout:           timeout,
 		},
 	))
 
@@ -159,7 +162,7 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
 		err := server.Shutdown(ctx)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Println("failure shutting down prometheus server:", err)
 		}
 	}(ctx, server)
@@ -167,8 +170,8 @@ func ExportPrometheusMetrics(ctx context.Context, gateways string) {
 	if gateways != "" {
 		go pushMetrics(ctx, strings.Split(gateways, ","))
 	}
-	err := server.ListenAndServe()
-	if err != nil {
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal()
 	}
 }
@@ -182,14 +185,19 @@ func getBasicAuth() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
 	decryptedData, err := utils.Decrypt(encryptedData)
 	if err != nil {
 		return "", "", err
 	}
+
+	const numBasicAuthParts = 2
+
 	parts := bytes.Split(decryptedData, []byte{':'})
-	if len(parts) != 2 {
+	if len(parts) != numBasicAuthParts {
 		return "", "", errors.New("invalid basic auth credential format")
 	}
+
 	return string(parts[0]), string(parts[1]), nil
 }
 
@@ -216,6 +224,7 @@ func getTLSConfig() (*tls.Config, error) {
 			return nil, errors.New("invalid embedded CA")
 		}
 	}
+
 	return &tls.Config{
 		RootCAs: rootCAs,
 	}, nil
@@ -230,18 +239,23 @@ func pushMetrics(ctx context.Context, gateways []string) {
 	tlsConfig, err := getTLSConfig()
 	if err != nil {
 		log.Println("Can't get tls config")
+
 		return
 	}
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
 	}
+
 	user, password, err := getBasicAuth()
 	if err != nil {
 		log.Println("Can't fetch basic auth credentials")
+
 		return
 	}
+
 	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
 
 	for {
@@ -264,7 +278,8 @@ func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
 		DNSBlastProtocolLabel:   protocol,
-		StatusLabel:             status}).Inc()
+		StatusLabel:             status,
+	}).Inc()
 }
 
 // IncHTTP increments counter of sent http queries

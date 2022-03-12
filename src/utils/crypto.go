@@ -33,6 +33,7 @@ func GetEncryptionKeys() ([]string, error) {
 			output = append(output, key)
 		}
 	}
+
 	return output, nil
 }
 
@@ -47,20 +48,25 @@ func Decrypt(cfg []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var lastErr error
 	// iterate over all keys and return on first success decryption
 	for _, key := range keys {
 		identity, err := age.NewScryptIdentity(key)
 		if err != nil {
 			lastErr = err
+
 			continue
 		}
 		decryptedReader, err := age.Decrypt(bytes.NewReader(cfg), identity)
 		if err != nil {
 			lastErr = err
+
 			continue
 		}
+
 		return ioutil.ReadAll(decryptedReader)
 	}
+
 	return nil, lastErr
 }

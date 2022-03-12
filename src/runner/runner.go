@@ -57,9 +57,7 @@ func (r *Runner) Run(ctx context.Context) {
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 	defer refreshTimer.Stop()
 
-	var (
-		cancel context.CancelFunc
-	)
+	var cancel context.CancelFunc
 	for {
 		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig, r.configFormat); cfg != nil {
 			if cancel != nil {
@@ -78,6 +76,7 @@ func (r *Runner) Run(ctx context.Context) {
 			if cancel != nil {
 				cancel()
 			}
+
 			return
 		}
 
@@ -93,6 +92,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 	for i := range cfg.Jobs {
 		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
 			log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+
 			continue
 		}
 
@@ -106,14 +106,16 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 		if cfg.Jobs[i].Count < 1 {
 			cfg.Jobs[i].Count = 1
 		}
+
 		if r.config.Global.ScaleFactor > 0 {
-			cfg.Jobs[i].Count = cfg.Jobs[i].Count * r.config.Global.ScaleFactor
+			cfg.Jobs[i].Count *= r.config.Global.ScaleFactor
 		}
+
 		cfgMap := make(map[string]interface{})
-		err := utils.Decode(cfg.Jobs[i], &cfgMap)
-		if err != nil {
+		if err := utils.Decode(cfg.Jobs[i], &cfgMap); err != nil {
 			log.Fatal("failed to encode cfg map")
 		}
+
 		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
@@ -129,6 +131,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 	}
 
 	log.Printf("%d job instances (re)started", jobInstancesCount)
+
 	return cancel
 }
 

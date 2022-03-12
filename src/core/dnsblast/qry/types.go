@@ -19,6 +19,7 @@ func ResponseCode(rc int) string {
 		8: "NOTAUTH",
 		9: "NOTZONE",
 	}
+
 	return rcodes[rc]
 }
 

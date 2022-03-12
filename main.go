@@ -78,6 +78,7 @@ func main() {
 
 	if help {
 		flag.CommandLine.Usage()
+
 		return
 	}
 

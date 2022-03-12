@@ -13,5 +13,4 @@ func init() {
 		panic("Can't decode base64 encoded encrypted config")
 	}
 	DefaultConfig = string(decoded)
-
 }

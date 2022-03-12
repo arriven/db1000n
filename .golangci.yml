@@ -96,904 +96,899 @@
 #   sort-results: false
 
 # # All available settings of specific linters.
-# linters-settings:
-#   bidichk:
-#     # The following configurations check for all mentioned invisible unicode runes.
-#     # All runes are enabled by default.
-#     left-to-right-embedding: false
-#     right-to-left-embedding: false
-#     pop-directional-formatting: false
-#     left-to-right-override: false
-#     right-to-left-override: false
-#     left-to-right-isolate: false
-#     right-to-left-isolate: false
-#     first-strong-isolate: false
-#     pop-directional-isolate: false
-
-#   cyclop:
-#     # The maximal code complexity to report.
-#     max-complexity: 10
-#     # The maximal average package complexity.
-#     # If it's higher than 0.0 (float) the check is enabled
-#     # Default: 0.0
-#     package-average: 0.5
-#     # Should ignore tests.
-#     # Default: false
-#     skip-tests: true
-
-#   decorder:
-#     # Required order of `type`, `const`, `var` and `func` declarations inside a file.
-#     # Default: types before constants before variables before functions.
-#     dec-order:
-#       - type
-#       - const
-#       - var
-#       - func
-
-#     # If true, order of declarations is not checked at all.
-#     # Default: true (disabled)
-#     disable-dec-order-check: false
-
-#     # If true, `init` func can be anywhere in file (does not have to be declared before all other functions).
-#     # Default: true (disabled)
-#     disable-init-func-first-check: false
-
-#     # If true, multiple global `type`, `const` and `var` declarations are allowed.
-#     # Default: true (disabled)
-#     disable-dec-num-check: false
-
-#   depguard:
-#     # Kind of list is passed in.
-#     # Allowed values: allowlist|denylist
-#     # Default: denylist
-#     list-type: allowlist
-
-#     # Check the list against standard lib.
-#     # Default: false
-#     include-go-root: true
-
-#     # A list of packages for the list type specified.
-#     # Default: []
-#     packages:
-#       - github.com/sirupsen/logrus
-
-#     # A list of packages for the list type specified.
-#     # Specify an error message to output when a denied package is used.
-#     # Default: []
-#     packages-with-error-message:
-#       - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
-
-#     # Create additional guards that follow the same configuration pattern.
-#     # Results from all guards are aggregated together.
-#     additional-guards:
-#       - list-type: denylist
-#         include-go-root: false
-#         packages:
-#           - github.com/stretchr/testify
-#         # Specify rules by which the linter ignores certain files for consideration.
-#         ignore-file-rules:
-#           - "**/*_test.go"
-#           - "**/mock/**/*.go"
-
-#   dogsled:
-#     # Checks assignments with too many blank identifiers.
-#     # Default: 2
-#     max-blank-identifiers: 3
-
-#   dupl:
-#     # Tokens count to trigger issue.
-#     # Default: 150
-#     threshold: 100
-
-#   errcheck:
-#     # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
-#     # Such cases aren't reported by default.
-#     # Default: false
-#     check-type-assertions: true
-
-#     # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
-#     # Such cases aren't reported by default.
-#     # Default: false
-#     check-blank: true
-
-#     # DEPRECATED comma-separated list of pairs of the form pkg:regex
-#     #
-#     # the regex is used to ignore names within pkg. (default "fmt:.*").
-#     # see https://github.com/kisielk/errcheck#the-deprecated-method for details
-#     ignore: fmt:.*,io/ioutil:^Read.*
-
-#     # To disable the errcheck built-in exclude list.
-#     # See `-excludeonly` option in https://github.com/kisielk/errcheck#excluding-functions for details.
-#     # Default: false
-#     disable-default-exclusions: true
-
-#     # DEPRECATED use exclude-functions instead.
-#     #
-#     # Path to a file containing a list of functions to exclude from checking.
-#     # See https://github.com/kisielk/errcheck#excluding-functions for details.
-#     exclude: /path/to/file.txt
-
-#     # List of functions to exclude from checking, where each entry is a single function to exclude.
-#     # See https://github.com/kisielk/errcheck#excluding-functions for details.
-#     exclude-functions:
-#       - io/ioutil.ReadFile
-#       - io.Copy(*bytes.Buffer)
-#       - io.Copy(os.Stdout)
-
-#   errchkjson:
-#     # With check-error-free-encoding set to true, errchkjson does warn about errors
-#     # from json encoding functions that are safe to be ignored,
-#     # because they are not possible to happen.
-#     #
-#     # if check-error-free-encoding is set to true and errcheck linter is enabled,
-#     # it is recommended to add the following exceptions to prevent from false positives:
-#     #
-#     #     linters-settings:
-#     #       errcheck:
-#     #         exclude-functions:
-#     #           - encoding/json.Marshal
-#     #           - encoding/json.MarshalIndent
-#     #
-#     # Default: false
-#     check-error-free-encoding: true
-
-#     # Issue on struct encoding that doesn't have exported fields.
-#     # Default: false
-#     report-no-exported: false
-
-#   errorlint:
-#     # Check whether fmt.Errorf uses the %w verb for formatting errors.
-#     # See the https://github.com/polyfloyd/go-errorlint for caveats.
-#     # Default: true
-#     errorf: false
-#     # Check for plain type assertions and type switches.
-#     # Default: true
-#     asserts: false
-#     # Check for plain error comparisons.
-#     # Default: true
-#     comparison: false
-
-#   exhaustive:
-#     # Check switch statements in generated files also.
-#     # Default: false
-#     check-generated: true
-#     # Presence of "default" case in switch statements satisfies exhaustiveness,
-#     # even if all enum members are not listed.
-#     # Default: false
-#     default-signifies-exhaustive: true
-#     # Enum members matching the supplied regex do not have to be listed in
-#     # switch statements to satisfy exhaustiveness.
-#     # Default: ""
-#     ignore-enum-members: "Example.+"
-#     # Consider enums only in package scopes, not in inner scopes.
-#     # Default: false
-#     package-scope-only: true
-
-#   exhaustivestruct:
-#     # Struct Patterns is list of expressions to match struct packages and names.
-#     # The struct packages have the form `example.com/package.ExampleStruct`.
-#     # The matching patterns can use matching syntax from https://pkg.go.dev/path#Match.
-#     # If this list is empty, all structs are tested.
-#     struct-patterns:
-#       - "*.Test"
-#       - "example.com/package.ExampleStruct"
-
-#   forbidigo:
-#     # Forbid the following identifiers (list of regexp).
-#     forbid:
-#       - ^print.*$
-#       - 'fmt\.Print.*'
-#       # Optionally put comments at the end of the regex, surrounded by `(# )?`
-#       # Escape any special characters.
-#       - 'fmt\.Print.*(# Do not commit print statements\.)?'
-#     # Exclude godoc examples from forbidigo checks.
-#     # Default: true
-#     exclude_godoc_examples: false
-
-#   funlen:
-#     # Checks the number of lines in a function.
-#     # If lower than 0, disable the check.
-#     # Default: 60
-#     lines: -1
-#     # Checks the number of statements in a function.
-#     # If lower than 0, disable the check.
-#     # Default: 40
-#     statements: -1
-
-#   gci:
-#     # DEPRECATED: use `sections` and `prefix(github.com/org/project)` instead.
-#     local-prefixes: github.com/org/project
-
-#     # Checks that no inline Comments are present.
-#     # Default: false
-#     no-inline-comments: true
-
-#     # Checks that no prefix Comments(comment lines above an import) are present.
-#     # Default: false
-#     no-prefix-comments: true
-
-#     # Section configuration to compare against.
-#     # Section names are case-insensitive and may contain parameters in ().
-#     # Default: ["standard", "default"]
-#     sections:
-#       - standard # Captures all standard packages if they do not match another section.
-#       - default # Contains all imports that could not be matched to another section type.
-#       - comment(your text here) # Prints the specified indented comment.
-#       - newLine # Prints an empty line
-#       - prefix(github.com/org/project) # Groups all imports with the specified Prefix.
-
-#     # Separators that should be present between sections.
-#     # Default: ["newLine"]
-#     section-separators:
-#       - newLine
-
-#   gocognit:
-#     # Minimal code complexity to report
-#     # Default: 30 (but we recommend 10-20)
-#     min-complexity: 10
-
-#   goconst:
-#     # Minimal length of string constant.
-#     # Default: 3
-#     min-len: 2
-#     # Minimum occurrences of constant string count to trigger issue.
-#     # Default: 3
-#     min-occurrences: 2
-#     # Ignore test files.
-#     # Default: false
-#     ignore-tests: true
-#     # Look for existing constants matching the values.
-#     # Default: true
-#     match-constant: false
-#     # Search also for duplicated numbers.
-#     # Default: false
-#     numbers: true
-#     # Minimum value, only works with goconst.numbers
-#     # Default: 3
-#     min: 2
-#     # Maximum value, only works with goconst.numbers
-#     # Default: 3
-#     max: 2
-#     # Ignore when constant is not used as function argument.
-#     # Default: true
-#     ignore-calls: false
-
-#   gocritic:
-#     # Which checks should be enabled; can't be combined with 'disabled-checks'.
-#     # See https://go-critic.github.io/overview#checks-overview.
-#     # To check which checks are enabled run `GL_DEBUG=gocritic golangci-lint run`.
-#     # By default, list of stable checks is used.
-#     enabled-checks:
-#       - nestingReduce
-#       - unnamedResult
-#       - ruleguard
-#       - truncateCmp
-
-#     # Which checks should be disabled; can't be combined with 'enabled-checks'.
-#     # Default: []
-#     disabled-checks:
-#       - regexpMust
-
-#     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
-#     # See https://github.com/go-critic/go-critic#usage -> section "Tags".
-#     # Default: []
-#     enabled-tags:
-#       - diagnostic
-#       - style
-#       - performance
-#       - experimental
-#       - opinionated
-#     disabled-tags:
-#       - diagnostic
-#       - style
-#       - performance
-#       - experimental
-#       - opinionated
-
-#     # Settings passed to gocritic.
-#     # The settings key is the name of a supported gocritic checker.
-#     # The list of supported checkers can be find in https://go-critic.github.io/overview.
-#     settings:
-#       # Must be valid enabled check name.
-#       captLocal:
-#         # Whether to restrict checker to params only.
-#         # Default: true
-#         paramsOnly: false
-#       elseif:
-#         # Whether to skip balanced if-else pairs.
-#         # Default: true
-#         skipBalanced: false
-#       hugeParam:
-#         # Size in bytes that makes the warning trigger.
-#         # Default: 80
-#         sizeThreshold: 70
-#       nestingReduce:
-#         # Min number of statements inside a branch to trigger a warning.
-#         # Default: 5
-#         bodyWidth: 4
-#       rangeExprCopy:
-#         # Size in bytes that makes the warning trigger.
-#         # Default: 512
-#         sizeThreshold: 516
-#         # Whether to check test functions
-#         # Default: true
-#         skipTestFuncs: false
-#       rangeValCopy:
-#         # Size in bytes that makes the warning trigger.
-#         # Default: 128
-#         sizeThreshold: 32
-#         # Whether to check test functions.
-#         # Default: true
-#         skipTestFuncs: false
-#       ruleguard:
-#         # Enable debug to identify which 'Where' condition was rejected.
-#         # The value of the parameter is the name of a function in a ruleguard file.
-#         #
-#         # When a rule is evaluated:
-#         # If:
-#         #   The Match() clause is accepted; and
-#         #   One of the conditions in the Where() clause is rejected,
-#         # Then:
-#         #   ruleguard prints the specific Where() condition that was rejected.
-#         #
-#         # The flag is passed to the ruleguard 'debug-group' argument.
-#         debug: "emptyDecl"
-#         # Deprecated, use 'failOn' param.
-#         # If set to true, identical to failOn='all', otherwise failOn=''
-#         failOnError: false
-#         # Determines the behavior when an error occurs while parsing ruleguard files.
-#         # If flag is not set, log error and skip rule files that contain an error.
-#         # If flag is set, the value must be a comma-separated list of error conditions.
-#         # - 'all':    fail on all errors.
-#         # - 'import': ruleguard rule imports a package that cannot be found.
-#         # - 'dsl':    gorule file does not comply with the ruleguard DSL.
-#         failOn: dsl
-#         # Comma-separated list of file paths containing ruleguard rules.
-#         # If a path is relative, it is relative to the directory where the golangci-lint command is executed.
-#         # The special '${configDir}' variable is substituted with the absolute directory containing the golangci config file.
-#         # Glob patterns such as 'rules-*.go' may be specified.
-#         rules: "${configDir}/ruleguard/rules-*.go,${configDir}/myrule1.go"
-#       tooManyResultsChecker:
-#         # Maximum number of results.
-#         # Default: 5
-#         maxResults: 10
-#       truncateCmp:
-#         # Whether to skip int/uint/uintptr types.
-#         # Default: true
-#         skipArchDependent: false
-#       underef:
-#         # Whether to skip (*x).method() calls where x is a pointer receiver.
-#         # Default: true
-#         skipRecvDeref: false
-#       unnamedResult:
-#         # Whether to check exported functions.
-#         checkExported: true
-
-#   gocyclo:
-#     # Minimal code complexity to report.
-#     # Default: 30 (but we recommend 10-20)
-#     min-complexity: 10
-
-#   godot:
-#     # Comments to be checked: `declarations`, `toplevel`, or `all`.
-#     # Default: declarations
-#     scope: toplevel
-#     # List of regexps for excluding particular comment lines from check.
-#     exclude:
-#       # Exclude todo and fixme comments.
-#       - "^fixme:"
-#       - "^todo:"
-#     # Check that each sentence ends with a period.
-#     # Default: true
-#     period: false
-#     # Check that each sentence starts with a capital letter.
-#     # Default: false
-#     capital: true
-
-#   godox:
-#     # Report any comments starting with keywords, this is useful for TODO or FIXME comments that
-#     # might be left in the code accidentally and should be resolved before merging.
-#     # Default: TODO, BUG, and FIXME.
-#     keywords:
-#       - NOTE
-#       - OPTIMIZE # marks code that should be optimized before merging
-#       - HACK # marks hack-around that should be removed before merging
-
-#   gofmt:
-#     # Simplify code: gofmt with `-s` option.
-#     # Default: true
-#     simplify: false
-
-#   gofumpt:
-#     # Select the Go version to target.
-#     # Default: 1.15
-#     lang-version: "1.17"
-
-#     # Choose whether to use the extra rules.
-#     # Default: false
-#     extra-rules: true
-
-#   goheader:
-#     # Supports two types 'const` and `regexp`.
-#     # Values can be used recursively.
-#     values:
-#       const:
-#         # Define here const type values in format k:v.
-#         # For example:
-#         COMPANY: MY COMPANY
-#       regexp:
-#         # Define here regexp type values.
-#         # for example:
-#         AUTHOR: .*@mycompany\.com
-#     # The template use for checking.
-#     template: |-
-#       # Put here copyright header template for source code files
-#       # For example:
-#       # Note: {{ YEAR }} is a builtin value that returns the year relative to the current machine time.
-#       #
-#       # {{ AUTHOR }} {{ COMPANY }} {{ YEAR }}
-#       # SPDX-License-Identifier: Apache-2.0
-
-#       # Licensed under the Apache License, Version 2.0 (the "License");
-#       # you may not use this file except in compliance with the License.
-#       # You may obtain a copy of the License at:
-
-#       #   http://www.apache.org/licenses/LICENSE-2.0
-
-#       # Unless required by applicable law or agreed to in writing, software
-#       # distributed under the License is distributed on an "AS IS" BASIS,
-#       # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#       # See the License for the specific language governing permissions and
-#       # limitations under the License.
-#     # As alternative of directive 'template', you may put the path to file with the template source.
-#     # Useful if you need to load the template from a specific file.
-#     template-path: /path/to/my/template.tmpl
-
-#   goimports:
-#     # Put imports beginning with prefix after 3rd-party packages.
-#     # It's a comma-separated list of prefixes.
-#     local-prefixes: github.com/org/project
-
-#   golint:
-#     # Minimal confidence for issues.
-#     # Default: 0.8
-#     min-confidence: 0.7
-
-#   gomnd:
-#     # List of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
-#     checks:
-#       - argument
-#       - case
-#       - condition
-#       - operation
-#       - return
-#       - assign
-#     # List of numbers to exclude from analysis.
-#     # The numbers should be written as string.
-#     # Values always ignored: "1", "1.0", "0" and "0.0"
-#     ignored-numbers:
-#       - "0666"
-#       - "0755"
-#       - "42"
-#     # List of file patterns to exclude from analysis.
-#     # Values always ignored: `.+_test.go`
-#     ignored-files:
-#       - "magic1_.*.go"
-#     # List of function patterns to exclude from analysis.
-#     # Values always ignored: `time.Time`
-#     ignored-functions:
-#       - "math.*"
-#       - "http.StatusText"
-
-#   gomoddirectives:
-#     # Allow local `replace` directives.
-#     replace-local: false
-#     # List of allowed `replace` directives.
-#     # Default: []
-#     replace-allow-list:
-#       - launchpad.net/gocheck
-#     # Allow to not explain why the version has been retracted in the `retract` directives.
-#     # Default: false
-#     retract-allow-no-explanation: false
-#     # Forbid the use of the `exclude` directives.
-#     # Default: false
-#     exclude-forbidden: false
-
-#   gomodguard:
-#     allowed:
-#       # List of allowed modules.
-#       modules:
-#         - gopkg.in/yaml.v2
-#       # List of allowed module domains.
-#       domains:
-#         - golang.org
-#     blocked:
-#       # List of blocked modules.
-#       modules:
-#         # Blocked module.
-#         - github.com/uudashr/go-module:
-#             # Recommended modules that should be used instead. (Optional)
-#             recommendations:
-#               - golang.org/x/mod
-#             # Reason why the recommended module should be used. (Optional)
-#             reason: "`mod` is the official go.mod parser library."
-#       # List of blocked module version constraints.
-#       versions:
-#         # Blocked module with version constraint.
-#         - github.com/mitchellh/go-homedir:
-#             # Version constraint, see https://github.com/Masterminds/semver#basic-comparisons.
-#             version: "< 1.1.0"
-#             # Reason why the version constraint exists. (Optional)
-#             reason: "testing if blocked version constraint works."
-#       # Set to true to raise lint issues for packages that are loaded from a local path via replace directive.
-#       local_replace_directives: false
-
-#   gosimple:
-#     # Select the Go version to target.
-#     # Default: 1.13
-#     go: "1.15"
-#     # https://staticcheck.io/docs/options#checks
-#     checks: ["all"]
-
-#   gosec:
-#     # To select a subset of rules to run.
-#     # Available rules: https://github.com/securego/gosec#available-rules
-#     includes:
-#       - G101
-#       - G102
-#       - G103
-#       - G104
-#       - G106
-#       - G107
-#       - G108
-#       - G109
-#       - G110
-#       - G201
-#       - G202
-#       - G203
-#       - G204
-#       - G301
-#       - G302
-#       - G303
-#       - G304
-#       - G305
-#       - G306
-#       - G307
-#       - G401
-#       - G402
-#       - G403
-#       - G404
-#       - G501
-#       - G502
-#       - G503
-#       - G504
-#       - G505
-#       - G601
-
-#     # To specify a set of rules to explicitly exclude.
-#     # Available rules: https://github.com/securego/gosec#available-rules
-#     excludes:
-#       - G101
-#       - G102
-#       - G103
-#       - G104
-#       - G106
-#       - G107
-#       - G108
-#       - G109
-#       - G110
-#       - G201
-#       - G202
-#       - G203
-#       - G204
-#       - G301
-#       - G302
-#       - G303
-#       - G304
-#       - G305
-#       - G306
-#       - G307
-#       - G401
-#       - G402
-#       - G403
-#       - G404
-#       - G501
-#       - G502
-#       - G503
-#       - G504
-#       - G505
-#       - G601
-
-#     # Exclude generated files
-#     # Default: false
-#     exclude-generated: true
-
-#     # Filter out the issues with a lower severity than the given value.
-#     # Valid options are: low, medium, high.
-#     # Default: low
-#     severity: medium
-
-#     # Filter out the issues with a lower confidence than the given value.
-#     # Valid options are: low, medium, high.
-#     # Default: low
-#     confidence: medium
-
-#     # Concurrency value.
-#     # Default: the number of logical CPUs usable by the current process.
-#     concurrency: 12
-
-#     # To specify the configuration of rules.
-#     # The configuration of rules is not fully documented by gosec:
-#     # https://github.com/securego/gosec#configuration
-#     # https://github.com/securego/gosec/blob/569328eade2ccbad4ce2d0f21ee158ab5356a5cf/rules/rulelist.go#L60-L102
-#     config:
-#       G306: "0600"
-#       G101:
-#         pattern: "(?i)example"
-#         ignore_entropy: false
-#         entropy_threshold: "80.0"
-#         per_char_threshold: "3.0"
-#         truncate: "32"
-
-#   govet:
-#     # Report about shadowed variables.
-#     # Default: false
-#     check-shadowing: true
-
-#     # Settings per analyzer.
-#     settings:
-#       # Analyzer name, run `go tool vet help` to see all analyzers.
-#       printf:
-#         # Run `go tool vet help printf` to see available settings for `printf` analyzer.
-#         funcs:
-#           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-#           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-#           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-#           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-
-#     # Disable all analyzers.
-#     # Default: false
-#     disable-all: true
-#     # Enable analyzers by name.
-#     # Run `go tool vet help` to see all analyzers.
-#     enable:
-#       - asmdecl
-#       - assign
-#       - atomic
-#       - atomicalign
-#       - bools
-#       - buildtag
-#       - cgocall
-#       - composites
-#       - copylocks
-#       - deepequalerrors
-#       - errorsas
-#       - fieldalignment
-#       - findcall
-#       - framepointer
-#       - httpresponse
-#       - ifaceassert
-#       - loopclosure
-#       - lostcancel
-#       - nilfunc
-#       - nilness
-#       - printf
-#       - reflectvaluecompare
-#       - shadow
-#       - shift
-#       - sigchanyzer
-#       - sortslice
-#       - stdmethods
-#       - stringintconv
-#       - structtag
-#       - testinggoroutine
-#       - tests
-#       - unmarshal
-#       - unreachable
-#       - unsafeptr
-#       - unusedresult
-#       - unusedwrite
-
-#     # Enable all analyzers.
-#     # Default: false
-#     enable-all: true
-#     # Disable analyzers by name.
-#     # Run `go tool vet help` to see all analyzers.
-#     disable:
-#       - asmdecl
-#       - assign
-#       - atomic
-#       - atomicalign
-#       - bools
-#       - buildtag
-#       - cgocall
-#       - composites
-#       - copylocks
-#       - deepequalerrors
-#       - errorsas
-#       - fieldalignment
-#       - findcall
-#       - framepointer
-#       - httpresponse
-#       - ifaceassert
-#       - loopclosure
-#       - lostcancel
-#       - nilfunc
-#       - nilness
-#       - printf
-#       - reflectvaluecompare
-#       - shadow
-#       - shift
-#       - sigchanyzer
-#       - sortslice
-#       - stdmethods
-#       - stringintconv
-#       - structtag
-#       - testinggoroutine
-#       - tests
-#       - unmarshal
-#       - unreachable
-#       - unsafeptr
-#       - unusedresult
-#       - unusedwrite
-
-#   grouper:
-#     # Require the use of a single global 'const' declaration only.
-#     # Default: false
-#     const-require-single-const: true
-#     # Require the use of grouped global 'const' declarations.
-#     # Default: false
-#     const-require-grouping: true
-
-#     # Require the use of a single 'import' declaration only.
-#     # Default: false
-#     import-require-single-import: true
-#     # Require the use of grouped 'import' declarations.
-#     # Default: false
-#     import-require-grouping: true
-
-#     # Require the use of a single global 'type' declaration only.
-#     # Default: false
-#     type-require-single-type: true
-#     # Require the use of grouped global 'type' declarations.
-#     # Default: false
-#     type-require-grouping: true
-
-#     # Require the use of a single global 'var' declaration only.
-#     # Default: false
-#     var-require-single-var: true
-#     # Require the use of grouped global 'var' declarations.
-#     # Default: false
-#     var-require-grouping: true
-
-#   ifshort:
-#     # Maximum length of variable declaration measured in number of lines, after which linter won't suggest using short syntax.
-#     # Has higher priority than max-decl-chars.
-#     # Default: 1
-#     max-decl-lines: 2
-#     # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
-#     # Default: 30
-#     max-decl-chars: 40
-
-#   importas:
-#     # Do not allow unaliased imports of aliased packages.
-#     # Default: false
-#     no-unaliased: true
-#     # Do not allow non-required aliases.
-#     # Default: false
-#     no-extra-aliases: true
-#     # List of aliases
-#     alias:
-#       # Using `servingv1` alias for `knative.dev/serving/pkg/apis/serving/v1` package.
-#       - pkg: knative.dev/serving/pkg/apis/serving/v1
-#         alias: servingv1
-#       # Using `autoscalingv1alpha1` alias for `knative.dev/serving/pkg/apis/autoscaling/v1alpha1` package.
-#       - pkg: knative.dev/serving/pkg/apis/autoscaling/v1alpha1
-#         alias: autoscalingv1alpha1
-#       # You can specify the package path by regular expression,
-#       # and alias by regular expression expansion syntax like below.
-#       # see https://github.com/julz/importas#use-regular-expression for details
-#       - pkg: knative.dev/serving/pkg/apis/(\w+)/(v[\w\d]+)
-#         alias: $1$2
-
-#   ireturn:
-#     # ireturn allows using `allow` and `reject` settings at the same time.
-#     # Both settings are lists of the keywords and regular expressions matched to interface or package names.
-#     # keywords:
-#     # - `empty` for `interface{}`
-#     # - `error` for errors
-#     # - `stdlib` for standard library
-#     # - `anon` for anonymous interfaces
-
-#     # By default, it allows using errors, empty interfaces, anonymous interfaces,
-#     # and interfaces provided by the standard library.
-#     allow:
-#       - anon
-#       - error
-#       - empty
-#       - stdlib
-#       # You can specify idiomatic endings for interface
-#       - (or|er)$
-
-#     # reject-list of interfaces
-#     reject:
-#       - github.com\/user\/package\/v4\.Type
-
-#   lll:
-#     # Max line length, lines longer will be reported.
-#     # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
-#     # Default: 120.
-#     line-length: 120
-#     # Tab width in spaces.
-#     # Default: 1
-#     tab-width: 1
-
-#   maintidx:
-#     # Show functions with maintainability index lower than N.
-#     # A high index indicates better maintainability (it's kind of the opposite of complexity).
-#     # Default: 20
-#     under: 100
-
-#   makezero:
-#     # Allow only slices initialized with a length of zero.
-#     # Default: false
-#     always: false
-
-#   maligned:
-#     # Print struct with more effective memory layout or not.
-#     # Default: false
-#     suggest-new: true
-
-#   misspell:
-#     # Correct spellings using locale preferences for US or UK.
-#     # Setting locale to US will correct the British spelling of 'colour' to 'color'.
-#     # Default is to use a neutral variety of English.
-#     locale: US
-#     ignore-words:
-#       - someword
-
-#   nakedret:
-#     # Make an issue if func has more lines of code than this setting, and it has naked returns.
-#     # Default: 30
-#     max-func-lines: 31
-
-#   nestif:
-#     # Minimal complexity of if statements to report.
-#     # Default: 5
-#     min-complexity: 4
-
-#   nilnil:
-#     # Checks that there is no simultaneous return of `nil` error and an invalid value.
-#     # Default: ptr, func, iface, map, chan
-#     checked-types:
-#       - ptr
-#       - func
-#       - iface
-#       - map
-#       - chan
-
-#   nlreturn:
-#     # Size of the block (including return statement that is still "OK")
-#     # so no return split required.
-#     # Default: 1
-#     block-size: 2
-
-#   nolintlint:
-#     # Disable to ensure that all nolint directives actually have an effect.
-#     # Default: false
-#     allow-unused: true
-#     # Disable to ensure that nolint directives don't have a leading space.
-#     # Default: true
-#     allow-leading-space: false
-#     # Exclude following linters from requiring an explanation.
-#     # Default: []
-#     allow-no-explanation: []
-#     # Enable to require an explanation of nonzero length after each nolint directive.
-#     # Default: false
-#     require-explanation: true
-#     # Enable to require nolint directives to mention the specific linter being suppressed.
-#     # Default: false
-#     require-specific: true
+linters-settings:
+  #   bidichk:
+  #     # The following configurations check for all mentioned invisible unicode runes.
+  #     # All runes are enabled by default.
+  #     left-to-right-embedding: false
+  #     right-to-left-embedding: false
+  #     pop-directional-formatting: false
+  #     left-to-right-override: false
+  #     right-to-left-override: false
+  #     left-to-right-isolate: false
+  #     right-to-left-isolate: false
+  #     first-strong-isolate: false
+  #     pop-directional-isolate: false
+
+  #   cyclop:
+  #     # The maximal code complexity to report.
+  #     max-complexity: 10
+  #     # The maximal average package complexity.
+  #     # If it's higher than 0.0 (float) the check is enabled
+  #     # Default: 0.0
+  #     package-average: 0.5
+  #     # Should ignore tests.
+  #     # Default: false
+  #     skip-tests: true
+
+  #   decorder:
+  #     # Required order of `type`, `const`, `var` and `func` declarations inside a file.
+  #     # Default: types before constants before variables before functions.
+  #     dec-order:
+  #       - type
+  #       - const
+  #       - var
+  #       - func
+
+  #     # If true, order of declarations is not checked at all.
+  #     # Default: true (disabled)
+  #     disable-dec-order-check: false
+
+  #     # If true, `init` func can be anywhere in file (does not have to be declared before all other functions).
+  #     # Default: true (disabled)
+  #     disable-init-func-first-check: false
+
+  #     # If true, multiple global `type`, `const` and `var` declarations are allowed.
+  #     # Default: true (disabled)
+  #     disable-dec-num-check: false
+
+  #   depguard:
+  #     # Kind of list is passed in.
+  #     # Allowed values: allowlist|denylist
+  #     # Default: denylist
+  #     list-type: allowlist
+
+  #     # Check the list against standard lib.
+  #     # Default: false
+  #     include-go-root: true
+
+  #     # A list of packages for the list type specified.
+  #     # Default: []
+  #     packages:
+  #       - github.com/sirupsen/logrus
+
+  #     # A list of packages for the list type specified.
+  #     # Specify an error message to output when a denied package is used.
+  #     # Default: []
+  #     packages-with-error-message:
+  #       - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
+
+  #     # Create additional guards that follow the same configuration pattern.
+  #     # Results from all guards are aggregated together.
+  #     additional-guards:
+  #       - list-type: denylist
+  #         include-go-root: false
+  #         packages:
+  #           - github.com/stretchr/testify
+  #         # Specify rules by which the linter ignores certain files for consideration.
+  #         ignore-file-rules:
+  #           - "**/*_test.go"
+  #           - "**/mock/**/*.go"
+
+  #   dogsled:
+  #     # Checks assignments with too many blank identifiers.
+  #     # Default: 2
+  #     max-blank-identifiers: 3
+
+  #   dupl:
+  #     # Tokens count to trigger issue.
+  #     # Default: 150
+  #     threshold: 100
+
+  #   errcheck:
+  #     # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+  #     # Such cases aren't reported by default.
+  #     # Default: false
+  #     check-type-assertions: true
+
+  #     # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
+  #     # Such cases aren't reported by default.
+  #     # Default: false
+  #     check-blank: true
+
+  #     # DEPRECATED comma-separated list of pairs of the form pkg:regex
+  #     #
+  #     # the regex is used to ignore names within pkg. (default "fmt:.*").
+  #     # see https://github.com/kisielk/errcheck#the-deprecated-method for details
+  #     ignore: fmt:.*,io/ioutil:^Read.*
+
+  #     # To disable the errcheck built-in exclude list.
+  #     # See `-excludeonly` option in https://github.com/kisielk/errcheck#excluding-functions for details.
+  #     # Default: false
+  #     disable-default-exclusions: true
+
+  #     # DEPRECATED use exclude-functions instead.
+  #     #
+  #     # Path to a file containing a list of functions to exclude from checking.
+  #     # See https://github.com/kisielk/errcheck#excluding-functions for details.
+  #     exclude: /path/to/file.txt
+
+  #     # List of functions to exclude from checking, where each entry is a single function to exclude.
+  #     # See https://github.com/kisielk/errcheck#excluding-functions for details.
+  #     exclude-functions:
+  #       - io/ioutil.ReadFile
+  #       - io.Copy(*bytes.Buffer)
+  #       - io.Copy(os.Stdout)
+
+  #   errchkjson:
+  #     # With check-error-free-encoding set to true, errchkjson does warn about errors
+  #     # from json encoding functions that are safe to be ignored,
+  #     # because they are not possible to happen.
+  #     #
+  #     # if check-error-free-encoding is set to true and errcheck linter is enabled,
+  #     # it is recommended to add the following exceptions to prevent from false positives:
+  #     #
+  #     #     linters-settings:
+  #     #       errcheck:
+  #     #         exclude-functions:
+  #     #           - encoding/json.Marshal
+  #     #           - encoding/json.MarshalIndent
+  #     #
+  #     # Default: false
+  #     check-error-free-encoding: true
+
+  #     # Issue on struct encoding that doesn't have exported fields.
+  #     # Default: false
+  #     report-no-exported: false
+
+  #   errorlint:
+  #     # Check whether fmt.Errorf uses the %w verb for formatting errors.
+  #     # See the https://github.com/polyfloyd/go-errorlint for caveats.
+  #     # Default: true
+  #     errorf: false
+  #     # Check for plain type assertions and type switches.
+  #     # Default: true
+  #     asserts: false
+  #     # Check for plain error comparisons.
+  #     # Default: true
+  #     comparison: false
+
+  #   exhaustive:
+  #     # Check switch statements in generated files also.
+  #     # Default: false
+  #     check-generated: true
+  #     # Presence of "default" case in switch statements satisfies exhaustiveness,
+  #     # even if all enum members are not listed.
+  #     # Default: false
+  #     default-signifies-exhaustive: true
+  #     # Enum members matching the supplied regex do not have to be listed in
+  #     # switch statements to satisfy exhaustiveness.
+  #     # Default: ""
+  #     ignore-enum-members: "Example.+"
+  #     # Consider enums only in package scopes, not in inner scopes.
+  #     # Default: false
+  #     package-scope-only: true
+
+  #   exhaustivestruct:
+  #     # Struct Patterns is list of expressions to match struct packages and names.
+  #     # The struct packages have the form `example.com/package.ExampleStruct`.
+  #     # The matching patterns can use matching syntax from https://pkg.go.dev/path#Match.
+  #     # If this list is empty, all structs are tested.
+  #     struct-patterns:
+  #       - "*.Test"
+  #       - "example.com/package.ExampleStruct"
+
+  #   forbidigo:
+  #     # Forbid the following identifiers (list of regexp).
+  #     forbid:
+  #       - ^print.*$
+  #       - 'fmt\.Print.*'
+  #       # Optionally put comments at the end of the regex, surrounded by `(# )?`
+  #       # Escape any special characters.
+  #       - 'fmt\.Print.*(# Do not commit print statements\.)?'
+  #     # Exclude godoc examples from forbidigo checks.
+  #     # Default: true
+  #     exclude_godoc_examples: false
+
+  #   funlen:
+  #     # Checks the number of lines in a function.
+  #     # If lower than 0, disable the check.
+  #     # Default: 60
+  #     lines: -1
+  #     # Checks the number of statements in a function.
+  #     # If lower than 0, disable the check.
+  #     # Default: 40
+  #     statements: -1
+
+  gci:
+    # Checks that no inline Comments are present.
+    # Default: false
+    no-inline-comments: true
+
+    # Checks that no prefix Comments(comment lines above an import) are present.
+    # Default: false
+    no-prefix-comments: true
+
+    # Section configuration to compare against.
+    # Section names are case-insensitive and may contain parameters in ().
+    # Default: ["standard", "default"]
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/Arriven/db1000n) # Groups all imports with the specified Prefix.
+
+    # Separators that should be present between sections.
+    # Default: ["newLine"]
+    section-separators:
+      - newLine
+
+  #   gocognit:
+  #     # Minimal code complexity to report
+  #     # Default: 30 (but we recommend 10-20)
+  #     min-complexity: 10
+
+  #   goconst:
+  #     # Minimal length of string constant.
+  #     # Default: 3
+  #     min-len: 2
+  #     # Minimum occurrences of constant string count to trigger issue.
+  #     # Default: 3
+  #     min-occurrences: 2
+  #     # Ignore test files.
+  #     # Default: false
+  #     ignore-tests: true
+  #     # Look for existing constants matching the values.
+  #     # Default: true
+  #     match-constant: false
+  #     # Search also for duplicated numbers.
+  #     # Default: false
+  #     numbers: true
+  #     # Minimum value, only works with goconst.numbers
+  #     # Default: 3
+  #     min: 2
+  #     # Maximum value, only works with goconst.numbers
+  #     # Default: 3
+  #     max: 2
+  #     # Ignore when constant is not used as function argument.
+  #     # Default: true
+  #     ignore-calls: false
+
+  #   gocritic:
+  #     # Which checks should be enabled; can't be combined with 'disabled-checks'.
+  #     # See https://go-critic.github.io/overview#checks-overview.
+  #     # To check which checks are enabled run `GL_DEBUG=gocritic golangci-lint run`.
+  #     # By default, list of stable checks is used.
+  #     enabled-checks:
+  #       - nestingReduce
+  #       - unnamedResult
+  #       - ruleguard
+  #       - truncateCmp
+
+  #     # Which checks should be disabled; can't be combined with 'enabled-checks'.
+  #     # Default: []
+  #     disabled-checks:
+  #       - regexpMust
+
+  #     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
+  #     # See https://github.com/go-critic/go-critic#usage -> section "Tags".
+  #     # Default: []
+  #     enabled-tags:
+  #       - diagnostic
+  #       - style
+  #       - performance
+  #       - experimental
+  #       - opinionated
+  #     disabled-tags:
+  #       - diagnostic
+  #       - style
+  #       - performance
+  #       - experimental
+  #       - opinionated
+
+  #     # Settings passed to gocritic.
+  #     # The settings key is the name of a supported gocritic checker.
+  #     # The list of supported checkers can be find in https://go-critic.github.io/overview.
+  #     settings:
+  #       # Must be valid enabled check name.
+  #       captLocal:
+  #         # Whether to restrict checker to params only.
+  #         # Default: true
+  #         paramsOnly: false
+  #       elseif:
+  #         # Whether to skip balanced if-else pairs.
+  #         # Default: true
+  #         skipBalanced: false
+  #       hugeParam:
+  #         # Size in bytes that makes the warning trigger.
+  #         # Default: 80
+  #         sizeThreshold: 70
+  #       nestingReduce:
+  #         # Min number of statements inside a branch to trigger a warning.
+  #         # Default: 5
+  #         bodyWidth: 4
+  #       rangeExprCopy:
+  #         # Size in bytes that makes the warning trigger.
+  #         # Default: 512
+  #         sizeThreshold: 516
+  #         # Whether to check test functions
+  #         # Default: true
+  #         skipTestFuncs: false
+  #       rangeValCopy:
+  #         # Size in bytes that makes the warning trigger.
+  #         # Default: 128
+  #         sizeThreshold: 32
+  #         # Whether to check test functions.
+  #         # Default: true
+  #         skipTestFuncs: false
+  #       ruleguard:
+  #         # Enable debug to identify which 'Where' condition was rejected.
+  #         # The value of the parameter is the name of a function in a ruleguard file.
+  #         #
+  #         # When a rule is evaluated:
+  #         # If:
+  #         #   The Match() clause is accepted; and
+  #         #   One of the conditions in the Where() clause is rejected,
+  #         # Then:
+  #         #   ruleguard prints the specific Where() condition that was rejected.
+  #         #
+  #         # The flag is passed to the ruleguard 'debug-group' argument.
+  #         debug: "emptyDecl"
+  #         # Deprecated, use 'failOn' param.
+  #         # If set to true, identical to failOn='all', otherwise failOn=''
+  #         failOnError: false
+  #         # Determines the behavior when an error occurs while parsing ruleguard files.
+  #         # If flag is not set, log error and skip rule files that contain an error.
+  #         # If flag is set, the value must be a comma-separated list of error conditions.
+  #         # - 'all':    fail on all errors.
+  #         # - 'import': ruleguard rule imports a package that cannot be found.
+  #         # - 'dsl':    gorule file does not comply with the ruleguard DSL.
+  #         failOn: dsl
+  #         # Comma-separated list of file paths containing ruleguard rules.
+  #         # If a path is relative, it is relative to the directory where the golangci-lint command is executed.
+  #         # The special '${configDir}' variable is substituted with the absolute directory containing the golangci config file.
+  #         # Glob patterns such as 'rules-*.go' may be specified.
+  #         rules: "${configDir}/ruleguard/rules-*.go,${configDir}/myrule1.go"
+  #       tooManyResultsChecker:
+  #         # Maximum number of results.
+  #         # Default: 5
+  #         maxResults: 10
+  #       truncateCmp:
+  #         # Whether to skip int/uint/uintptr types.
+  #         # Default: true
+  #         skipArchDependent: false
+  #       underef:
+  #         # Whether to skip (*x).method() calls where x is a pointer receiver.
+  #         # Default: true
+  #         skipRecvDeref: false
+  #       unnamedResult:
+  #         # Whether to check exported functions.
+  #         checkExported: true
+
+  #   gocyclo:
+  #     # Minimal code complexity to report.
+  #     # Default: 30 (but we recommend 10-20)
+  #     min-complexity: 10
+
+  #   godot:
+  #     # Comments to be checked: `declarations`, `toplevel`, or `all`.
+  #     # Default: declarations
+  #     scope: toplevel
+  #     # List of regexps for excluding particular comment lines from check.
+  #     exclude:
+  #       # Exclude todo and fixme comments.
+  #       - "^fixme:"
+  #       - "^todo:"
+  #     # Check that each sentence ends with a period.
+  #     # Default: true
+  #     period: false
+  #     # Check that each sentence starts with a capital letter.
+  #     # Default: false
+  #     capital: true
+
+  #   godox:
+  #     # Report any comments starting with keywords, this is useful for TODO or FIXME comments that
+  #     # might be left in the code accidentally and should be resolved before merging.
+  #     # Default: TODO, BUG, and FIXME.
+  #     keywords:
+  #       - NOTE
+  #       - OPTIMIZE # marks code that should be optimized before merging
+  #       - HACK # marks hack-around that should be removed before merging
+
+  #   gofmt:
+  #     # Simplify code: gofmt with `-s` option.
+  #     # Default: true
+  #     simplify: false
+
+  #   gofumpt:
+  #     # Select the Go version to target.
+  #     # Default: 1.15
+  #     lang-version: "1.17"
+
+  #     # Choose whether to use the extra rules.
+  #     # Default: false
+  #     extra-rules: true
+
+  #   goheader:
+  #     # Supports two types 'const` and `regexp`.
+  #     # Values can be used recursively.
+  #     values:
+  #       const:
+  #         # Define here const type values in format k:v.
+  #         # For example:
+  #         COMPANY: MY COMPANY
+  #       regexp:
+  #         # Define here regexp type values.
+  #         # for example:
+  #         AUTHOR: .*@mycompany\.com
+  #     # The template use for checking.
+  #     template: |-
+  #       # Put here copyright header template for source code files
+  #       # For example:
+  #       # Note: {{ YEAR }} is a builtin value that returns the year relative to the current machine time.
+  #       #
+  #       # {{ AUTHOR }} {{ COMPANY }} {{ YEAR }}
+  #       # SPDX-License-Identifier: Apache-2.0
+
+  #       # Licensed under the Apache License, Version 2.0 (the "License");
+  #       # you may not use this file except in compliance with the License.
+  #       # You may obtain a copy of the License at:
+
+  #       #   http://www.apache.org/licenses/LICENSE-2.0
+
+  #       # Unless required by applicable law or agreed to in writing, software
+  #       # distributed under the License is distributed on an "AS IS" BASIS,
+  #       # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  #       # See the License for the specific language governing permissions and
+  #       # limitations under the License.
+  #     # As alternative of directive 'template', you may put the path to file with the template source.
+  #     # Useful if you need to load the template from a specific file.
+  #     template-path: /path/to/my/template.tmpl
+
+  #   goimports:
+  #     # Put imports beginning with prefix after 3rd-party packages.
+  #     # It's a comma-separated list of prefixes.
+  #     local-prefixes: github.com/org/project
+
+  #   golint:
+  #     # Minimal confidence for issues.
+  #     # Default: 0.8
+  #     min-confidence: 0.7
+
+  #   gomnd:
+  #     # List of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
+  #     checks:
+  #       - argument
+  #       - case
+  #       - condition
+  #       - operation
+  #       - return
+  #       - assign
+  #     # List of numbers to exclude from analysis.
+  #     # The numbers should be written as string.
+  #     # Values always ignored: "1", "1.0", "0" and "0.0"
+  #     ignored-numbers:
+  #       - "0666"
+  #       - "0755"
+  #       - "42"
+  #     # List of file patterns to exclude from analysis.
+  #     # Values always ignored: `.+_test.go`
+  #     ignored-files:
+  #       - "magic1_.*.go"
+  #     # List of function patterns to exclude from analysis.
+  #     # Values always ignored: `time.Time`
+  #     ignored-functions:
+  #       - "math.*"
+  #       - "http.StatusText"
+
+  #   gomoddirectives:
+  #     # Allow local `replace` directives.
+  #     replace-local: false
+  #     # List of allowed `replace` directives.
+  #     # Default: []
+  #     replace-allow-list:
+  #       - launchpad.net/gocheck
+  #     # Allow to not explain why the version has been retracted in the `retract` directives.
+  #     # Default: false
+  #     retract-allow-no-explanation: false
+  #     # Forbid the use of the `exclude` directives.
+  #     # Default: false
+  #     exclude-forbidden: false
+
+  #   gomodguard:
+  #     allowed:
+  #       # List of allowed modules.
+  #       modules:
+  #         - gopkg.in/yaml.v2
+  #       # List of allowed module domains.
+  #       domains:
+  #         - golang.org
+  #     blocked:
+  #       # List of blocked modules.
+  #       modules:
+  #         # Blocked module.
+  #         - github.com/uudashr/go-module:
+  #             # Recommended modules that should be used instead. (Optional)
+  #             recommendations:
+  #               - golang.org/x/mod
+  #             # Reason why the recommended module should be used. (Optional)
+  #             reason: "`mod` is the official go.mod parser library."
+  #       # List of blocked module version constraints.
+  #       versions:
+  #         # Blocked module with version constraint.
+  #         - github.com/mitchellh/go-homedir:
+  #             # Version constraint, see https://github.com/Masterminds/semver#basic-comparisons.
+  #             version: "< 1.1.0"
+  #             # Reason why the version constraint exists. (Optional)
+  #             reason: "testing if blocked version constraint works."
+  #       # Set to true to raise lint issues for packages that are loaded from a local path via replace directive.
+  #       local_replace_directives: false
+
+  #   gosimple:
+  #     # Select the Go version to target.
+  #     # Default: 1.13
+  #     go: "1.15"
+  #     # https://staticcheck.io/docs/options#checks
+  #     checks: ["all"]
+
+  #   gosec:
+  #     # To select a subset of rules to run.
+  #     # Available rules: https://github.com/securego/gosec#available-rules
+  #     includes:
+  #       - G101
+  #       - G102
+  #       - G103
+  #       - G104
+  #       - G106
+  #       - G107
+  #       - G108
+  #       - G109
+  #       - G110
+  #       - G201
+  #       - G202
+  #       - G203
+  #       - G204
+  #       - G301
+  #       - G302
+  #       - G303
+  #       - G304
+  #       - G305
+  #       - G306
+  #       - G307
+  #       - G401
+  #       - G402
+  #       - G403
+  #       - G404
+  #       - G501
+  #       - G502
+  #       - G503
+  #       - G504
+  #       - G505
+  #       - G601
+
+  #     # To specify a set of rules to explicitly exclude.
+  #     # Available rules: https://github.com/securego/gosec#available-rules
+  #     excludes:
+  #       - G101
+  #       - G102
+  #       - G103
+  #       - G104
+  #       - G106
+  #       - G107
+  #       - G108
+  #       - G109
+  #       - G110
+  #       - G201
+  #       - G202
+  #       - G203
+  #       - G204
+  #       - G301
+  #       - G302
+  #       - G303
+  #       - G304
+  #       - G305
+  #       - G306
+  #       - G307
+  #       - G401
+  #       - G402
+  #       - G403
+  #       - G404
+  #       - G501
+  #       - G502
+  #       - G503
+  #       - G504
+  #       - G505
+  #       - G601
+
+  #     # Exclude generated files
+  #     # Default: false
+  #     exclude-generated: true
+
+  #     # Filter out the issues with a lower severity than the given value.
+  #     # Valid options are: low, medium, high.
+  #     # Default: low
+  #     severity: medium
+
+  #     # Filter out the issues with a lower confidence than the given value.
+  #     # Valid options are: low, medium, high.
+  #     # Default: low
+  #     confidence: medium
+
+  #     # Concurrency value.
+  #     # Default: the number of logical CPUs usable by the current process.
+  #     concurrency: 12
+
+  #     # To specify the configuration of rules.
+  #     # The configuration of rules is not fully documented by gosec:
+  #     # https://github.com/securego/gosec#configuration
+  #     # https://github.com/securego/gosec/blob/569328eade2ccbad4ce2d0f21ee158ab5356a5cf/rules/rulelist.go#L60-L102
+  #     config:
+  #       G306: "0600"
+  #       G101:
+  #         pattern: "(?i)example"
+  #         ignore_entropy: false
+  #         entropy_threshold: "80.0"
+  #         per_char_threshold: "3.0"
+  #         truncate: "32"
+
+  #   govet:
+  #     # Report about shadowed variables.
+  #     # Default: false
+  #     check-shadowing: true
+
+  #     # Settings per analyzer.
+  #     settings:
+  #       # Analyzer name, run `go tool vet help` to see all analyzers.
+  #       printf:
+  #         # Run `go tool vet help printf` to see available settings for `printf` analyzer.
+  #         funcs:
+  #           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+  #           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+  #           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+  #           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+
+  #     # Disable all analyzers.
+  #     # Default: false
+  #     disable-all: true
+  #     # Enable analyzers by name.
+  #     # Run `go tool vet help` to see all analyzers.
+  #     enable:
+  #       - asmdecl
+  #       - assign
+  #       - atomic
+  #       - atomicalign
+  #       - bools
+  #       - buildtag
+  #       - cgocall
+  #       - composites
+  #       - copylocks
+  #       - deepequalerrors
+  #       - errorsas
+  #       - fieldalignment
+  #       - findcall
+  #       - framepointer
+  #       - httpresponse
+  #       - ifaceassert
+  #       - loopclosure
+  #       - lostcancel
+  #       - nilfunc
+  #       - nilness
+  #       - printf
+  #       - reflectvaluecompare
+  #       - shadow
+  #       - shift
+  #       - sigchanyzer
+  #       - sortslice
+  #       - stdmethods
+  #       - stringintconv
+  #       - structtag
+  #       - testinggoroutine
+  #       - tests
+  #       - unmarshal
+  #       - unreachable
+  #       - unsafeptr
+  #       - unusedresult
+  #       - unusedwrite
+
+  #     # Enable all analyzers.
+  #     # Default: false
+  #     enable-all: true
+  #     # Disable analyzers by name.
+  #     # Run `go tool vet help` to see all analyzers.
+  #     disable:
+  #       - asmdecl
+  #       - assign
+  #       - atomic
+  #       - atomicalign
+  #       - bools
+  #       - buildtag
+  #       - cgocall
+  #       - composites
+  #       - copylocks
+  #       - deepequalerrors
+  #       - errorsas
+  #       - fieldalignment
+  #       - findcall
+  #       - framepointer
+  #       - httpresponse
+  #       - ifaceassert
+  #       - loopclosure
+  #       - lostcancel
+  #       - nilfunc
+  #       - nilness
+  #       - printf
+  #       - reflectvaluecompare
+  #       - shadow
+  #       - shift
+  #       - sigchanyzer
+  #       - sortslice
+  #       - stdmethods
+  #       - stringintconv
+  #       - structtag
+  #       - testinggoroutine
+  #       - tests
+  #       - unmarshal
+  #       - unreachable
+  #       - unsafeptr
+  #       - unusedresult
+  #       - unusedwrite
+
+  #   grouper:
+  #     # Require the use of a single global 'const' declaration only.
+  #     # Default: false
+  #     const-require-single-const: true
+  #     # Require the use of grouped global 'const' declarations.
+  #     # Default: false
+  #     const-require-grouping: true
+
+  #     # Require the use of a single 'import' declaration only.
+  #     # Default: false
+  #     import-require-single-import: true
+  #     # Require the use of grouped 'import' declarations.
+  #     # Default: false
+  #     import-require-grouping: true
+
+  #     # Require the use of a single global 'type' declaration only.
+  #     # Default: false
+  #     type-require-single-type: true
+  #     # Require the use of grouped global 'type' declarations.
+  #     # Default: false
+  #     type-require-grouping: true
+
+  #     # Require the use of a single global 'var' declaration only.
+  #     # Default: false
+  #     var-require-single-var: true
+  #     # Require the use of grouped global 'var' declarations.
+  #     # Default: false
+  #     var-require-grouping: true
+
+  #   ifshort:
+  #     # Maximum length of variable declaration measured in number of lines, after which linter won't suggest using short syntax.
+  #     # Has higher priority than max-decl-chars.
+  #     # Default: 1
+  #     max-decl-lines: 2
+  #     # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
+  #     # Default: 30
+  #     max-decl-chars: 40
+
+  #   importas:
+  #     # Do not allow unaliased imports of aliased packages.
+  #     # Default: false
+  #     no-unaliased: true
+  #     # Do not allow non-required aliases.
+  #     # Default: false
+  #     no-extra-aliases: true
+  #     # List of aliases
+  #     alias:
+  #       # Using `servingv1` alias for `knative.dev/serving/pkg/apis/serving/v1` package.
+  #       - pkg: knative.dev/serving/pkg/apis/serving/v1
+  #         alias: servingv1
+  #       # Using `autoscalingv1alpha1` alias for `knative.dev/serving/pkg/apis/autoscaling/v1alpha1` package.
+  #       - pkg: knative.dev/serving/pkg/apis/autoscaling/v1alpha1
+  #         alias: autoscalingv1alpha1
+  #       # You can specify the package path by regular expression,
+  #       # and alias by regular expression expansion syntax like below.
+  #       # see https://github.com/julz/importas#use-regular-expression for details
+  #       - pkg: knative.dev/serving/pkg/apis/(\w+)/(v[\w\d]+)
+  #         alias: $1$2
+
+  #   ireturn:
+  #     # ireturn allows using `allow` and `reject` settings at the same time.
+  #     # Both settings are lists of the keywords and regular expressions matched to interface or package names.
+  #     # keywords:
+  #     # - `empty` for `interface{}`
+  #     # - `error` for errors
+  #     # - `stdlib` for standard library
+  #     # - `anon` for anonymous interfaces
+
+  #     # By default, it allows using errors, empty interfaces, anonymous interfaces,
+  #     # and interfaces provided by the standard library.
+  #     allow:
+  #       - anon
+  #       - error
+  #       - empty
+  #       - stdlib
+  #       # You can specify idiomatic endings for interface
+  #       - (or|er)$
+
+  #     # reject-list of interfaces
+  #     reject:
+  #       - github.com\/user\/package\/v4\.Type
+
+  #   lll:
+  #     # Max line length, lines longer will be reported.
+  #     # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
+  #     # Default: 120.
+  #     line-length: 120
+  #     # Tab width in spaces.
+  #     # Default: 1
+  #     tab-width: 1
+
+  #   maintidx:
+  #     # Show functions with maintainability index lower than N.
+  #     # A high index indicates better maintainability (it's kind of the opposite of complexity).
+  #     # Default: 20
+  #     under: 100
+
+  #   makezero:
+  #     # Allow only slices initialized with a length of zero.
+  #     # Default: false
+  #     always: false
+
+  #   maligned:
+  #     # Print struct with more effective memory layout or not.
+  #     # Default: false
+  #     suggest-new: true
+
+  #   misspell:
+  #     # Correct spellings using locale preferences for US or UK.
+  #     # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+  #     # Default is to use a neutral variety of English.
+  #     locale: US
+  #     ignore-words:
+  #       - someword
+
+  #   nakedret:
+  #     # Make an issue if func has more lines of code than this setting, and it has naked returns.
+  #     # Default: 30
+  #     max-func-lines: 31
+
+  #   nestif:
+  #     # Minimal complexity of if statements to report.
+  #     # Default: 5
+  #     min-complexity: 4
+
+  #   nilnil:
+  #     # Checks that there is no simultaneous return of `nil` error and an invalid value.
+  #     # Default: ptr, func, iface, map, chan
+  #     checked-types:
+  #       - ptr
+  #       - func
+  #       - iface
+  #       - map
+  #       - chan
+
+  #   nlreturn:
+  #     # Size of the block (including return statement that is still "OK")
+  #     # so no return split required.
+  #     # Default: 1
+  #     block-size: 2
+
+  nolintlint:
+    # Disable to ensure that all nolint directives actually have an effect.
+    # Default: false
+    allow-unused: true
+    # Disable to ensure that nolint directives don't have a leading space.
+    # Default: true
+    allow-leading-space: false
+    # Exclude following linters from requiring an explanation.
+    # Default: []
+    allow-no-explanation: []
+    # Enable to require an explanation of nonzero length after each nolint directive.
+    # Default: false
+    require-explanation: true
+    # Enable to require nolint directives to mention the specific linter being suppressed.
+    # Default: false
+    require-specific: true
 
 #   prealloc:
 #     # IMPORTANT: we don't recommend using this linter before doing performance profiling.
@@ -1640,7 +1635,7 @@ linters:
     - bidichk
     - bodyclose
     - containedctx
-    # - contextcheck
+    - contextcheck
     # - cyclop
     - deadcode
     - decorder
@@ -1651,29 +1646,29 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    # - errorlint
+    - errorlint
     - exhaustive
     # - exhaustivestruct
     - exportloopref
-    # - forbidigo
-    # - forcetypeassert
+    - forbidigo
+    - forcetypeassert
     # - funlen
-    # - gci
+    - gci
     # - gochecknoglobals
     # - gochecknoinits
     - gocognit
     - goconst
-    # - gocritic
+    - gocritic
     # - gocyclo
     # - godot
     # - godox
     # - goerr113
     - gofmt
-    # - gofumpt
+    - gofumpt
     - goheader
     - goimports
     # - golint # deprecated
-    # - gomnd
+    - gomnd
     # - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -1681,7 +1676,7 @@ linters:
     - gosimple
     - govet
     - grouper
-    # - ifshort
+    - ifshort
     - importas
     - ineffassign
     # - interfacer # deprecated
@@ -1695,7 +1690,7 @@ linters:
     - nestif
     - nilerr
     # - nilnil
-    # - nlreturn
+    - nlreturn
     # - noctx
     - nolintlint
     # - paralleltest
