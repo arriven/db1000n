@@ -48,7 +48,7 @@ func ConfirmAndSelfUpdate() {
 		return
 	}
 
-	fmt.Print("Do you want to update to", latest.Version, "? (y/n): ")
+	fmt.Print("Do you want to update to", latest.Version, "? (y/n): ") //nolint:forbidigo // Here we actually write to console and expect user input
 	input, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil || (input != "y\n" && input != "n\n") {
 		log.Println("Invalid input")
