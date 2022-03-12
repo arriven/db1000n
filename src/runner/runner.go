@@ -19,14 +19,11 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths        string            // Comma-separated config location URLs
-	BackupConfig       []byte            // Raw backup config
-	RefreshTimeout     time.Duration     // How often to refresh config
-	MetricsPath        string            // Where to dump metrics to
-	Format             string            // json or yaml
-	Global             jobs.GlobalConfig // meant to pass cmdline and other args to every job
-	PrometheusOn       bool
-	PrometheusGateways string
+	ConfigPaths    string            // Comma-separated config location URLs
+	BackupConfig   []byte            // Raw backup config
+	RefreshTimeout time.Duration     // How often to refresh config
+	Format         string            // json or yaml
+	Global         jobs.GlobalConfig // meant to pass cmdline and other args to every job
 }
 
 // Runner executes jobs according to the (fetched from remote) configuration
@@ -35,7 +32,6 @@ type Runner struct {
 	configPaths    []string
 	backupConfig   []byte
 	refreshTimeout time.Duration
-	metricsPath    string
 	configFormat   string
 
 	currentRawConfig []byte // currently applied config
@@ -52,7 +48,6 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 		configPaths:    strings.Split(cfg.ConfigPaths, ","),
 		backupConfig:   cfg.BackupConfig,
 		refreshTimeout: cfg.RefreshTimeout,
-		metricsPath:    cfg.MetricsPath,
 		configFormat:   cfg.Format,
 
 		debug: debug,
@@ -80,9 +75,6 @@ func (r *Runner) Run() {
 			}
 
 			ctx, cancel = context.WithCancel(context.Background())
-			if r.config.PrometheusOn {
-				go metrics.ExportPrometheusMetrics(ctx, r.config.PrometheusGateways)
-			}
 
 			var jobInstancesCount int
 
@@ -141,7 +133,7 @@ func (r *Runner) Run() {
 			stop = true
 		}
 
-		dumpMetrics(r.metricsPath, "traffic", clientID.String(), r.debug)
+		dumpMetrics(clientID.String(), r.debug)
 	}
 
 	if cancel != nil {
@@ -154,7 +146,7 @@ func (r *Runner) Run() {
 // Stop runner asynchronously
 func (r *Runner) Stop() { close(r.stop) }
 
-func dumpMetrics(path, name, clientID string, debug bool) {
+func dumpMetrics(clientID string, debug bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("caught panic: %v", err)
