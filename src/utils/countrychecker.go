@@ -26,18 +26,19 @@ func CheckCountry(countriesToAvoid []string) {
 		Country string `json:"country"`
 	}
 
-	var ipCheckerURI = "https://api.myip.com/"
+	ipCheckerURI := "https://api.myip.com/"
 
 	resp, err := http.Get(ipCheckerURI)
 	if err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
 		return
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			log.Printf("Can't close connection to: %s", ipCheckerURI)
+
 			return
 		}
 	}()
@@ -45,13 +46,15 @@ func CheckCountry(countriesToAvoid []string) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
 		return
 	}
 
 	ipInfo := IPInfo{}
-	err = json.Unmarshal(body, &ipInfo)
-	if err != nil {
+
+	if err = json.Unmarshal(body, &ipInfo); err != nil {
 		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
 		return
 	}
 
@@ -59,6 +62,7 @@ func CheckCountry(countriesToAvoid []string) {
 		if ipInfo.Country == country {
 			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
 			openBrowser("https://arriven.github.io/db1000n/vpn/")
+
 			return
 		}
 	}

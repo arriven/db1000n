@@ -1,6 +1,6 @@
 # Over the air updates
 
 {%
-    include-markdown "../ota/README.md"
+    include-markdown "../src/utils/ota/README.md"
     start="# Over-the-air updates"
 %}

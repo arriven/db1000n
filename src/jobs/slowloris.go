@@ -25,7 +25,8 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	if jobConfig.ContentLength == 0 {
-		jobConfig.ContentLength = 1000 * 1000
+		const defaultContentLength = 1000 * 1000
+		jobConfig.ContentLength = defaultContentLength
 	}
 
 	if jobConfig.DialWorkersCount == 0 {
@@ -33,18 +34,21 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	}
 
 	if jobConfig.RampUpInterval == 0 {
-		jobConfig.RampUpInterval = 1 * time.Second
+		jobConfig.RampUpInterval = time.Second
 	}
 
 	if jobConfig.SleepInterval == 0 {
-		jobConfig.SleepInterval = 10 * time.Second
+		const defaultSleepInterval = 10 * time.Second
+		jobConfig.SleepInterval = defaultSleepInterval
 	}
 
 	if jobConfig.Duration == 0 {
-		jobConfig.Duration = 10 * time.Second
+		const defaultDuration = 10 * time.Second
+		jobConfig.Duration = defaultDuration
 	}
 
 	shouldStop := make(chan bool)
+
 	go func() {
 		<-ctx.Done()
 		close(shouldStop)

@@ -32,13 +32,16 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
 		log.Printf("Error parsing json: %v", err)
+
 		return nil, err
 	}
 
 	host := templates.ParseAndExecute(jobConfig.Host, nil)
+
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
 		log.Printf("Error parsing port: %v", err)
+
 		return nil, err
 	}
 
@@ -53,19 +56,25 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
 		log.Printf("Error parsing packet: %v", err)
+
 		return nil, err
 	}
+
 	log.Printf("Attacking %v:%v", host, port)
 
 	protocolLabelValue := "tcp"
 	if _, ok := jobConfig.Packet["udp"]; ok {
 		protocolLabelValue = "udp"
 	}
-	hostPort := host + ":" + strconv.FormatInt(int64(port), 10)
+
+	const base10 = 10
+
+	hostPort := host + ":" + strconv.FormatInt(int64(port), base10)
 
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
 		log.Printf("Error building raw connection: %v", err)
+
 		return nil, err
 	}
 
@@ -81,10 +90,11 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		var packetConfig packetgen.PacketConfig
 		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
 			log.Printf("Error parsing json: %v", err)
+
 			return nil, err
 		}
 
-		len, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
+		n, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
 			log.Printf("Error sending packet: %v", err)
 			metrics.IncPacketgen(
@@ -92,15 +102,17 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 				hostPort,
 				protocolLabelValue,
 				metrics.StatusFail)
+
 			return nil, err
 		}
+
 		metrics.IncPacketgen(
 			host,
 			hostPort,
 			protocolLabelValue,
 			metrics.StatusSuccess)
 
-		trafficMonitor.Add(uint64(len))
+		trafficMonitor.Add(uint64(n))
 	}
 
 	return nil, nil

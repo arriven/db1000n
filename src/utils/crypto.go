@@ -24,15 +24,18 @@ func GetEncryptionKeys() ([]string, error) {
 		// to avoid manual copy/join default key to new
 		keysString = keysString + keySeparator + EncryptionKeys
 	}
+
 	// +1 to allocate for case if no separator and list contains key itself
 	// otherwise we just allocate +1 struct for string slice that stores just 2 int fields
 	// that is not a lot
 	output := make([]string, 0, strings.Count(keysString, keySeparator)+1)
+
 	for _, key := range strings.Split(keysString, keySeparator) {
 		if key != "" {
 			output = append(output, key)
 		}
 	}
+
 	return output, nil
 }
 
@@ -47,20 +50,26 @@ func Decrypt(cfg []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var lastErr error
 	// iterate over all keys and return on first success decryption
 	for _, key := range keys {
 		identity, err := age.NewScryptIdentity(key)
 		if err != nil {
 			lastErr = err
+
 			continue
 		}
+
 		decryptedReader, err := age.Decrypt(bytes.NewReader(cfg), identity)
 		if err != nil {
 			lastErr = err
+
 			continue
 		}
+
 		return ioutil.ReadAll(decryptedReader)
 	}
+
 	return nil, lastErr
 }

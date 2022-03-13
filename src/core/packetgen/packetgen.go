@@ -52,13 +52,16 @@ func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader 
 		udpPacket *layers.UDP
 		tcpPacket *layers.TCP
 	)
+
 	ipPacket := buildIPPacket(c.IP)
-	if c.UDP != nil {
+
+	switch {
+	case c.UDP != nil:
 		udpPacket = buildUDPPacket(*c.UDP)
 		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			return nil, nil, err
 		}
-	} else if c.TCP != nil {
+	case c.TCP != nil:
 		tcpPacket = buildTCPPacket(*c.TCP)
 		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
 			return nil, nil, err
@@ -102,11 +105,8 @@ func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader 
 
 // OpenRawConnection opens a raw ip network connection based on the provided config
 func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
-	var (
-		packetConn net.PacketConn
-		err        error
-	)
-	if packetConn, err = net.ListenPacket(c.Name, c.Address); err != nil {
+	packetConn, err := net.ListenPacket(c.Name, c.Address)
+	if err != nil {
 		return nil, err
 	}
 
@@ -115,12 +115,7 @@ func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
 
 // SendPacket is used to generate and send the packet over the network
 func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, destinationPort int) (int, error) {
-	var (
-		payloadBuf gopacket.SerializeBuffer
-		ipHeader   *ipv4.Header
-		err        error
-	)
-	payloadBuf, ipHeader, err = BuildPacket(c)
+	payloadBuf, ipHeader, err := BuildPacket(c)
 	if err != nil {
 		return 0, err
 	}
@@ -128,6 +123,7 @@ func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, d
 	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
 		return 0, err
 	}
+
 	return len(payloadBuf.Bytes()), nil
 }
 
@@ -139,10 +135,12 @@ type IPPacketConfig struct {
 
 // buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
 func buildIPPacket(c IPPacketConfig) *layers.IPv4 {
+	const ipv4 = 4
+
 	return &layers.IPv4{
 		SrcIP:    net.ParseIP(c.SrcIP).To4(),
 		DstIP:    net.ParseIP(c.DstIP).To4(),
-		Version:  4,
+		Version:  ipv4,
 		Protocol: layers.IPProtocolTCP,
 	}
 }
@@ -215,6 +213,7 @@ type EthernetPacketConfig struct {
 func buildEthernetPacket(c EthernetPacketConfig) *layers.Ethernet {
 	srcMac := net.HardwareAddr(c.SrcMAC)
 	dstMac := net.HardwareAddr(c.DstMAC)
+
 	return &layers.Ethernet{
 		SrcMAC: net.HardwareAddr{srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]},
 		DstMAC: net.HardwareAddr{dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]},

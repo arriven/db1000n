@@ -11,7 +11,8 @@ type Args = map[string]interface{}
 
 // GlobalConfig is a struct meant to pass commandline arguments to every job
 type GlobalConfig struct {
-	ProxyURL string
+	ProxyURL    string
+	ScaleFactor int
 }
 
 // Job comment for linter

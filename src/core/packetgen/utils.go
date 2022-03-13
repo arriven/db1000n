@@ -30,31 +30,39 @@ import (
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
-func RandomPayload(length int) []byte {
+func RandomPayload(length int) string {
 	payload := make([]byte, length)
 	rand.Read(payload)
-	return payload
+
+	return string(payload)
 }
 
 // RandomIP returns a random ip to spoof packets
 func RandomIP() string {
-	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(255)+1, rand.Intn(255)+1,
-		rand.Intn(255)+1, rand.Intn(255)+1)
+	const maxByte = 255
+
+	return fmt.Sprintf("%d.%d.%d.%d", rand.Intn(maxByte)+1, rand.Intn(maxByte)+1,
+		rand.Intn(maxByte)+1, rand.Intn(maxByte)+1)
 }
 
 // RandomPort returns a random port to spoof packets
 func RandomPort() int {
-	const minPort = 1024
-	const maxPort = 65535
+	const (
+		minPort = 1024
+		maxPort = 65535
+	)
+
 	return rand.Intn(maxPort-minPort) + minPort
 }
 
 // RandomMacAddr returns a random mac address to spoof packets
 func RandomMacAddr() net.HardwareAddr {
-	buf := make([]byte, 6)
-	rand.Read(buf)
-	var addr net.HardwareAddr = buf
-	return net.HardwareAddr(addr.String())
+	const macSizeBytes = 6
+
+	addr := make(net.HardwareAddr, macSizeBytes)
+	rand.Read(addr)
+
+	return addr
 }
 
 // LocalMacAddres returns first valid mac address
@@ -63,12 +71,14 @@ func LocalMacAddres() string {
 	if err != nil {
 		return ""
 	}
+
 	for _, ifa := range ifas {
 		a := ifa.HardwareAddr.String()
 		if a != "" {
 			return a
 		}
 	}
+
 	return ""
 }
 
@@ -78,6 +88,7 @@ func LocalIP() string {
 	if err != nil {
 		return ""
 	}
+
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -86,6 +97,7 @@ func LocalIP() string {
 			}
 		}
 	}
+
 	return ""
 }
 
