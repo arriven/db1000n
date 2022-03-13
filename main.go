@@ -43,10 +43,14 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+const (
+	DefaultUpdateCheckFrequency = 24 * time.Hour
+)
+
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
-	log.Printf("DB1000n [Version: %s]", ota.Version)
+	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
 	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
 	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
@@ -60,7 +64,10 @@ func main() {
 	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", false), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""), "Comma separated list of prometheus push gateways")
-	doSelfUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
+	doAutoUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
+	doRestartOnUpdate := flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true), "Allows application to restart upon successful update (ignored if auto-update is disabled)")
+	skipUpdateCheckOnStart := flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false), "Allows to skip the update check at the startup (usually set automatically by the previous version)")
+	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency", utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", DefaultUpdateCheckFrequency), "How often to run auto-update checks")
 
 	flag.Parse()
 
@@ -70,8 +77,8 @@ func main() {
 		return
 	}
 
-	if *doSelfUpdate {
-		ota.DoSelfUpdate()
+	if *doAutoUpdate {
+		go watchUpdates(*doRestartOnUpdate, *skipUpdateCheckOnStart, *autoUpdateCheckFrequency)
 	}
 
 	setUpPprof(*pprof, *debug)
@@ -106,9 +113,13 @@ func main() {
 	}
 
 	go func() {
-		// Wait for sigterm
 		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGTERM)
+		signal.Notify(sigs,
+			syscall.SIGTERM,
+			syscall.SIGABRT,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+		)
 		<-sigs
 		log.Println("Terminating")
 		cancel()
@@ -136,4 +147,54 @@ func setUpPprof(pprof string, debug bool) {
 	go func() {
 		log.Println(http.ListenAndServe(pprof, mux))
 	}()
+}
+
+func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateCheckFrequency time.Duration) {
+	if !skipUpdateCheckOnStart {
+		runUpdate(doRestartOnUpdate)
+	} else {
+		log.Printf("Version update on startup is skipped, next update check is scheduled in %s",
+			autoUpdateCheckFrequency)
+	}
+
+	periodicalUpdateChecker := time.NewTicker(autoUpdateCheckFrequency)
+	defer periodicalUpdateChecker.Stop()
+
+	for range periodicalUpdateChecker.C {
+		runUpdate(doRestartOnUpdate)
+	}
+}
+
+//nolint:nestif // The nested if linter is disabled as it would add unnecessary function splitting. This function is quite obvious
+func runUpdate(doRestartOnUpdate bool) {
+	log.Println("Running a check for a newer version...")
+
+	isUpdateFound, newVersion, changeLog, err := ota.DoAutoUpdate()
+	if err != nil {
+		log.Printf("Auto-Update is failed: %s", err)
+
+		return
+	}
+
+	if isUpdateFound {
+		log.Printf("Newer version of the application is found [version=%s]\n", newVersion)
+		log.Printf("What's new:\n%s", changeLog)
+
+		if doRestartOnUpdate {
+			log.Println("Auto restart is enabled, restarting the application to run a new version")
+
+			additionalArgs := []string{
+				"-skip-update-check-on-start",
+			}
+
+			if err = ota.Restart(additionalArgs...); err != nil {
+				log.Printf("Failed to restart the application after the update to the new version: %s", err)
+				log.Printf("Restart the application manually to apply changes!\n")
+			}
+		} else {
+			log.Println("Auto restart is disabled, restart the application manually to apply changes!")
+		}
+	} else {
+		log.Println("We are running the latest version, OK!")
+	}
 }
