@@ -11,7 +11,7 @@
 To init Terraform run:
 
 ```sh
-terraform apply
+terraform init
 ```
 
 Need to create terraform/gcp_expressvpn/terraform.tfvars file and set two variables values tou yours

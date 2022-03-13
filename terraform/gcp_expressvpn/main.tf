@@ -29,8 +29,7 @@ sudo apt-get install -y \
     curl \
     gnupg \
     lsb-release \
-    cron \
-    expect
+    cron
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
@@ -130,7 +129,7 @@ docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-dr
 EOF
 chmod +x ./run.sh
 
-(crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh | logger -t atck 2>&1') | crontab -
+(crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh') | crontab -
 
 docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
 
