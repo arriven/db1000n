@@ -16,7 +16,7 @@ terraform apply
 
 Need to create terraform/gcp_expressvpn/terraform.tfvars file and set two variables values tou yours
 
-```
+```sh
 project_id     = "google-project-id"
 expressvpn_key = "expressvpn-activation-code"
 ```
