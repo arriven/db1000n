@@ -54,12 +54,13 @@ func mergeExtraArgs(osArgs, extraArgs []string) []string {
 	copy(osArgsC, osArgs)
 
 	isPresent := func(what string, where []string) bool {
+		isFound := false
 		for i := range where {
 			if where[i] == what {
-				return true
+				isFound = true
 			}
 		}
-		return false
+		return isFound
 	}
 
 	for i := range extraArgs {
