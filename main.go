@@ -150,17 +150,21 @@ func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateChec
 	}
 
 	periodicalUpdateChecker := time.NewTicker(autoUpdateCheckFrequency)
+	defer periodicalUpdateChecker.Stop()
+
 	for range periodicalUpdateChecker.C {
 		runUpdate(doRestartOnUpdate)
 	}
 }
 
+//nolint:nestif // The nested if linter is disabled as it would add unnecessary function splitting. This function is quite obvious
 func runUpdate(doRestartOnUpdate bool) {
 	log.Println("Running a check for a newer version...")
 
 	isUpdateFound, newVersion, changeLog, err := ota.DoAutoUpdate()
 	if err != nil {
 		log.Printf("Auto-Update is failed: %s", err)
+
 		return
 	}
 
@@ -174,8 +178,8 @@ func runUpdate(doRestartOnUpdate bool) {
 			additionalArgs := []string{
 				"-skip-update-check-on-start",
 			}
-			err := ota.Restart(additionalArgs...)
-			if err != nil {
+
+			if err = ota.Restart(additionalArgs...); err != nil {
 				log.Printf("Failed to restart the application after the update to the new version: %s", err)
 				log.Printf("Restart the application manually to apply changes!\n")
 			}

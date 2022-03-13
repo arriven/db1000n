@@ -2,8 +2,9 @@
 package ota
 
 import (
+	"fmt"
+
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 )
 
@@ -11,13 +12,15 @@ import (
 func DoAutoUpdate() (updateFound bool, newVersion, changeLog string, err error) {
 	v, err := semver.ParseTolerant(Version)
 	if err != nil {
-		err = errors.Wrap(err, "binary version validation failed")
+		err = fmt.Errorf("binary version validation failed: %w", err)
+
 		return
 	}
 
 	latest, err := selfupdate.UpdateSelf(v, Repository)
 	if err != nil {
-		err = errors.Wrap(err, "binary update failed")
+		err = fmt.Errorf("binary update failed: %w", err)
+
 		return
 	}
 
