@@ -1691,7 +1691,7 @@ linters:
     - nilerr
     # - nilnil
     - nlreturn
-    # - noctx
+    - noctx
     - nolintlint
     # - paralleltest
     - prealloc

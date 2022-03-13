@@ -98,10 +98,10 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
-	go utils.CheckCountry([]string{"Ukraine"})
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	go utils.CheckCountry(ctx, []string{"Ukraine"})
 
 	if *prometheusOn {
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
