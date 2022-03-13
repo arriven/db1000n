@@ -3,6 +3,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -87,14 +88,18 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 
 	const requestTimeout = 20 * time.Second
 
-	client := http.Client{
-		Timeout: requestTimeout,
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, configURL.String(), nil)
+	if err != nil {
+		return nil, err
 	}
-	req, _ := http.NewRequest(http.MethodGet, configURL.String(), nil)
+
 	req.Header.Add("If-None-Match", f.lastKnownConfig.etag)
 	req.Header.Add("If-Modified-Since", f.lastKnownConfig.lastModified)
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

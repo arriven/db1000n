@@ -6,6 +6,8 @@ import (
 )
 
 func TestDistinctHeavyHitterGenerator(t *testing.T) {
+	t.Parallel()
+
 	seedDomains := []string{
 		"host.local",
 		"laptop.local",
