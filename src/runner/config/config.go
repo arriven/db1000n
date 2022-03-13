@@ -105,8 +105,6 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 	}
 
 	if resp.StatusCode == http.StatusNotModified {
-		log.Println("Received HTTP 304 Not Modified")
-
 		return &f.lastKnownConfig, nil
 	}
 
