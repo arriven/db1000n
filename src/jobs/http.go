@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,8 +41,8 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		return nil, err
 	}
 
-	if globalConfig.ProxyURL != "" {
-		clientConfig.ProxyURLs = globalConfig.ProxyURL
+	if globalConfig.ProxyListURL != "" {
+		clientConfig.ProxyURLs = strings.Join(templates.GetProxylist(), ",")
 	}
 
 	client := http.NewClient(clientConfig, debug)
@@ -122,8 +123,8 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		return nil, err
 	}
 
-	if globalConfig.ProxyURL != "" {
-		clientConfig.ProxyURLs = globalConfig.ProxyURL
+	if globalConfig.ProxyListURL != "" {
+		clientConfig.ProxyURLs = strings.Join(templates.GetProxylist(), ",")
 	}
 
 	client := http.NewClient(clientConfig, debug)

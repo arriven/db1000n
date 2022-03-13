@@ -30,7 +30,7 @@ func SetProxiesURL(url string) {
 	proxiesURL = url
 }
 
-func getProxylist() (urls []string) {
+func GetProxylist() (urls []string) {
 	return getProxylistByURL(getProxylistURL())
 }
 
@@ -123,7 +123,7 @@ func Parse(input string) (*template.Template, error) {
 		"join":                 strings.Join,
 		"get_url":              getURLContent,
 		"proxylist_url":        getProxylistURL,
-		"get_proxylist":        getProxylist,
+		"get_proxylist":        GetProxylist,
 		"get_proxylist_by_url": getProxylistByURL,
 		"mod":                  mod,
 		"ctx_key":              ctxKey,
