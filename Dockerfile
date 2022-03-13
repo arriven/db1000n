@@ -5,8 +5,7 @@ WORKDIR /build
 COPY go.mod .
 RUN go mod download && go mod verify
 COPY . .
-# use -s -w to strip extra debug data
-RUN make LDFLAGS="-s -w" build_encrypted
+RUN make build_encrypted
 
 FROM alpine:3.11.3 as advanced
 

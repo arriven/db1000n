@@ -4,14 +4,8 @@ Lots of maintainers run their needles on a bare metal machines.
 As long as this project is so frequently updated, it might be
 a good idea to let them update it without the hassle.
 
-## TODO
-
-_TO BE CONFIRMED WITH THE CODE OWNER!_
-
-- [?] Enable automatic time-based version check
-- [?] Enable push-based version check
-- [?] Enable application self-restart after it downloaded the update
-- [?] Disable OTA updates for needles running inside the Docker container
+- [V] Enabled automatic time-based version check
+- [V] Enabled application self-restart after it downloaded the update
 
 ## Description
 
@@ -27,26 +21,71 @@ target in the Makefile.
 
 ## Usage
 
+### Available flags
+
+```bash
+  -enable-self-update
+        Enable the application automatic updates on the startup
+  -restart-on-update
+        Allows application to restart upon the successful update (ignored if auto-update is disabled) (default true)
+  -self-update-check-frequency duration
+        How often to run auto-update checks (default 24h0m0s)
+  -skip-update-check-on-start
+        Allows to skip the update check at the startup (usually set automatically by the previous version) (default false)
+```
+
+The default behavior if the self-update enabled:
+1. Check for the update
+2. If update is available - download it
+   1. If auto-restart is enabled
+      1. Notify the user that a newer version is available
+      2. Fork-Exec a new process (will have a different PID), add a flag to skip the version check upon startup
+      3. Stop the current process
+   2. If auto-restart is disabled - notify user that manual restart is required
+3. If update is NOT available - schedule the next check
+
+### Examples
+
 To update your needle, start it with a flag `-enable-self-update`
 
 ```sh
 ./db1000n -enable-self-update
 ```
 
-### Update example
+#### Advanced options
 
+* Start the needle with the **self-update & self-restart**
 ```bash
-$ make build
-CGO_ENABLED=0 go build -ldflags="-s -w -X 'github.com/Arriven/db1000n/ota.Version=v0.6.4'" -o db1000n -a ./main.go
-$ ./db1000n -enable-self-update
-1970/01/01 00:00:00.00000 main.go:76: DB1000n [Version: v0.6.4]
-1970/01/01 00:00:00.00000 ota.go:30: Successfully updated to version 0.6.5
-1970/01/01 00:00:00.00000 ota.go:31: Release note:
- ## What's Changed
-* User friendly logs by @Arriven in https://github.com/Arriven/db1000n/pull/271
-...
+$ ./db1000n -enable-self-update 
+0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.6.4][PID=75259]
+0000/00/00 00:00:00 main.go:166: Running a check for a newer version...
+0000/00/00 00:00:00 main.go:176: Newer version of the application is found [0.7.0]
+0000/00/00 00:00:00 main.go:177: What's new:
+* Added some great improvements
+* Added some spectacular bugs
+0000/00/00 00:00:00 main.go:180: Auto restart is enabled, restarting the application to run a new version
+0000/00/00 00:00:00 restart.go:45: new process has been started successfully [old_pid=75259,new_pid=75262]
 
-**Full Changelog**: https://github.com/Arriven/db1000n/compare/v0.6.4...v0.6.5
-1970/01/01 00:00:00.00000 config.go:36: Loading config from "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"
-1970/01/01 00:00:00.00000 config.go:97: New config received, applying
+# NOTE: Process 75259 exited, Process 75262 has started with a flag to skip version check on the startup
+
+0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.7.0][PID=75262]                                                                             
+0000/00/00 00:00:00 main.go:155: Version update on startup is skipped, next update check is scheduled in 24h0m0s
 ```
+
+* Start the needle with the self-update but do not restart the process upon update (`systemd` friendly)
+```bash
+$ ./db1000n -enable-self-update -self-update-check-frequency=5m -restart-on-update=false
+0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.6.4][PID=75320]
+0000/00/00 00:00:00 main.go:166: Running a check for a newer version...
+0000/00/00 00:00:00 main.go:176: Newer version of the application is found [0.7.0]
+0000/00/00 00:00:00 main.go:177: What's new:
+* Added some great improvements
+* Added some spectacular bugs
+0000/00/00 00:00:00 main.go:191: Auto restart is disabled, restart the application manually to apply changes!
+```
+
+# References
+
+* https://github.com/Scalingo/go-graceful-restart-example
+* https://github.com/rcrowley/goagain
+* https://grisha.org/blog/2014/06/03/graceful-restart-in-golang
