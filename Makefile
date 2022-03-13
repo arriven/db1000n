@@ -1,6 +1,6 @@
 APP_NAME := db1000n
 
-ifeq ($(OS),Windows_NT)
+ifeq ($(GOOS),windows)
 	APP_NAME := $(addsuffix .exe,$(APP_NAME))
 endif
 
