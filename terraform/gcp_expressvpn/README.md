@@ -6,6 +6,18 @@
 - Subscription on [expressvpn.com](https://www.expressvpn.com) (get the activation code)
 - `terraform` installed
 
+## Init
+To init Terraform run:
+```sh
+terraform apply
+```
+Need to create terraform/gcp_expressvpn/terraform.tfvars file and set two variables values tou yours
+```
+project_id     = "google-project-id"
+expressvpn_key = "expressvpn-activation-code"
+```
+Other vars can be overwritten in this file id needed.
+
 ## Deploy
 
 To deploy run:
