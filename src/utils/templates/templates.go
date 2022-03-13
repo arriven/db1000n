@@ -42,8 +42,18 @@ func getProxylistByURL(url string) (urls []string) {
 
 	defer resp.Body.Close()
 
-	if err = json.NewDecoder(resp.Body).Decode(&urls); err != nil {
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil
+	}
+
+	err = json.Unmarshal(b, &urls)
+	if err != nil {
+		// try to parse response body as plain text with newline delimiter
+		urls = strings.Split(string(b), "\n")
+		if len(urls) == 0 {
+			return nil
+		}
 	}
 
 	return urls
