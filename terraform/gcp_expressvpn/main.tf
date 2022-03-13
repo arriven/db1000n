@@ -41,21 +41,6 @@ apt-get install -y docker-ce docker-ce-cli containerd.io
 ulimit -n 30000
 ulimit -n 30000
 
-wget -q "https://www.expressvpn.works/clients/linux/expressvpn_3.18.1.0-1_amd64.deb" -O /tmp/expressvpn_3.18.1.0-1_amd64.deb
-dpkg -i /tmp/expressvpn_3.18.1.0-1_amd64.deb \
-    && rm -rf /tmp/*.deb
-
-cat <<EOF >> ./activate.sh
-#!/usr/bin/expect
-spawn expressvpn activate
-expect "code:"
-send "${var.expressvpn_key}\r"
-expect "information."
-send "n\r"
-expect eof
-EOF
-chmod +x ./activate.sh && ./activate.sh
-
 cat <<EOF >> ./countries.txt
 Hong Kong
 Singapore
@@ -117,27 +102,37 @@ Austria
 Finland
 EOF
 
-expressvpn preferences set send_diagnostics false
-expressvpn preferences set auto_connect true
-expressvpn connect "$(shuf -n 1 /countries.txt)"
+sudo docker run \
+--env=ACTIVATION_CODE=${var.expressvpn_key} \
+--env=PREFERRED_PROTOCOL=auto \
+--env=LIGHTWAY_CIPHER=auto \
+--env=SERVER=$(shuf -n 1 /countries.txt) \
+-e NETWORK=192.168.1.0/24 \
+--cap-add=NET_ADMIN \
+--device=/dev/net/tun \
+--privileged \
+--tty=true \
+--name=vpn \
+--detach=true \
+--dns=1.1.1.1 \
+--tty=true \
+polkaned/expressvpn \
+/bin/bash
 
 sleep 10
-echo "INITIAL IP-> $(curl -v ifconfig.me)"
 
 cat <<EOF >> ./run.sh
 #! /bin/bash
-docker stop $(docker ps -a -q)
-expressvpn disconnect
-expressvpn connect "$(shuf -n 1 /countries.txt)"
-sleep 10
-echo "NEW IP-> $(curl -v ifconfig.me)"
-docker run --rm -d ghcr.io/arriven/db1000n-advanced:latest
+docker stop db1000n
+docker exec vpn expressvpn disconnect
+docker exec vpn expressvpn connect "$(shuf -n 1 /countries.txt)"
+docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
 EOF
 chmod +x ./run.sh
 
 (crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh | logger -t atck 2>&1') | crontab -
 
-docker run -d --rm ghcr.io/arriven/db1000n-advanced:latest
+docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
 
 EOT
 
