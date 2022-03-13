@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+//nolint: paralleltest // No need to test in parallel
 func TestMergeExtraArgs(t *testing.T) {
 	type testCase struct {
 		Name         string

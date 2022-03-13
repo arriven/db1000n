@@ -1672,7 +1672,7 @@ linters:
     # - gomoddirectives
     - gomodguard
     - goprintffuncname
-    # - gosec
+    - gosec
     - gosimple
     - govet
     - grouper
@@ -1691,9 +1691,9 @@ linters:
     - nilerr
     # - nilnil
     - nlreturn
-    # - noctx
+    - noctx
     - nolintlint
-    # - paralleltest
+    - paralleltest
     - prealloc
     - predeclared
     - promlinter

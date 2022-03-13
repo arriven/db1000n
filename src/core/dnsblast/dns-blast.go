@@ -271,7 +271,7 @@ func newDefaultDNSClient(proto string) *dns.Client {
 
 	if c.Net == TCPTLSProtoName {
 		c.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec // This is intentional
 		}
 	}
 

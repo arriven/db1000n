@@ -136,19 +136,7 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     service docker start
     usermod -a -G docker ec2-user
     chkconfig docker on
-
-    docker run --rm -ti -d --name volia ghcr.io/arriven/db1000n-advanced
-
-    while :
-    do
-        sleep 60
-# shut down if docker died
-        if [ $(docker info --format '{{ .ContainersRunning }}') == "0" ]
-        then
-          echo no container running
-          systemctl --force --force poweroff
-        fi
-    done
+    docker run  -ti -d --restart always ghcr.io/arriven/db1000n-advanced
 
 EOF
   )

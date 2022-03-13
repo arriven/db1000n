@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os/exec"
@@ -21,39 +21,29 @@ func openBrowser(url string) {
 }
 
 // CheckCountry allows to check which country the app is running from
-func CheckCountry(countriesToAvoid []string) {
-	type IPInfo struct {
+func CheckCountry(ctx context.Context, countriesToAvoid []string) {
+	const ipCheckerURI = "https://api.myip.com/"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
+	if err != nil {
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
+
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var ipInfo struct {
 		Country string `json:"country"`
 	}
 
-	ipCheckerURI := "https://api.myip.com/"
-
-	resp, err := http.Get(ipCheckerURI)
-	if err != nil {
-		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-
-		return
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("Can't close connection to: %s", ipCheckerURI)
-
-			return
-		}
-	}()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-
-		return
-	}
-
-	ipInfo := IPInfo{}
-
-	if err = json.Unmarshal(body, &ipInfo); err != nil {
-		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+	if err = json.NewDecoder(resp.Body).Decode(&ipInfo); err != nil {
+		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
 
 		return
 	}

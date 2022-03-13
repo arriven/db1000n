@@ -89,7 +89,7 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 	}
 
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, //nolint:gosec // This is intentional
 	}
 	if clientConfig.TLSClientConfig != nil {
 		tlsConfig = clientConfig.TLSClientConfig
@@ -115,7 +115,7 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 				return ""
 			}
 
-			return proxyURLs[rand.Intn(len(proxyURLs))]
+			return proxyURLs[rand.Intn(len(proxyURLs))] //nolint:gosec // Cryptographically secure random not required
 		}
 	}
 

@@ -2,6 +2,7 @@
 package templates
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
@@ -35,22 +37,48 @@ func getProxylist() (urls []string) {
 }
 
 func getProxylistByURL(url string) (urls []string) {
-	resp, err := http.Get(url)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil
 	}
 
 	defer resp.Body.Close()
 
-	if err = json.NewDecoder(resp.Body).Decode(&urls); err != nil {
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil
+	}
+
+	err = json.Unmarshal(b, &urls)
+	if err != nil {
+		// try to parse response body as plain text with newline delimiter
+		urls = strings.Split(string(b), "\n")
+		if len(urls) == 0 {
+			return nil
+		}
 	}
 
 	return urls
 }
 
 func getURLContent(url string) (string, error) {
-	resp, err := http.Get(url)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}

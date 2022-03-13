@@ -3,14 +3,15 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -24,10 +25,32 @@ type Config struct {
 	Jobs []jobs.Config
 }
 
+type RawConfig struct {
+	body         []byte
+	lastModified string
+	etag         string
+}
+
+type Fetcher struct {
+	backupConfig    []byte
+	lastKnownConfig RawConfig
+}
+
+func NewFetcher(backupConfig []byte) *Fetcher {
+	return &Fetcher{
+		backupConfig: backupConfig,
+		lastKnownConfig: RawConfig{
+			body:         nil,
+			lastModified: "",
+			etag:         "",
+		},
+	}
+}
+
 // fetch tries to read a config from the list of mirrors until it succeeds
-func fetch(paths []string) ([]byte, error) {
+func (f *Fetcher) fetch(paths []string) *RawConfig {
 	for i := range paths {
-		res, err := fetchSingle(paths[i])
+		config, err := f.fetchSingle(paths[i])
 		if err != nil {
 			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
 
@@ -36,33 +59,55 @@ func fetch(paths []string) ([]byte, error) {
 
 		log.Printf("Loading config from %q", paths[i])
 
-		return res, nil
+		return config
 	}
 
-	return nil, errors.New("config fetch failed")
+	if f.lastKnownConfig.body != nil {
+		log.Println("Could not load new config, proceeding with the last known good one")
+
+		return &f.lastKnownConfig
+	}
+
+	log.Println("Could not load new config, proceeding with the backup one")
+
+	return &RawConfig{body: f.backupConfig, lastModified: "", etag: ""}
 }
 
 // fetchSingle reads a config from a single source
-func fetchSingle(path string) ([]byte, error) {
+func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 	configURL, err := url.ParseRequestURI(path)
-	if err != nil {
+	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
+	if err != nil || filepath.IsAbs(path) {
 		res, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 
-		return res, nil
+		return &RawConfig{body: res, lastModified: "", etag: ""}, nil
 	}
 
 	const requestTimeout = 20 * time.Second
 
-	client := http.Client{
-		Timeout: requestTimeout,
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-	resp, err := client.Get(configURL.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, configURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	req.Header.Add("If-None-Match", f.lastKnownConfig.etag)
+	req.Header.Add("If-Modified-Since", f.lastKnownConfig.lastModified)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusNotModified {
+		log.Println("Received HTTP 304 Not Modified")
+
+		return &f.lastKnownConfig, nil
 	}
 
 	defer resp.Body.Close()
@@ -71,68 +116,62 @@ func fetchSingle(path string) ([]byte, error) {
 		return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)
 	}
 
+	etag := resp.Header.Get("etag")
+	lastModified := resp.Header.Get("last-modified")
+
 	res, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	return &RawConfig{body: res, etag: etag, lastModified: lastModified}, nil
 }
 
 // Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
-func Update(paths []string, current, backup []byte, format string) (*Config, []byte) {
-	newRawConfig, err := fetch(paths)
-	if err != nil {
-		if current != nil {
-			log.Println("Could not load new config, proceeding with the last known good one")
+func (f *Fetcher) Update(paths []string, format string) *Config {
+	newConfig := f.fetch(paths)
 
-			newRawConfig = current
-		} else {
-			log.Println("Could not load new config, proceeding with the backup one")
-
-			newRawConfig = backup
-		}
-	}
-
-	if bytes.Equal(current, newRawConfig) { // Only restart jobs if the new config differs from the current one
-		log.Println("The config has not changed. Keep calm and carry on!")
-
-		return nil, nil
-	}
-
-	log.Println("New config received, applying")
-
-	if utils.IsEncrypted(newRawConfig) {
-		decryptedConfig, err := utils.Decrypt(newRawConfig)
+	if utils.IsEncrypted(newConfig.body) {
+		decryptedConfig, err := utils.Decrypt(newConfig.body)
 		if err != nil {
 			log.Println("Can't decrypt config")
 
-			return nil, nil
+			return nil
 		}
 
 		log.Println("Decrypted config")
 
-		newRawConfig = decryptedConfig
+		newConfig.body = decryptedConfig
 	}
+
+	if bytes.Equal(f.lastKnownConfig.body, newConfig.body) { // Only restart jobs if the new config differs from the current one
+		log.Println("The config has not changed. Keep calm and carry on!")
+
+		return nil
+	}
+
+	log.Println("New config received, applying")
 
 	var config Config
 
 	switch format {
 	case "", "json":
-		if err := json.Unmarshal(newRawConfig, &config); err != nil {
+		if err := json.Unmarshal(newConfig.body, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
 
-			return nil, nil
+			return nil
 		}
 	case "yaml":
-		if err := yaml.Unmarshal(newRawConfig, &config); err != nil {
+		if err := yaml.Unmarshal(newConfig.body, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
 
-			return nil, nil
+			return nil
 		}
 	default:
 		log.Printf("Unknown config format: %v", format)
 	}
 
-	return &config, newRawConfig
+	f.lastKnownConfig = *newConfig
+
+	return &config
 }

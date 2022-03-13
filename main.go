@@ -26,6 +26,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"math/rand"
 	"net/http"
 	pprofhttp "net/http/pprof"
 	"os"
@@ -80,22 +81,8 @@ func main() {
 		go watchUpdates(*doRestartOnUpdate, *skipUpdateCheckOnStart, *autoUpdateCheckFrequency)
 	}
 
-	if *debug && *pprof == "" {
-		*pprof = ":8080"
-	}
-
-	if *pprof != "" {
-		mux := http.NewServeMux()
-		mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
-		mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
-		mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
-		mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
-		mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
-
-		go func() {
-			log.Println(http.ListenAndServe(*pprof, mux))
-		}()
-	}
+	setUpPprof(*pprof, *debug)
+	rand.Seed(time.Now().UnixNano())
 
 	if !metrics.ValidatePrometheusPushGateways(*prometheusPushGateways) {
 		log.Fatal("Invalid value for --prometheus_gateways")
@@ -105,10 +92,10 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
-	go utils.CheckCountry([]string{"Ukraine"})
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	go utils.CheckCountry(ctx, []string{"Ukraine"})
 
 	if *prometheusOn {
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
@@ -139,6 +126,27 @@ func main() {
 	}()
 
 	r.Run(ctx)
+}
+
+func setUpPprof(pprof string, debug bool) {
+	if debug && pprof == "" {
+		pprof = ":8080"
+	}
+
+	if pprof == "" {
+		return
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
+
+	go func() {
+		log.Println(http.ListenAndServe(pprof, mux))
+	}()
 }
 
 func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateCheckFrequency time.Duration) {
