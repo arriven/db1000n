@@ -1,5 +1,9 @@
 APP_NAME := db1000n
 
+ifeq ($(OS),Windows_NT)
+	APP_NAME := $(addsuffix .exe,$(APP_NAME))
+endif
+
 REPOSITORY_BASE_PATH := github.com/Arriven/db1000n
 LATEST_TAG := $(shell git describe --tags --abbrev=0)
 
