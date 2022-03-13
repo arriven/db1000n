@@ -52,7 +52,7 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 ### Free by request or promo code
 
 {%
-   include-markdown "./docs/vpn.md"
+   include-markdown "./vpn.md"
    start="Free VPN list:"
 %}
 
