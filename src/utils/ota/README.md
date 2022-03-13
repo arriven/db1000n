@@ -71,7 +71,7 @@ $ ./db1000n -enable-self-update
 
 # NOTE: Process 75259 exited, Process 75262 has started with a flag to skip version check on the startup
 
-0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.7.0][PID=75262]                                                                             
+0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.7.0][PID=75262]
 0000/00/00 00:00:00 main.go:155: Version update on startup is skipped, next update check is scheduled in 24h0m0s
 ```
 
@@ -90,6 +90,6 @@ $ ./db1000n -enable-self-update -self-update-check-frequency=5m -restart-on-upda
 
 ## References
 
-* [https://github.com/Scalingo/go-graceful-restart-example](https://github.com/Scalingo/go-graceful-restart-example)
-* [https://github.com/rcrowley/goagain](https://github.com/rcrowley/goagain)
-* [https://grisha.org/blog/2014/06/03/graceful-restart-in-golang](https://grisha.org/blog/2014/06/03/graceful-restart-in-golang)
+1. Graceful restart with zero downtime for TCP connection -  [https://github.com/Scalingo/go-graceful-restart-example](https://github.com/Scalingo/go-graceful-restart-example)
+1. Graceful restart with zero downtime for TCP connection (two variants) [https://github.com/rcrowley/goagain](https://github.com/rcrowley/goagain)
+1. Graceful restart with zero downtime for TCP connection (alternative) [https://grisha.org/blog/2014/06/03/graceful-restart-in-golang](https://grisha.org/blog/2014/06/03/graceful-restart-in-golang)
