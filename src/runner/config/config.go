@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -74,7 +75,8 @@ func (f *Fetcher) fetch(paths []string) *RawConfig {
 // fetchSingle reads a config from a single source
 func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 	configURL, err := url.ParseRequestURI(path)
-	if err != nil {
+	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
+	if err != nil || filepath.IsAbs(path) {
 		res, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
