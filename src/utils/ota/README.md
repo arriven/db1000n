@@ -9,8 +9,7 @@ a good idea to let them update it without the hassle.
 
 ## Description
 
-Support for the application self-update by downloading
-the latest release from the official repository.
+Support for the application self-update by downloading the latest release from the official repository.
 
 ```text
 Stay strong, be the first in line!
@@ -36,6 +35,7 @@ target in the Makefile.
 
 The default behavior if the self-update enabled:
 
+```bash
 * Check for the update
 * If update is available - download it
    * If auto-restart is enabled
@@ -44,6 +44,7 @@ The default behavior if the self-update enabled:
       * Stop the current process
    * If auto-restart is disabled - notify user that manual restart is required
 * If update is NOT available - schedule the next check
+```
 
 ### Examples
 
@@ -58,7 +59,7 @@ To update your needle, start it with a flag `-enable-self-update`
 Start the needle with the **self-update & self-restart**
 
 ```bash
-$ ./db1000n -enable-self-update 
+$ ./db1000n -enable-self-update
 0000/00/00 00:00:00 main.go:82: DB1000n [Version: v0.6.4][PID=75259]
 0000/00/00 00:00:00 main.go:166: Running a check for a newer version...
 0000/00/00 00:00:00 main.go:176: Newer version of the application is found [0.7.0]
