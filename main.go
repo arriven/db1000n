@@ -95,11 +95,9 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
-	countries := strings.Split(*countryList, ",")
-	if !utils.CheckCountry(countries) && *strictCountryCheck {
-		if !utils.CheckCountry(countries) {
-			log.Fatal("Strict country check mode is enabled, exiting")
-
+	if *countryList != "" {
+		countries := strings.Split(*countryList, ",")
+		if !utils.CheckCountry(countries, *strictCountryCheck) {
 			return
 		}
 	}

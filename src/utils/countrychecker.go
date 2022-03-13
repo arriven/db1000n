@@ -6,25 +6,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 )
 
-func openBrowser(url string) {
-	switch runtime.GOOS {
-	case "windows":
-		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		_ = exec.Command("open", url).Start()
-	}
-
-	log.Printf("Please open %s", url)
-}
-
 // CheckCountry allows to check which country the app is running from
-func CheckCountry(countriesToAvoid []string) bool {
+func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) bool {
 	type IPInfo struct {
 		Country string `json:"country"`
 		IP      string `json:"ip"`
@@ -83,15 +70,27 @@ func CheckCountry(countriesToAvoid []string) bool {
 	}
 
 	if ipInfo.Country == "" {
-		return false
+		if strictCountryCheck {
+			log.Println("Strict country check mode is enabled, exiting")
+
+			return false
+		}
+
+		return true
 	}
 
 	for _, country := range countriesToAvoid {
 		if ipInfo.Country == strings.TrimSpace(country) {
 			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
-			openBrowser("https://arriven.github.io/db1000n/vpn/")
+			OpenBrowser("https://arriven.github.io/db1000n/vpn/")
 
-			return false
+			if strictCountryCheck {
+				log.Println("Strict country check mode is enabled, exiting")
+
+				return false
+			}
+
+			return true
 		}
 	}
 

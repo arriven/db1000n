@@ -4,6 +4,8 @@ package utils
 import (
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -88,4 +90,15 @@ func Decode(input interface{}, output interface{}) error {
 	}
 
 	return decoder.Decode(input)
+}
+
+func OpenBrowser(url string) {
+	switch runtime.GOOS {
+	case "windows":
+		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		_ = exec.Command("open", url).Start()
+	}
+
+	log.Printf("Please open %s", url)
 }
