@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- GCP account
+- [GCP account](http://console.cloud.google.com)
 - Subscription on [expressvpn.com](https://www.expressvpn.com) (get the activation code)
 - `terraform` installed
 
