@@ -29,11 +29,9 @@ type Config struct {
 type Runner struct {
 	config         *Config
 	configPaths    []string
-	backupConfig   []byte
 	refreshTimeout time.Duration
 	configFormat   string
-
-	currentRawConfig []byte // currently applied config
+	configFetcher  *config.Fetcher
 
 	debug bool
 }
@@ -43,7 +41,7 @@ func New(cfg *Config, debug bool) (*Runner, error) {
 	return &Runner{
 		config:         cfg,
 		configPaths:    strings.Split(cfg.ConfigPaths, ","),
-		backupConfig:   cfg.BackupConfig,
+		configFetcher:  config.NewFetcher(cfg.BackupConfig),
 		refreshTimeout: cfg.RefreshTimeout,
 		configFormat:   cfg.Format,
 
@@ -56,19 +54,18 @@ func (r *Runner) Run(ctx context.Context) {
 	clientID := uuid.New()
 
 	refreshTimer := time.NewTicker(r.refreshTimeout)
+
 	defer refreshTimer.Stop()
 
 	var cancel context.CancelFunc
 
 	for {
-		if cfg, raw := config.Update(r.configPaths, r.currentRawConfig, r.backupConfig, r.configFormat); cfg != nil {
+		if cfg := r.configFetcher.Update(r.configPaths, r.configFormat); cfg != nil {
 			if cancel != nil {
 				cancel()
 			}
 
 			cancel = r.runJobs(ctx, cfg, clientID)
-
-			r.currentRawConfig = raw
 		}
 
 		// Wait for refresh timer or stop signal
