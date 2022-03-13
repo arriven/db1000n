@@ -7,6 +7,8 @@ import (
 )
 
 func TestBlast(t *testing.T) {
+	t.Parallel()
+
 	const (
 		testDuration = 5 * time.Second
 
@@ -75,6 +77,8 @@ func TestBlast(t *testing.T) {
 	for i := range testCases {
 		testcase := testCases[i]
 		t.Run(testcase.Name, func(tt *testing.T) {
+			tt.Parallel()
+
 			config := &Config{
 				RootDomain:      testcase.RootDomain,
 				Protocol:        testcase.Protocol,
@@ -101,6 +105,8 @@ func TestBlast(t *testing.T) {
 }
 
 func TestGetSeedDomain(t *testing.T) {
+	t.Parallel()
+
 	const seedDomain = `example.com`
 
 	generator, err := NewDistinctHeavyHitterGenerator(context.Background(), []string{seedDomain})

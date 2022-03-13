@@ -26,6 +26,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"math/rand"
 	"net/http"
 	pprofhttp "net/http/pprof"
 	"os"
@@ -45,7 +46,7 @@ import (
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
-	log.Printf("DB1000n [Version: %s]\n", ota.Version)
+	log.Printf("DB1000n [Version: %s]", ota.Version)
 
 	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
 	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
@@ -73,22 +74,8 @@ func main() {
 		ota.DoSelfUpdate()
 	}
 
-	if *debug && *pprof == "" {
-		*pprof = ":8080"
-	}
-
-	if *pprof != "" {
-		mux := http.NewServeMux()
-		mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
-		mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
-		mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
-		mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
-		mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
-
-		go func() {
-			log.Println(http.ListenAndServe(*pprof, mux))
-		}()
-	}
+	setUpPprof(*pprof, *debug)
+	rand.Seed(time.Now().UnixNano())
 
 	if !metrics.ValidatePrometheusPushGateways(*prometheusPushGateways) {
 		log.Fatal("Invalid value for --prometheus_gateways")
@@ -98,10 +85,10 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
-	go utils.CheckCountry([]string{"Ukraine"})
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	go utils.CheckCountry(ctx, []string{"Ukraine"})
 
 	if *prometheusOn {
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
@@ -128,4 +115,25 @@ func main() {
 	}()
 
 	r.Run(ctx)
+}
+
+func setUpPprof(pprof string, debug bool) {
+	if debug && pprof == "" {
+		pprof = ":8080"
+	}
+
+	if pprof == "" {
+		return
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprofhttp.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprofhttp.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprofhttp.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
+
+	go func() {
+		log.Println(http.ListenAndServe(pprof, mux))
+	}()
 }
