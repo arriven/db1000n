@@ -22,6 +22,9 @@ endif
 ifneq ($(CA_PATH_VALUE),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/metrics.PushGatewayCA=$(CA_PATH_VALUE)'
 endif
+ifneq ($(PROMETHEUS_BASIC_AUTH),)
+LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/metrics.BasicAuth=$(PROMETHEUS_BASIC_AUTH)'
+endif
 
 build:
 	CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o $(APP_NAME) -a ./main.go
