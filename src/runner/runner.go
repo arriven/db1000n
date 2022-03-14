@@ -18,7 +18,7 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths    string            // Comma-separated config location URLs
+	ConfigPaths    []string          // Comma-separated config location URLs
 	BackupConfig   []byte            // Raw backup config
 	RefreshTimeout time.Duration     // How often to refresh config
 	Format         string            // json or yaml
@@ -40,7 +40,7 @@ type Runner struct {
 func New(cfg *Config, debug bool) (*Runner, error) {
 	return &Runner{
 		config:         cfg,
-		configPaths:    strings.Split(cfg.ConfigPaths, ","),
+		configPaths:    cfg.ConfigPaths,
 		configFetcher:  config.NewFetcher(cfg.BackupConfig),
 		refreshTimeout: cfg.RefreshTimeout,
 		configFormat:   cfg.Format,

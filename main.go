@@ -82,8 +82,10 @@ func main() {
 		return
 	}
 
+	configPathsArray := strings.Split(*configPaths, ",")
+
 	if *updaterMode {
-		updater.Run()
+		updater.Run(configPathsArray)
 
 		return
 	}
@@ -118,7 +120,7 @@ func main() {
 	}
 
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:    *configPaths,
+		ConfigPaths:    configPathsArray,
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
