@@ -29,10 +29,12 @@ The config is expected to be in json format and has following configuration valu
 
 `http` args:
 
-- `method` - `[string]` http method to use (passed directly to go `http.NewRequest`)
-- `path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
-- `body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
-- `headers` - `[object]` key-value map of http headers
+- `request` - `[object]` defines requests to be sent
+- `request.method` - `[string]` http method to use (passed directly to go `http.NewRequest`)
+- `request.path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
+- `request.body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
+- `request.headers` - `[object]` key-value map of http headers
+- `request.cookies` - `[object]` key-value map of http cookies
 - `client` - `[object]` http client config for the job
 - `client.tls_config` - `[object]` tls config for transport (InsecureSkipVerify is true by default)
 - `client.proxy_urls` - `[array]` string urls for proxies to use (chosen randomly for each request)
@@ -48,13 +50,6 @@ The config is expected to be in json format and has following configuration valu
 
 - `interval_ms` - `[number]` interval between requests in milliseconds. Defaults to 0 (Care, in case of udp job it might generate the data faster than your OS/network card can process it)
 - `count` - `[number]` limit the amount of requests to send with this job invocation. Defaults to 0 (no limit). Note: if config is refreshed before this limit is reached the job will be restarted and the counter will be reset
-
-`syn-flood` args:
-
-- `host` - `[string]` host to attack, can be either DNS name or IP
-- `port` - `[number]` port to attack
-- `payload_length` - `[number]` refer to original syn-flood package docs
-- `flood_type` - `[string]` type of flood to send, can be `syn`, `ack`, `synack`, and `random`
 
 Warning: `packetgen` requires root privileges to run
 
@@ -84,15 +79,30 @@ Warning: `packetgen` requires root privileges to run
 Almost every leaf `[string]` or `[object]` parameter can be templated with go template syntax. I've also added couple helper functions (list will be growing):
 
 - `random_uuid`
+- `random_int_n"`
 - `random_int`
-- `random_int_n`
-- `random_ip`
 - `random_payload`
-- `random_mac_addr`
+- `random_ip`
 - `random_port`
+- `random_mac_addr`
+- `random_user_agent`
 - `local_ip`
 - `local_mac_addr`
+- `resolve_host`
 - `base64_encode`
 - `base64_decode`
+- `json_encode`
+- `json_decode`
+- `yaml_encode`
+- `yaml_decode`
+- `join`
+- `get_url`
+- `proxylist_url`
+- `get_proxylist`
+- `get_proxylist_by_url`
+- `mod`
+- `ctx_key`
+- `split`
+- `cookie_string`
 
 Please refer to official go documentation and code for these for now
