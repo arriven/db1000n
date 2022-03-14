@@ -16,15 +16,16 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+type rawnetConfig struct {
+	BasicJobConfig
+	addr    string
+	bodyTpl *template.Template
+}
+
 func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
-	jobConfig, addr, bodyTpl, err := parseRawNetJobArgs(args)
-	if err != nil {
-		return nil, err
-	}
-
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	jobConfig, err := parseRawNetJobArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -39,55 +40,63 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	if debug {
-		log.Printf("%s started at %d", addr, time.Now().Unix())
+		log.Printf("%s started at %d", jobConfig.addr, time.Now().Unix())
 	}
 
 	for jobConfig.Next(ctx) {
-		sendTCP(tcpAddr, bodyTpl, trafficMonitor, processedTrafficMonitor, debug)
+		sendTCP(ctx, jobConfig, trafficMonitor, processedTrafficMonitor, debug)
 	}
 
 	return nil, nil
 }
 
-func sendTCP(a *net.TCPAddr, bodyTpl *template.Template, trafficMonitor, processedTrafficMonitor *metrics.Writer, debug bool) {
-	conn, err := net.DialTCP("tcp", nil, a)
+func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer, debug bool) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.addr)
+	if err != nil {
+		return
+	}
+
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		if debug {
-			log.Printf("error connecting to [%v]: %v", a, err)
+			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 		}
 
-		metrics.IncRawnetTCP(a.String(), metrics.StatusFail)
+		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 		return
 	}
 
 	defer conn.Close()
 
-	n, err := conn.Write([]byte(templates.Execute(bodyTpl, nil)))
-	trafficMonitor.Add(uint64(n))
+	// Write to conn until error
+	for jobConfig.Next(ctx) {
+		n, err := conn.Write([]byte(templates.Execute(jobConfig.bodyTpl, nil)))
+		trafficMonitor.Add(uint64(n))
 
-	if err != nil {
-		if debug {
-			log.Printf("%s failed at %d with err: %v", a.String(), time.Now().Unix(), err)
+		if err != nil {
+			if debug {
+				log.Printf("%s failed at %d with err: %v", tcpAddr.String(), time.Now().Unix(), err)
+			}
+
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+
+			return
 		}
 
-		metrics.IncRawnetTCP(a.String(), metrics.StatusFail)
+		if debug {
+			log.Printf("%s finished at %d", tcpAddr.String(), time.Now().Unix())
+		}
 
-		return
+		processedTrafficMonitor.Add(uint64(n))
+		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 	}
-
-	if debug {
-		log.Printf("%s finished at %d", a.String(), time.Now().Unix())
-	}
-
-	processedTrafficMonitor.Add(uint64(n))
-	metrics.IncRawnetTCP(a.String(), metrics.StatusSuccess)
 }
 
 func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
-	jobConfig, addr, bodyTpl, err := parseRawNetJobArgs(args)
+	jobConfig, err := parseRawNetJobArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +104,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+	udpAddr, err := net.ResolveUDPAddr("udp", jobConfig.addr)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +113,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	go trafficMonitor.Update(ctx, time.Second)
 
 	if debug {
-		log.Printf("%s started at %d", addr, time.Now().Unix())
+		log.Printf("%s started at %d", jobConfig.addr, time.Now().Unix())
 	}
 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
@@ -121,7 +130,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	defer conn.Close()
 
 	for jobConfig.Next(ctx) {
-		sendUDP(udpAddr, conn, bodyTpl, trafficMonitor, debug)
+		sendUDP(udpAddr, conn, jobConfig.bodyTpl, trafficMonitor, debug)
 	}
 
 	return nil, nil
@@ -147,7 +156,7 @@ func sendUDP(a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, traf
 	}
 }
 
-func parseRawNetJobArgs(args Args) (cfg *BasicJobConfig, targetAddress string, bodyTpl *template.Template, err error) {
+func parseRawNetJobArgs(args Args) (tpl *rawnetConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
 
@@ -156,15 +165,15 @@ func parseRawNetJobArgs(args Args) (cfg *BasicJobConfig, targetAddress string, b
 	}
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		return nil, "", nil, fmt.Errorf("error decoding rawnet job config: %w", err)
+		return nil, fmt.Errorf("error decoding rawnet job config: %w", err)
 	}
 
-	bodyTpl, err = templates.Parse(jobConfig.Body)
+	bodyTpl, err := templates.Parse(jobConfig.Body)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
+		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
-	targetAddress = strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil))
+	targetAddress := strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil))
 
-	return &jobConfig.BasicJobConfig, targetAddress, bodyTpl, nil
+	return &rawnetConfig{BasicJobConfig: jobConfig.BasicJobConfig, addr: targetAddress, bodyTpl: bodyTpl}, nil
 }
