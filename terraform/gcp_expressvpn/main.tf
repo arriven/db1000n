@@ -16,36 +16,10 @@ resource "google_project_iam_member" "vm_metric" {
   member  = "serviceAccount:${google_service_account.vm.email}"
 }
 
-resource "google_compute_instance" "core" {
-  count = 1
-
-  project      = var.project_id
-  name         = "atck-${count.index}"
+resource "google_compute_instance_template" "atck" {
+  name         = "atck-template"
   machine_type = var.machine_type
-  zone         = var.machine_location
-
-  tags = ["default-allow-ssh"]
-
-  boot_disk {
-    initialize_params {
-      image = "projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2004-focal-v20220203"
-    }
-  }
-
-  network_interface {
-    network = "default"
-    access_config {}
-  }
-
-  scheduling {
-    preemptible       = true
-    automatic_restart = false
-  }
-
-  service_account {
-    email  = google_service_account.vm.email
-    scopes = ["cloud-platform", "logging-write", "monitoring-write"]
-  }
+  tags         = ["default-allow-ssh"]
 
   metadata_startup_script = <<EOT
 apt-get remove docker docker-engine docker.io containerd runc
@@ -66,36 +40,130 @@ apt-get install -y docker-ce docker-ce-cli containerd.io
 ulimit -n 30000
 ulimit -n 30000
 
-wget -q "https://www.expressvpn.works/clients/linux/expressvpn_3.18.1.0-1_amd64.deb" -O /tmp/expressvpn_3.18.1.0-1_amd64.deb
-dpkg -i /tmp/expressvpn_3.18.1.0-1_amd64.deb \
-    && rm -rf /tmp/*.deb
-
-cat <<EOF >> ./activate.sh
-#!/usr/bin/expect
-spawn expressvpn activate
-expect "code:"
-send "${var.expressvpn_key}\r"
-expect "information."
-send "n\r"
-expect eof
+cat <<EOF >> ./countries.txt
+Hong Kong
+Singapore
+India
+Canada
+Japan
+Germany
+Mexico
+Australia
+United Kingdom
+Netherlands
+Spain
+South Korea
+Switzerland
+France
+Philippines
+Malaysia
+Sri Lanka
+Italy
+Pakistan
+Kazakhstan
+Thailand
+Indonesia
+Taiwan
+Vietnam
+Macau
+Cambodia
+Mongolia
+Laos
+Myanmar
+Nepal
+Kyrgyzstan
+Uzbekistan
+Bangladesh
+Bhutan
+Brazil
+Panama
+Chile
+Argentina
+Bolivia
+Colombia
+Venezuela
+Ecuador
+Guatemala
+Peru
+Uruguay
+Bahamas
+Sweden
+Romania
+Turkey
+Ireland
+Iceland
+Norway
+Denmark
+Belgium
+Greece
+Portugal
+Austria
+Finland
 EOF
-chmod +x ./activate.sh && ./activate.sh
 
-expressvpn preferences set send_diagnostics false
-expressvpn preferences set auto_connect true
-expressvpn connect "${var.vpn_location}"
+sudo docker run \
+--env=ACTIVATION_CODE=${var.expressvpn_key} \
+--env=PREFERRED_PROTOCOL=auto \
+--env=LIGHTWAY_CIPHER=auto \
+--env=SERVER=$(shuf -n 1 /countries.txt) \
+-e NETWORK=192.168.1.0/24 \
+--cap-add=NET_ADMIN \
+--device=/dev/net/tun \
+--privileged \
+--tty=true \
+--name=vpn \
+--detach=true \
+--dns=1.1.1.1 \
+--tty=true \
+polkaned/expressvpn \
+/bin/bash
 
 sleep 10
-echo "IP HERE-> $(curl -v ifconfig.me)"
 
 cat <<EOF >> ./run.sh
 #! /bin/bash
-docker stop $(docker ps -a -q)
-docker run --rm ghcr.io/arriven/db1000n-advanced:latest
+docker stop db1000n
+docker exec vpn expressvpn disconnect
+docker exec vpn expressvpn connect "$(shuf -n 1 /countries.txt)"
+docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
 EOF
 chmod +x ./run.sh
 
-(crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh >> /var/log/run.log 2>&1') | crontab -
+(crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh') | crontab -
+
+docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
 
 EOT
+
+  service_account {
+    email  = google_service_account.vm.email
+    scopes = ["cloud-platform", "logging-write", "monitoring-write"]
+  }
+
+  network_interface {
+    network = "default"
+    access_config {}
+  }
+
+  disk {
+    source_image = "projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2004-focal-v20220203"
+    auto_delete  = true
+    boot         = true
+  }
+
+  scheduling {
+    preemptible       = true
+    automatic_restart = false
+  }
+}
+
+resource "google_compute_instance_group_manager" "attckrs" {
+  name               = "attckrs"
+  base_instance_name = "atck"
+  zone               = var.machine_location
+  target_size        = var.machine_count
+
+  version {
+    instance_template = google_compute_instance_template.atck.id
+  }
 }

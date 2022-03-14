@@ -34,7 +34,7 @@ func NewDistinctHeavyHitterGenerator(ctx context.Context, seedDomains []string) 
 
 	generator := &DistinctHeavyHitterGenerator{
 		buffer:               make(chan string, dhhGeneratorBufferSize),
-		randomizer:           rand.New(rand.NewSource(time.Now().Unix())),
+		randomizer:           rand.New(rand.NewSource(time.Now().Unix())), //nolint:gosec // Cryptographically secure random not required
 		randomizerDictionary: []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
 	}
 

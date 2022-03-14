@@ -230,13 +230,14 @@ func getTLSConfig() (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs: rootCAs,
+		RootCAs:    rootCAs,
+		MinVersion: tls.VersionTLS12,
 	}, nil
 }
 
 func pushMetrics(ctx context.Context, gateways []string) {
 	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "default_push")
-	gateway := gateways[rand.Int()%len(gateways)]
+	gateway := gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
 	ticker := time.NewTicker(tickerPeriod)
 
@@ -270,7 +271,7 @@ func pushMetrics(ctx context.Context, gateways []string) {
 			if err := pusher.Push(); err != nil {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 
-				gateway = gateways[rand.Int()%len(gateways)]
+				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 				pusher = push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
 			}
 		}
