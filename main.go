@@ -85,7 +85,7 @@ func main() {
 	configPathsArray := strings.Split(*configPaths, ",")
 
 	if *updaterMode {
-		updater.Run(configPathsArray)
+		updater.Run(configPathsArray, []byte(*backupConfig))
 
 		return
 	}

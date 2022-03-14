@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"bytes"
 	"io"
 	"log"
 	"os"
@@ -9,13 +10,13 @@ import (
 	"github.com/Arriven/db1000n/src/runner/config"
 )
 
-func Run(configPaths []string) {
-	configFetcher := config.NewFetcher([]byte{})
+func Run(configPaths []string, backupConfig []byte) {
+	lastKnownConfig := &config.RawConfig{Body: backupConfig}
 
 	for {
-		config := configFetcher.UpdateWithoutUnmarshal(configPaths, "json")
+		rawConfig := config.FetchRawConfig(configPaths, lastKnownConfig)
 
-		if config != nil {
+		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
 			file, err := os.Create("config/config.json")
 			if err != nil {
 				log.Println("Unable to create config/config.json")
@@ -23,7 +24,7 @@ func Run(configPaths []string) {
 				return
 			}
 
-			size, err := io.WriteString(file, string(config.Body))
+			size, err := io.WriteString(file, string(rawConfig.Body))
 			if err != nil {
 				log.Println("Error while writing to config/config.json")
 
@@ -32,7 +33,8 @@ func Run(configPaths []string) {
 
 			defer file.Close()
 
-			configFetcher.LastKnownConfig = *config
+			lastKnownConfig = rawConfig
+
 			log.Printf("Saved config/config.json with size %d", size)
 		}
 
