@@ -43,6 +43,8 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 
 	if globalConfig.ProxyListURL != "" {
 		clientConfig.ProxyURLs = strings.Join(templates.GetProxylist(), ",")
+	} else if globalConfig.ProxyURL != "" {
+		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
 
 	client := http.NewClient(clientConfig, debug)
@@ -125,6 +127,8 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 
 	if globalConfig.ProxyListURL != "" {
 		clientConfig.ProxyURLs = strings.Join(templates.GetProxylist(), ",")
+	} else if globalConfig.ProxyURL != "" {
+		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
 
 	client := http.NewClient(clientConfig, debug)
