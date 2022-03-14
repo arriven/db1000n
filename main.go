@@ -173,36 +173,35 @@ func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateChec
 	}
 }
 
-//nolint:nestif // The nested if linter is disabled as it would add unnecessary function splitting. This function is quite obvious
 func runUpdate(doRestartOnUpdate bool) {
 	log.Println("Running a check for a newer version...")
 
 	isUpdateFound, newVersion, changeLog, err := ota.DoAutoUpdate()
 	if err != nil {
-		log.Printf("Auto-Update is failed: %s", err)
+		log.Printf("Auto-Update failed: %s", err)
 
 		return
 	}
 
-	if isUpdateFound {
-		log.Printf("Newer version of the application is found [version=%s]\n", newVersion)
-		log.Printf("What's new:\n%s", changeLog)
-
-		if doRestartOnUpdate {
-			log.Println("Auto restart is enabled, restarting the application to run a new version")
-
-			additionalArgs := []string{
-				"-skip-update-check-on-start",
-			}
-
-			if err = ota.Restart(additionalArgs...); err != nil {
-				log.Printf("Failed to restart the application after the update to the new version: %s", err)
-				log.Printf("Restart the application manually to apply changes!\n")
-			}
-		} else {
-			log.Println("Auto restart is disabled, restart the application manually to apply changes!")
-		}
-	} else {
+	if !isUpdateFound {
 		log.Println("We are running the latest version, OK!")
+
+		return
+	}
+
+	log.Printf("Newer version of the application is found [version=%s]", newVersion)
+	log.Printf("What's new:\n%s", changeLog)
+
+	if !doRestartOnUpdate {
+		log.Println("Auto restart is disabled, restart the application manually to apply changes!")
+
+		return
+	}
+
+	log.Println("Auto restart is enabled, restarting the application to run a new version")
+
+	if err = ota.Restart("-skip-update-check-on-start"); err != nil {
+		log.Printf("Failed to restart the application after the update to the new version: %s", err)
+		log.Println("Restart the application manually to apply changes!")
 	}
 }

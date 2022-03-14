@@ -51,26 +51,3 @@ func Restart(extraArgs ...string) error {
 
 	return nil
 }
-
-//nolint:makezero,wsl // Makezero is skipped because it's expected to append arguments, same for WSL
-func appendArgIfNotPresent(osArgs, extraArgs []string) []string {
-	osArgsC := make([]string, len(osArgs))
-	copy(osArgsC, osArgs)
-
-	nothing := struct{}{}
-	osArgsSet := make(map[string]struct{})
-
-	for _, osArg := range osArgs {
-		osArgsSet[osArg] = nothing
-	}
-
-	acceptedExtraArgs := make([]string, 0)
-	for _, extraArg := range extraArgs {
-		_, isAlreadyOSArg := osArgsSet[extraArg]
-		if !isAlreadyOSArg {
-			acceptedExtraArgs = append(acceptedExtraArgs, extraArg)
-		}
-	}
-
-	return append(osArgsC, acceptedExtraArgs...)
-}
