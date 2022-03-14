@@ -19,10 +19,11 @@
     },
     {
       "type": "tcp",
+      "count": 100,
       "args": {
         "address": "localhost:9090",
-        "header": "test",
-        "body": "more_test"
+        "body": "more_test",
+        "interval_ms": 1000
       }
     },
     {

@@ -43,13 +43,13 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	}
 
 	for jobConfig.Next(ctx) {
-		sendTCP(tcpAddr, bodyTpl, trafficMonitor, processedTrafficMonitor, debug)
+		sendTCP(ctx, jobConfig, tcpAddr, bodyTpl, trafficMonitor, processedTrafficMonitor, debug)
 	}
 
 	return nil, nil
 }
 
-func sendTCP(a *net.TCPAddr, bodyTpl *template.Template, trafficMonitor, processedTrafficMonitor *metrics.Writer, debug bool) {
+func sendTCP(ctx context.Context, jobConfig *BasicJobConfig, a *net.TCPAddr, bodyTpl *template.Template, trafficMonitor, processedTrafficMonitor *metrics.Writer, debug bool) {
 	conn, err := net.DialTCP("tcp", nil, a)
 	if err != nil {
 		if debug {
@@ -63,25 +63,28 @@ func sendTCP(a *net.TCPAddr, bodyTpl *template.Template, trafficMonitor, process
 
 	defer conn.Close()
 
-	n, err := conn.Write([]byte(templates.Execute(bodyTpl, nil)))
-	trafficMonitor.Add(uint64(n))
+	// Write to conn until error
+	for jobConfig.Next(ctx) {
+		n, err := conn.Write([]byte(templates.Execute(bodyTpl, nil)))
+		trafficMonitor.Add(uint64(n))
 
-	if err != nil {
-		if debug {
-			log.Printf("%s failed at %d with err: %v", a.String(), time.Now().Unix(), err)
+		if err != nil {
+			if debug {
+				log.Printf("%s failed at %d with err: %v", a.String(), time.Now().Unix(), err)
+			}
+
+			metrics.IncRawnetTCP(a.String(), metrics.StatusFail)
+
+			return
 		}
 
-		metrics.IncRawnetTCP(a.String(), metrics.StatusFail)
+		if debug {
+			log.Printf("%s finished at %d", a.String(), time.Now().Unix())
+		}
 
-		return
+		processedTrafficMonitor.Add(uint64(n))
+		metrics.IncRawnetTCP(a.String(), metrics.StatusSuccess)
 	}
-
-	if debug {
-		log.Printf("%s finished at %d", a.String(), time.Now().Unix())
-	}
-
-	processedTrafficMonitor.Add(uint64(n))
-	metrics.IncRawnetTCP(a.String(), metrics.StatusSuccess)
 }
 
 func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
