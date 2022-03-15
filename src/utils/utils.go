@@ -106,8 +106,9 @@ func Unmarshal(input []byte, output interface{}, format string) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("Unknown config format: %v", format)
+		return fmt.Errorf("unknown config format: %v", format)
 	}
+
 	return nil
 }
 
