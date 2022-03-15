@@ -1,0 +1,7 @@
+[target]
+<VM IP-address> ansible_connection=ssh ansible_ssh_user=<ssh-username>
+
+[target:vars]
+ansible_python_interpreter=/usr/bin/python3
+setup_vpn=<True|False>
+expressvpn_activation_code=<expressvpn-activation-code>

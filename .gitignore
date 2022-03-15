@@ -20,12 +20,20 @@ config.json
 # macOS
 .DS_Store
 
+# Ansible
+**/inventory.cfg
+
 # Terraform
 **/.terraform*
 **/terraform.tfstate*
 **/terraform.tfvars
 
+# JetBrains
 .idea
+
+# VScode
+.vscode
+
 # Installation artifacts
 *.tar.gz
 db1000n
