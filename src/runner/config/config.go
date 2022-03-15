@@ -3,7 +3,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -12,8 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"gopkg.in/yaml.v3"
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/utils"
@@ -129,21 +126,10 @@ func Unmarshal(body []byte, format string) *Config {
 
 	var config Config
 
-	switch format {
-	case "", "json":
-		if err := json.Unmarshal(body, &config); err != nil {
-			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
+	if err := utils.Unmarshal(body, &config, format); err != nil {
+		log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
 
-			return nil
-		}
-	case "yaml":
-		if err := yaml.Unmarshal(body, &config); err != nil {
-			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
-
-			return nil
-		}
-	default:
-		log.Printf("Unknown config format: %v", format)
+		return nil
 	}
 
 	return &config
