@@ -53,7 +53,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
-	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
+	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", config.GetDefaultConfigURL()), "path to config files, separated by a comma, each path can be a web endpoint")
 	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
 	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute), "refresh timeout for updating the config")
 	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
