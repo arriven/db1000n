@@ -22,7 +22,7 @@ type rawnetConfig struct {
 	bodyTpl *template.Template
 }
 
-func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
 	jobConfig, err := parseRawNetJobArgs(args)
@@ -39,12 +39,8 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
-	if debug {
-		log.Printf("%s started at %d", jobConfig.addr, time.Now().Unix())
-	}
-
 	for jobConfig.Next(ctx) {
-		sendTCP(ctx, jobConfig, trafficMonitor, processedTrafficMonitor, debug)
+		sendTCP(ctx, jobConfig, trafficMonitor, processedTrafficMonitor, globalConfig.Debug)
 	}
 
 	return nil, nil
@@ -58,7 +54,7 @@ func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, proce
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		if debug {
+		if debug && !isInEncryptedContext(ctx) {
 			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
 		}
 
@@ -75,17 +71,9 @@ func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, proce
 		trafficMonitor.Add(uint64(n))
 
 		if err != nil {
-			if debug {
-				log.Printf("%s failed at %d with err: %v", tcpAddr.String(), time.Now().Unix(), err)
-			}
-
 			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 			return
-		}
-
-		if debug {
-			log.Printf("%s finished at %d", tcpAddr.String(), time.Now().Unix())
 		}
 
 		processedTrafficMonitor.Add(uint64(n))
@@ -93,7 +81,7 @@ func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, proce
 	}
 }
 
-func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
 	jobConfig, err := parseRawNetJobArgs(args)
@@ -112,13 +100,9 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
-	if debug {
-		log.Printf("%s started at %d", jobConfig.addr, time.Now().Unix())
-	}
-
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
-		if debug {
+		if globalConfig.Debug && !isInEncryptedContext(ctx) {
 			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
 		}
 
@@ -130,30 +114,22 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug boo
 	defer conn.Close()
 
 	for jobConfig.Next(ctx) {
-		sendUDP(udpAddr, conn, jobConfig.bodyTpl, trafficMonitor, debug)
+		sendUDP(udpAddr, conn, jobConfig.bodyTpl, trafficMonitor)
 	}
 
 	return nil, nil
 }
 
-func sendUDP(a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, trafficMonitor *metrics.Writer, debug bool) {
+func sendUDP(a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, trafficMonitor *metrics.Writer) {
 	n, err := conn.Write([]byte(templates.Execute(bodyTpl, nil)))
 	if err != nil {
 		metrics.IncRawnetUDP(a.String(), metrics.StatusFail)
-
-		if debug {
-			log.Printf("%s failed at %d with err: %v", a.String(), time.Now().Unix(), err)
-		}
 
 		return
 	}
 
 	trafficMonitor.Add(uint64(n))
 	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
-
-	if debug {
-		log.Printf("%s finished at %d", a.String(), time.Now().Unix())
-	}
 }
 
 func parseRawNetJobArgs(args Args) (tpl *rawnetConfig, err error) {

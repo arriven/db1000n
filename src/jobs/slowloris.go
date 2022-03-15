@@ -10,7 +10,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -54,7 +54,7 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 		close(shouldStop)
 	}()
 
-	if debug {
+	if globalConfig.Debug && !isInEncryptedContext(ctx) {
 		log.Printf("sending slow loris with params: %v", jobConfig)
 	}
 

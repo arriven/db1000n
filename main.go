@@ -126,8 +126,8 @@ func main() {
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor, SkipEncrypted: *skipEncrytedJobs},
-	}, *debug)
+		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor, SkipEncrypted: *skipEncrytedJobs, Debug: *debug},
+	})
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}
