@@ -64,6 +64,7 @@ func main() {
 	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
 	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
 	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
+	skipEncrytedJobs := flag.Bool("skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false), "set to true if you want to only run plaintext jobs from the config for security considerations")
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"), "Comma separated list of prometheus push gateways")
 	doAutoUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
@@ -125,7 +126,7 @@ func main() {
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor},
+		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor, SkipEncrypted: *skipEncrytedJobs},
 	}, *debug)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)

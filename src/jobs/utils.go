@@ -87,6 +87,10 @@ func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bo
 }
 
 func encryptedJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+	if globalConfig.SkipEncrypted {
+		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
