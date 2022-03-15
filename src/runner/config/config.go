@@ -79,11 +79,11 @@ func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode == http.StatusNotModified {
 		return lastKnownConfig, nil
 	}
-
-	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return nil, fmt.Errorf("error fetching config, code %d", resp.StatusCode)

@@ -2,7 +2,6 @@ package updater
 
 import (
 	"bytes"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -17,27 +16,34 @@ func Run(destinationConfig string, configPaths []string, backupConfig []byte) {
 		rawConfig := config.FetchRawConfig(configPaths, lastKnownConfig)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
-			file, err := os.Create(destinationConfig)
+			err := writeConfig(rawConfig.Body, destinationConfig)
 			if err != nil {
-				log.Printf("Unable to create %s", destinationConfig)
+				log.Printf("Error writing config: %v", err)
 
 				return
 			}
-
-			size, err := io.WriteString(file, string(rawConfig.Body))
-			if err != nil {
-				log.Printf("Error while writing to %s", destinationConfig)
-
-				return
-			}
-
-			defer file.Close()
 
 			lastKnownConfig = rawConfig
-
-			log.Printf("Saved %s with size %d", destinationConfig, size)
 		}
 
 		time.Sleep(1 * time.Minute)
 	}
+}
+
+func writeConfig(body []byte, destinationConfig string) error {
+	file, err := os.Create(destinationConfig)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	size, err := file.Write(body)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Saved %s with size %d", destinationConfig, size)
+
+	return nil
 }
