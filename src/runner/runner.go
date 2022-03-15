@@ -32,19 +32,15 @@ type Runner struct {
 	configPaths    []string
 	refreshTimeout time.Duration
 	configFormat   string
-
-	debug bool
 }
 
 // New runner according to the config
-func New(cfg *Config, debug bool) (*Runner, error) {
+func New(cfg *Config) (*Runner, error) {
 	return &Runner{
 		config:         cfg,
 		configPaths:    cfg.ConfigPaths,
 		refreshTimeout: cfg.RefreshTimeout,
 		configFormat:   cfg.Format,
-
-		debug: debug,
 	}, nil
 }
 
@@ -89,7 +85,7 @@ func (r *Runner) Run(ctx context.Context) {
 			return
 		}
 
-		dumpMetrics(clientID.String(), r.debug)
+		dumpMetrics(clientID.String(), r.config.Global.Debug)
 	}
 }
 
@@ -129,7 +125,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
 			go func(i int) {
-				_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+				_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args)
 				if err != nil {
 					log.Println("error running job:", err)
 				}
