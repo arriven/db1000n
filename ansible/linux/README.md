@@ -14,7 +14,7 @@ Script will be  useful if you have some plain VM and want to quickly setup it. P
 cp inventory.cfg.example inventory.cfg
 ```
 
-Fill inventory.cfg with values. 
+Fill inventory.cfg with values.
 Example with [ExpressVPN](https://www.expressvpn.com):
 
 ```sh
