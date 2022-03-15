@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"bytes"
 	"context"
 	"log"
 	"strings"
@@ -18,7 +19,7 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths    string            // Comma-separated config location URLs
+	ConfigPaths    []string          // Comma-separated config location URLs
 	BackupConfig   []byte            // Raw backup config
 	RefreshTimeout time.Duration     // How often to refresh config
 	Format         string            // json or yaml
@@ -31,7 +32,6 @@ type Runner struct {
 	configPaths    []string
 	refreshTimeout time.Duration
 	configFormat   string
-	configFetcher  *config.Fetcher
 
 	debug bool
 }
@@ -40,8 +40,7 @@ type Runner struct {
 func New(cfg *Config, debug bool) (*Runner, error) {
 	return &Runner{
 		config:         cfg,
-		configPaths:    strings.Split(cfg.ConfigPaths, ","),
-		configFetcher:  config.NewFetcher(cfg.BackupConfig),
+		configPaths:    cfg.ConfigPaths,
 		refreshTimeout: cfg.RefreshTimeout,
 		configFormat:   cfg.Format,
 
@@ -59,13 +58,24 @@ func (r *Runner) Run(ctx context.Context) {
 
 	var cancel context.CancelFunc
 
-	for {
-		if cfg := r.configFetcher.Update(r.configPaths, r.configFormat); cfg != nil {
-			if cancel != nil {
-				cancel()
-			}
+	lastKnownConfig := &config.RawConfig{Body: r.config.BackupConfig}
 
-			cancel = r.runJobs(ctx, cfg, clientID)
+	for {
+		rawConfig := config.FetchRawConfig(r.configPaths, lastKnownConfig)
+
+		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) { // Only restart jobs if the new config differs from the current one
+			cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
+			if cfg != nil {
+				lastKnownConfig = rawConfig
+
+				if cancel != nil {
+					cancel()
+				}
+
+				cancel = r.runJobs(ctx, cfg, clientID)
+			}
+		} else {
+			log.Println("The config has not changed. Keep calm and carry on!")
 		}
 
 		// Wait for refresh timer or stop signal

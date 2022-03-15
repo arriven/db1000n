@@ -2,7 +2,6 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -26,31 +25,15 @@ type Config struct {
 }
 
 type RawConfig struct {
-	body         []byte
+	Body         []byte
 	lastModified string
 	etag         string
 }
 
-type Fetcher struct {
-	backupConfig    []byte
-	lastKnownConfig RawConfig
-}
-
-func NewFetcher(backupConfig []byte) *Fetcher {
-	return &Fetcher{
-		backupConfig: backupConfig,
-		lastKnownConfig: RawConfig{
-			body:         nil,
-			lastModified: "",
-			etag:         "",
-		},
-	}
-}
-
 // fetch tries to read a config from the list of mirrors until it succeeds
-func (f *Fetcher) fetch(paths []string) *RawConfig {
+func fetch(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 	for i := range paths {
-		config, err := f.fetchSingle(paths[i])
+		config, err := fetchSingle(paths[i], lastKnownConfig)
 		if err != nil {
 			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
 
@@ -62,19 +45,11 @@ func (f *Fetcher) fetch(paths []string) *RawConfig {
 		return config
 	}
 
-	if f.lastKnownConfig.body != nil {
-		log.Println("Could not load new config, proceeding with the last known good one")
-
-		return &f.lastKnownConfig
-	}
-
-	log.Println("Could not load new config, proceeding with the backup one")
-
-	return &RawConfig{body: f.backupConfig, lastModified: "", etag: ""}
+	return lastKnownConfig
 }
 
 // fetchSingle reads a config from a single source
-func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
+func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
 	configURL, err := url.ParseRequestURI(path)
 	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
 	if err != nil || filepath.IsAbs(path) {
@@ -83,7 +58,7 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 			return nil, err
 		}
 
-		return &RawConfig{body: res, lastModified: "", etag: ""}, nil
+		return &RawConfig{Body: res, lastModified: "", etag: ""}, nil
 	}
 
 	const requestTimeout = 20 * time.Second
@@ -96,8 +71,8 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 		return nil, err
 	}
 
-	req.Header.Add("If-None-Match", f.lastKnownConfig.etag)
-	req.Header.Add("If-Modified-Since", f.lastKnownConfig.lastModified)
+	req.Header.Add("If-None-Match", lastKnownConfig.etag)
+	req.Header.Add("If-Modified-Since", lastKnownConfig.lastModified)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -105,7 +80,7 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 	}
 
 	if resp.StatusCode == http.StatusNotModified {
-		return &f.lastKnownConfig, nil
+		return lastKnownConfig, nil
 	}
 
 	defer resp.Body.Close()
@@ -122,29 +97,31 @@ func (f *Fetcher) fetchSingle(path string) (*RawConfig, error) {
 		return nil, err
 	}
 
-	return &RawConfig{body: res, etag: etag, lastModified: lastModified}, nil
+	return &RawConfig{Body: res, etag: etag, lastModified: lastModified}, nil
 }
 
-// Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
-func (f *Fetcher) Update(paths []string, format string) *Config {
-	newConfig := f.fetch(paths)
+func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
+	newConfig := fetch(paths, lastKnownConfig)
 
-	if utils.IsEncrypted(newConfig.body) {
-		decryptedConfig, err := utils.Decrypt(newConfig.body)
+	if utils.IsEncrypted(newConfig.Body) {
+		decryptedConfig, err := utils.Decrypt(newConfig.Body)
 		if err != nil {
 			log.Println("Can't decrypt config")
 
-			return nil
+			return lastKnownConfig
 		}
 
 		log.Println("Decrypted config")
 
-		newConfig.body = decryptedConfig
+		newConfig.Body = decryptedConfig
 	}
 
-	if bytes.Equal(f.lastKnownConfig.body, newConfig.body) { // Only restart jobs if the new config differs from the current one
-		log.Println("The config has not changed. Keep calm and carry on!")
+	return newConfig
+}
 
+// Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
+func Unmarshal(body []byte, format string) *Config {
+	if body == nil {
 		return nil
 	}
 
@@ -154,13 +131,13 @@ func (f *Fetcher) Update(paths []string, format string) *Config {
 
 	switch format {
 	case "", "json":
-		if err := json.Unmarshal(newConfig.body, &config); err != nil {
+		if err := json.Unmarshal(body, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
 
 			return nil
 		}
 	case "yaml":
-		if err := yaml.Unmarshal(newConfig.body, &config); err != nil {
+		if err := yaml.Unmarshal(body, &config); err != nil {
 			log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
 
 			return nil
@@ -168,8 +145,6 @@ func (f *Fetcher) Update(paths []string, format string) *Config {
 	default:
 		log.Printf("Unknown config format: %v", format)
 	}
-
-	f.lastKnownConfig = *newConfig
 
 	return &config
 }
