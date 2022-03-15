@@ -10,23 +10,23 @@ import (
 	"github.com/Arriven/db1000n/src/runner/config"
 )
 
-func Run(configPaths []string, backupConfig []byte) {
+func Run(destinationConfig string, configPaths []string, backupConfig []byte) {
 	lastKnownConfig := &config.RawConfig{Body: backupConfig}
 
 	for {
 		rawConfig := config.FetchRawConfig(configPaths, lastKnownConfig)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
-			file, err := os.Create("config/config.json")
+			file, err := os.Create(destinationConfig)
 			if err != nil {
-				log.Println("Unable to create config/config.json")
+				log.Printf("Unable to create %s", destinationConfig)
 
 				return
 			}
 
 			size, err := io.WriteString(file, string(rawConfig.Body))
 			if err != nil {
-				log.Println("Error while writing to config/config.json")
+				log.Printf("Error while writing to %s", destinationConfig)
 
 				return
 			}
@@ -35,7 +35,7 @@ func Run(configPaths []string, backupConfig []byte) {
 
 			lastKnownConfig = rawConfig
 
-			log.Printf("Saved config/config.json with size %d", size)
+			log.Printf("Saved %s with size %d", destinationConfig, size)
 		}
 
 		time.Sleep(1 * time.Minute)

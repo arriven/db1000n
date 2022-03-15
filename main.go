@@ -73,6 +73,7 @@ func main() {
 	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false), "enable strict country check; will also exit if IP can't be determined")
 	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
 	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
+	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"), "Destination config file to write (only applies if updater-mode is enabled")
 
 	flag.Parse()
 
@@ -85,7 +86,7 @@ func main() {
 	configPathsArray := strings.Split(*configPaths, ",")
 
 	if *updaterMode {
-		updater.Run(configPathsArray, []byte(*backupConfig))
+		updater.Run(*destinationConfig, configPathsArray, []byte(*backupConfig))
 
 		return
 	}
