@@ -1,0 +1,102 @@
+- name: setup db1000n on plain VM
+  gather_facts: false
+  hosts: all
+  become: true
+  tasks:
+
+    - name: cleanup old Docker versions
+      apt:
+        pkg: "{{ item }}"
+        state: absent
+      with_items:
+        - docker
+        - docker-engine
+        - docker.io
+        - containerd
+        - runc
+
+    - name: update repositories and install packages
+      apt:
+        pkg: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+        - cron
+
+    # - name: add Docker repository
+    #   shell: |
+    #     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    #     echo \
+    #     "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+    #     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    - name: install Docker
+      apt:
+        pkg: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+
+    - name: copy VPN countries list
+      copy:
+        src: countries.txt
+        dest: /countries.txt
+      when: setup_vpn == True
+
+    - name: initial cron script
+      shell: |
+        echo "#! /bin/bash" >> /run.sh
+        echo "docker stop db1000n" >> /run.sh
+        chmod +x /run.sh
+
+    - name: add VPN reconnect and docker run to cron script
+      shell: |
+        echo "docker exec vpn expressvpn disconnect" >> /run.sh
+        echo 'docker exec vpn expressvpn connect "$(shuf -n 1 /countries.txt)"' >> /run.sh
+        echo "docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest" >> /run.sh
+      when: setup_vpn == True
+    
+    - name: add docker run to cron script
+      shell: |
+        echo "docker run --name=db1000n -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest" >> /run.sh
+      when: setup_vpn != True
+
+    - name: start VPN container
+      shell: |
+        docker run \
+        --env=ACTIVATION_CODE={{ expressvpn_activation_code }} \
+        --env=PREFERRED_PROTOCOL=auto \
+        --env=LIGHTWAY_CIPHER=auto \
+        --env=SERVER=$(shuf -n 1 /countries.txt) \
+        -e NETWORK=192.168.1.0/24 \
+        --cap-add=NET_ADMIN \
+        --device=/dev/net/tun \
+        --privileged \
+        --tty=true \
+        --name=vpn \
+        --detach=true \
+        --dns=1.1.1.1 \
+        --tty=true \
+        polkaned/expressvpn \
+        /bin/bash
+
+        sleep 10
+      when: (setup_vpn == True) and (expressvpn_activation_code is defined) and (expressvpn_activation_code|length > 0)
+
+    - name: update crontab
+      shell: (crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh') | crontab -
+
+    - name: initial Docker run with VPN
+      shell: docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest
+      when: setup_vpn == True
+
+    - name: initial Docker run without VPN
+      shell: docker run --name=db1000n -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest
+      when: setup_vpn != True
