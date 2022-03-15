@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 
@@ -83,4 +84,44 @@ func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bo
 	}
 
 	return nil, nil
+}
+
+func encryptedJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	defer utils.PanicHandler()
+
+	var jobConfig struct {
+		BasicJobConfig
+
+		Format string
+		Data   string
+	}
+
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(jobConfig.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	decrypted, err := utils.Decrypt(decoded)
+	if err != nil {
+		return nil, err
+	}
+
+	var jobCfg Config
+
+	if err = utils.Unmarshal(decrypted, &jobCfg, jobConfig.Format); err != nil {
+		return nil, err
+	}
+
+	job := Get(jobCfg.Type)
+	if job == nil {
+		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
+	}
+
+	return job(ctx, globalConfig, jobCfg.Args, debug)
 }

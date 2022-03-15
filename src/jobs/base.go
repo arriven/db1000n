@@ -56,6 +56,8 @@ func Get(t string) Job {
 		return checkJob
 	case "loop":
 		return loopJob
+	case "encrypted":
+		return encryptedJob
 	default:
 		return nil
 	}

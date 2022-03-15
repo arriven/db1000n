@@ -2,6 +2,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v3"
 )
 
 // PanicHandler just stub it in the beginning of every major module invocation to prevent single module failure from crashing the whole app
@@ -90,6 +93,22 @@ func Decode(input interface{}, output interface{}) error {
 	}
 
 	return decoder.Decode(input)
+}
+
+func Unmarshal(input []byte, output interface{}, format string) error {
+	switch format {
+	case "", "json":
+		if err := json.Unmarshal(input, output); err != nil {
+			return err
+		}
+	case "yaml":
+		if err := yaml.Unmarshal(input, output); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Unknown config format: %v", format)
+	}
+	return nil
 }
 
 func OpenBrowser(url string) {

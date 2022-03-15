@@ -1,6 +1,13 @@
 {
   "jobs": [
     {
+      "type": "encrypted",
+      "args": {
+        "format": "json",
+        "data": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCB5eCtiMzQ5RWlZRXo4dTNpRE8veHdRIDE4CmYyb2d0YXlnaXptS25sbUJlQUVaUHpRbngwaUdBYUpJRStHbFltdUVNNkUKLS0tIG5oUUVCd041TWJoNWNCQjhvODk4eUFpUldmUFUvaStpanRsdCtWR0RrSVkK2ehc+JYVl+f5VgLKV0mG/J4CQrtHn+FFV5AAcKiLEAjU6MNDaVqBI6Qm9RunLZ51wAA13DLZkPJH39DcsS77H3HmgLpRQ7DMFG2AIDxWysIt2Yi2hVVn9Ogea73twGa8FOpk2kk0Z7NSHCCcpTJd1Db4cwYJiIFaqfBXR+VZtNk3qBgUMStN1CiOyJxvHbnc6tbfeqq042LImKsaLvFzB2y5H/ec9BonHimrP/aZv6dhequs"
+      }
+    },
+    {
       "type": "http",
       "filter": "{{ eq (mod . 2) 0 }}",
       "args": {
