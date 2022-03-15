@@ -4,8 +4,11 @@ package runner
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
@@ -161,11 +164,19 @@ func dumpMetrics(clientID string, debug bool) {
 	if bytesGenerated > 0 {
 		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
 		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
 
-		if bytesProcessed > 0 {
-			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
-		}
+		const BytesInMegabytes = 1024
+		var megabytesGenerated = bytesGenerated / BytesInMegabytes
+		var megabytesProcessed = bytesProcessed / BytesInMegabytes
+		var responsePercent = float64(bytesProcessed) / float64(bytesGenerated) * 100
+
+		networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+		fmt.Fprint(networkStatsWriter, "---------Traffic stats---------\n")
+		fmt.Fprintf(networkStatsWriter, "[Generated]\t%v MB\t|\t%v bytes\n", megabytesGenerated, bytesGenerated)
+		fmt.Fprintf(networkStatsWriter, "[Received]\t%v MB\t|\t%v bytes\n", megabytesProcessed, bytesProcessed)
+		fmt.Fprintf(networkStatsWriter, "[Response rate]\t%.1f%%\n", responsePercent)
+		fmt.Fprint(networkStatsWriter, "-------------------------------\n")
+		networkStatsWriter.Flush()
 	} else {
 		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
 	}
