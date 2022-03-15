@@ -34,9 +34,11 @@ func GetDefaultConfigURL() string {
 		return FallbackConfigURL
 	}
 
-	return buildDefaultConfigUrlForVersion(major, minor, patch)
+	return buildDefaultConfigURLForVersion(major, minor, patch)
 }
 
-func buildDefaultConfigUrlForVersion(major, minor, patch uint) string {
+func buildDefaultConfigURLForVersion(major, minor, patch uint) string {
+	_ = patch // To calm down the linter and not to lose the method signature format'
+
 	return fmt.Sprintf(DefaultConfigURLTemplate, major, minor)
 }

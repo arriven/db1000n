@@ -8,6 +8,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/ota"
 )
 
+//nolint: paralleltest // No need to test this in parallel :p
 func TestGetDefaultConfigURL(t *testing.T) {
 	t.Run("Case when the version is not embedded", func(tt *testing.T) {
 		ota.Version = ota.InitialVersion
@@ -64,13 +65,14 @@ func TestGetDefaultConfigURL(t *testing.T) {
 
 		t.Logf("Resolved version: %s", resolvedDefaultConfigURL)
 
-		if resolvedDefaultConfigURL != buildDefaultConfigUrlForVersion(majorVer, minorVer, patchVer) {
+		if resolvedDefaultConfigURL != buildDefaultConfigURLForVersion(majorVer, minorVer, patchVer) {
 			tt.Errorf("unexpected default URL:\nexp:%s\ngot:%s",
 				FallbackConfigURL, resolvedDefaultConfigURL)
 		}
 
 		if _, err := url.Parse(resolvedDefaultConfigURL); err != nil {
 			tt.Errorf("unexpected error validation the default URL: %s", err)
+
 			return
 		}
 	})
