@@ -4,8 +4,11 @@ package runner
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
@@ -154,15 +157,27 @@ func dumpMetrics(clientID string, debug bool) {
 		log.Println("error reporting statistics:", err)
 	}
 
-	if bytesGenerated > 0 {
-		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
-		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
+	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
 
-		if bytesProcessed > 0 {
-			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
-		}
+	if bytesGenerated > 0 {
+		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		fmt.Fprintln(networkStatsWriter, "!Attack is successful! Russian warship, go fuck yourself!")
+
+		const BytesInMegabytes = 1024 * 1024
+		megabytesGenerated := float64(bytesGenerated) / BytesInMegabytes
+		megabytesProcessed := float64(bytesProcessed) / BytesInMegabytes
+
+		const PercentConversionMultilpier = 100
+		responsePercent := float64(bytesProcessed) / float64(bytesGenerated) * PercentConversionMultilpier
+
+		fmt.Fprint(networkStatsWriter, "---------Traffic stats---------\n")
+		fmt.Fprintf(networkStatsWriter, "[\tGenerated\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesGenerated, bytesGenerated)
+		fmt.Fprintf(networkStatsWriter, "[\tReceived\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesProcessed, bytesProcessed)
+		fmt.Fprintf(networkStatsWriter, "[\tResponse rate\t]\t%.1f\t%%\n", responsePercent)
+		fmt.Fprint(networkStatsWriter, "-------------------------------\n\n")
 	} else {
-		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
+		fmt.Fprintln(networkStatsWriter, "[Error] No traffic generated. If you see this message a lot - contact admins")
 	}
+
+	networkStatsWriter.Flush()
 }
