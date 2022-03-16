@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestBlast(t *testing.T) {
@@ -92,7 +94,7 @@ func TestBlast(t *testing.T) {
 			blastContext, cancel := context.WithTimeout(context.Background(), testcase.Duration)
 			defer cancel()
 
-			err := Start(blastContext, nil, config)
+			err := Start(blastContext, zap.NewExample(), nil, config)
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
 

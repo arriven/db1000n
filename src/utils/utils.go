@@ -12,13 +12,14 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
 // PanicHandler just stub it in the beginning of every major module invocation to prevent single module failure from crashing the whole app
-func PanicHandler() {
+func PanicHandler(logger *zap.Logger) {
 	if err := recover(); err != nil {
-		log.Printf("caught panic: %v", err)
+		logger.Error("caught panic", zap.Any("err", err))
 	}
 }
 
