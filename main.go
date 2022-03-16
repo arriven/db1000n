@@ -135,7 +135,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	clientID := uuid.NewString()
 	if *prometheusOn {
+		metrics.InitMetrics(clientID, country)
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
 	}
 
@@ -149,7 +151,7 @@ func main() {
 			ScaleFactor:   *scaleFactor,
 			SkipEncrypted: *skipEncrytedJobs,
 			Debug:         *debug,
-			ClientID:      uuid.NewString(),
+			ClientID:      clientID,
 		},
 	})
 	if err != nil {
