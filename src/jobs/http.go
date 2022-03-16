@@ -174,12 +174,12 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 
 func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response, globalConfig GlobalConfig) error {
 	if err := client.Do(req, resp); err != nil {
-		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail, globalConfig.ClientID)
+		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 
 		return err
 	}
 
-	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess, globalConfig.ClientID)
+	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
 
 	return nil
 }

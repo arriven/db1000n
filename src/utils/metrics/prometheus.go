@@ -83,41 +83,61 @@ const (
 
 // Client related values and labels
 const (
-	ClientIDLabel = "id"
+	ClientIDLabel = `id`
+	CountryLabel  = `country`
 )
 
 // registered metrics
 var (
+	dnsBlastCounter  *prometheus.CounterVec = nil
+	httpCounter      *prometheus.CounterVec = nil
+	packetgenCounter *prometheus.CounterVec = nil
+	slowlorisCounter *prometheus.CounterVec = nil
+	rawnetCounter    *prometheus.CounterVec = nil
+	clientCounter    *prometheus.CounterVec = nil
+)
+
+func InitMetrics(clientID, country string) {
+	constLabels := prometheus.Labels{ClientIDLabel: clientID}
+	if country != "" {
+		constLabels[CountryLabel] = country
+	}
 	dnsBlastCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "db1000n_dns_blast_total",
-			Help: "Number of dns queries",
-		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel, ClientIDLabel})
+			Name:        "db1000n_dns_blast_total",
+			Help:        "Number of dns queries",
+			ConstLabels: constLabels,
+		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel})
 	httpCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "db1000n_http_request_total",
-			Help: "Number of http queries",
-		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel, ClientIDLabel})
+			Name:        "db1000n_http_request_total",
+			Help:        "Number of http queries",
+			ConstLabels: constLabels,
+		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel})
 	packetgenCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "db1000n_packetgen_total",
-			Help: "Number of packet generation transfers",
-		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel, ClientIDLabel})
+			Name:        "db1000n_packetgen_total",
+			Help:        "Number of packet generation transfers",
+			ConstLabels: constLabels,
+		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel})
 	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "db1000n_slowloris_total",
-			Help: "Number of sent raw tcp/udp packets",
-		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel, ClientIDLabel})
+			Name:        "db1000n_slowloris_total",
+			Help:        "Number of sent raw tcp/udp packets",
+			ConstLabels: constLabels,
+		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel})
 	rawnetCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "db1000n_rawnet_total",
-			Help: "Number of sent raw tcp/udp packets",
-		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel, ClientIDLabel})
+			Name:        "db1000n_rawnet_total",
+			Help:        "Number of sent raw tcp/udp packets",
+			ConstLabels: constLabels,
+		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel})
 	clientCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "db1000n_client_total",
-		Help: "Number of clients",
-	}, []string{ClientIDLabel})
-)
+		Name:        "db1000n_client_total",
+		Help:        "Number of clients",
+		ConstLabels: constLabels,
+	}, []string{})
+}
 
 func registerMetrics() {
 	prometheus.MustRegister(dnsBlastCounter)
@@ -262,23 +282,21 @@ func pushMetrics(ctx context.Context, gateways []string) {
 }
 
 // IncDNSBlast increments counter of sent dns queries
-func IncDNSBlast(rootDomain, seedDomain, protocol, status, id string) {
+func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
 	dnsBlastCounter.With(prometheus.Labels{
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
 		DNSBlastProtocolLabel:   protocol,
 		StatusLabel:             status,
-		ClientIDLabel:           id,
 	}).Inc()
 }
 
 // IncHTTP increments counter of sent http queries
-func IncHTTP(host, method, status, id string) {
+func IncHTTP(host, method, status string) {
 	httpCounter.With(prometheus.Labels{
 		HTTPMethodLabel:          method,
 		HTTPDestinationHostLabel: host,
 		StatusLabel:              status,
-		ClientIDLabel:            id,
 	}).Inc()
 }
 
@@ -294,37 +312,32 @@ func IncPacketgen(host, hostPort, protocol, status, id string) {
 }
 
 // IncSlowLoris increments counter of sent raw ethernet+ip+tcp/udp packets
-func IncSlowLoris(address, protocol, status, id string) {
+func IncSlowLoris(address, protocol, status string) {
 	slowlorisCounter.With(prometheus.Labels{
 		SlowlorisAddressLabel:  address,
 		SlowlorisProtocolLabel: protocol,
 		StatusLabel:            status,
-		ClientIDLabel:          id,
 	}).Inc()
 }
 
 // IncRawnetTCP increments counter of sent raw tcp packets
-func IncRawnetTCP(address, status, id string) {
+func IncRawnetTCP(address, status string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "tcp",
 		StatusLabel:         status,
-		ClientIDLabel:       id,
 	}).Inc()
 }
 
 // IncRawnetUDP increments counter of sent raw tcp packets
-func IncRawnetUDP(address, status, id string) {
+func IncRawnetUDP(address, status string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "udp",
 		StatusLabel:         status,
-		ClientIDLabel:       id,
 	}).Inc()
 }
 
-func IncClient(id string) {
-	clientCounter.With(prometheus.Labels{
-		ClientIDLabel: id,
-	}).Inc()
+func IncClient() {
+	clientCounter.With(prometheus.Labels{}).Inc()
 }

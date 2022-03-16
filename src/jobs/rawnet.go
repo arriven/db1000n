@@ -55,7 +55,7 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, g
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		logger.Debug("error connecting via tcp", zap.Reflect("addr", tcpAddr), zap.Error(err))
-		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail, globalConfig.ClientID)
+		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 		return
 	}
@@ -68,13 +68,13 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, g
 		trafficMonitor.Add(uint64(n))
 
 		if err != nil {
-			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail, globalConfig.ClientID)
+			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 			return
 		}
 
 		processedTrafficMonitor.Add(uint64(n))
-		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess, globalConfig.ClientID)
+		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
 	}
 }
 
@@ -100,7 +100,7 @@ func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		logger.Debug("error connecting via tcp", zap.Reflect("addr", udpAddr), zap.Error(err))
-		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail, globalConfig.ClientID)
+		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return nil, err
 	}
@@ -117,13 +117,13 @@ func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, globalConfig GlobalConfig, trafficMonitor *metrics.Writer) {
 	n, err := conn.Write([]byte(templates.Execute(logger, bodyTpl, ctx)))
 	if err != nil {
-		metrics.IncRawnetUDP(a.String(), metrics.StatusFail, globalConfig.ClientID)
+		metrics.IncRawnetUDP(a.String(), metrics.StatusFail)
 
 		return
 	}
 
 	trafficMonitor.Add(uint64(n))
-	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess, globalConfig.ClientID)
+	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
 }
 
 func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args Args) (tpl *rawnetConfig, err error) {

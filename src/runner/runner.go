@@ -52,7 +52,7 @@ func New(cfg *Config) (*Runner, error) {
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	clientID := uuid.MustParse(r.config.Global.ClientID)
 
-	metrics.IncClient(clientID.String())
+	metrics.IncClient()
 
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 
