@@ -35,6 +35,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
@@ -45,7 +46,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/Arriven/db1000n/src/utils/updater"
-	"github.com/google/uuid"
 )
 
 const (
