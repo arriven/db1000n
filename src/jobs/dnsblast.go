@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/Arriven/db1000n/src/core/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
-	"go.uber.org/zap"
 )
 
 const (
