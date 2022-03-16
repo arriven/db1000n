@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
 	"github.com/Arriven/db1000n/src/utils"
@@ -15,7 +16,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -31,9 +32,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 	var jobConfig packetgenJobConfig
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		if !isInEncryptedContext(ctx) {
-			log.Printf("Error parsing json: %v", err)
-		}
+		logger.Debug("error parsing job config", zap.Error(err))
 
 		return nil, err
 	}
@@ -42,9 +41,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 
 	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
 	if err != nil {
-		if !isInEncryptedContext(ctx) {
-			log.Printf("Error parsing port: %v", err)
-		}
+		logger.Debug("error parsing port", zap.Error(err))
 
 		return nil, err
 	}
@@ -59,9 +56,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
-		if !isInEncryptedContext(ctx) {
-			log.Printf("Error parsing packet: %v", err)
-		}
+		logger.Debug("error parsing packet", zap.Error(err))
 
 		return nil, err
 	}
@@ -81,9 +76,7 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
 	if err != nil {
-		if !isInEncryptedContext(ctx) {
-			log.Printf("Error building raw connection: %v", err)
-		}
+		logger.Debug("error building raw connection", zap.Error(err))
 
 		return nil, err
 	}
@@ -92,26 +85,19 @@ func packetgenJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		packetConfigRaw := packetTpl.Execute(nil)
-		if globalConfig.Debug && !isInEncryptedContext(ctx) {
-			log.Printf("[packetgen] Rendered packet config template:\n%s", packetConfigRaw)
-		}
+		packetConfigRaw := packetTpl.Execute(ctx)
+		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
 		var packetConfig packetgen.PacketConfig
 		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
-			if !isInEncryptedContext(ctx) {
-				log.Printf("Error parsing json: %v", err)
-			}
+			logger.Debug("error parsing packet config", zap.Error(err))
 
 			return nil, err
 		}
 
 		n, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
 		if err != nil {
-			if !isInEncryptedContext(ctx) {
-				log.Printf("Error sending packet: %v", err)
-			}
-
+			logger.Debug("error sending packet", zap.Error(err))
 			metrics.IncPacketgen(
 				host,
 				hostPort,

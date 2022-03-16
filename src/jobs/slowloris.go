@@ -3,14 +3,14 @@ package jobs
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/Arriven/db1000n/src/core/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
+	"go.uber.org/zap"
 )
 
-func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -54,9 +54,7 @@ func slowLorisJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 		close(shouldStop)
 	}()
 
-	if globalConfig.Debug && !isInEncryptedContext(ctx) {
-		log.Printf("sending slow loris with params: %v", jobConfig)
-	}
+	logger.Debug("sending flow loris with params", zap.Reflect("params", jobConfig))
 
-	return nil, slowloris.Start(shouldStop, jobConfig)
+	return nil, slowloris.Start(shouldStop, logger, jobConfig)
 }

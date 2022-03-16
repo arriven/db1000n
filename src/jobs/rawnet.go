@@ -3,13 +3,13 @@ package jobs
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
@@ -22,7 +22,7 @@ type rawnetConfig struct {
 	bodyTpl *template.Template
 }
 
-func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
 	jobConfig, err := parseRawNetJobArgs(args)
@@ -40,13 +40,13 @@ func tcpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data int
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		sendTCP(ctx, jobConfig, trafficMonitor, processedTrafficMonitor, globalConfig.Debug)
+		sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
 	}
 
 	return nil, nil
 }
 
-func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer, debug bool) {
+func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.addr)
 	if err != nil {
 		return
@@ -54,10 +54,7 @@ func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, proce
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		if debug && !isInEncryptedContext(ctx) {
-			log.Printf("error connecting to [%v]: %v", tcpAddr, err)
-		}
-
+		logger.Debug("error connecting via tcp", zap.Reflect("addr", tcpAddr), zap.Error(err))
 		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
 
 		return
@@ -81,7 +78,7 @@ func sendTCP(ctx context.Context, jobConfig *rawnetConfig, trafficMonitor, proce
 	}
 }
 
-func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler()
 
 	jobConfig, err := parseRawNetJobArgs(args)
@@ -102,10 +99,7 @@ func udpJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data int
 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
-		if globalConfig.Debug && !isInEncryptedContext(ctx) {
-			log.Printf("Error connecting to [%v]: %v", udpAddr, err)
-		}
-
+		logger.Debug("error connecting via tcp", zap.Reflect("addr", udpAddr), zap.Error(err))
 		metrics.IncRawnetUDP(udpAddr.String(), metrics.StatusFail)
 
 		return nil, err

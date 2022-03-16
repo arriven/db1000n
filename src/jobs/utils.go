@@ -4,17 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"log"
 
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func logJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func logJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	if isInEncryptedContext(ctx) {
-		log.Println("logs disabled in encrypted context")
+		logger.Error("logs disabled in encrypted context")
 
 		return nil, nil
 	}
@@ -27,12 +27,12 @@ func logJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data int
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	log.Println(templates.ParseAndExecute(jobConfig.Text, ctx))
+	logger.Info(templates.ParseAndExecute(jobConfig.Text, ctx))
 
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func setVarJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -44,7 +44,7 @@ func setVarJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data 
 	return templates.ParseAndExecute(jobConfig.Value, ctx), nil
 }
 
-func checkJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func checkJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -60,7 +60,7 @@ func checkJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data i
 	return nil, nil
 }
 
-func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -81,7 +81,7 @@ func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data in
 			return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
 		}
 
-		data, err := job(ctx, globalConfig, jobConfig.Job.Args)
+		data, err := job(ctx, logger, globalConfig, jobConfig.Job.Args)
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
@@ -92,7 +92,7 @@ func loopJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data in
 	return nil, nil
 }
 
-func encryptedJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
 	}
@@ -133,5 +133,5 @@ func encryptedJob(ctx context.Context, globalConfig GlobalConfig, args Args) (da
 		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
 	}
 
-	return job(context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true), globalConfig, jobCfg.Args)
+	return job(context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true), zap.NewNop(), globalConfig, jobCfg.Args)
 }

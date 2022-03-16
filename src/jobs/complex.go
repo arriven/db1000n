@@ -7,12 +7,13 @@ import (
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -33,7 +34,7 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args) (dat
 			return nil, fmt.Errorf("unknown job %q", cfg.Type)
 		}
 
-		data, err := job(ctx, globalConfig, cfg.Args)
+		data, err := job(ctx, logger, globalConfig, cfg.Args)
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
@@ -44,7 +45,7 @@ func sequenceJob(ctx context.Context, globalConfig GlobalConfig, args Args) (dat
 	return nil, nil
 }
 
-func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer utils.PanicHandler()
@@ -77,10 +78,8 @@ func parallelJob(ctx context.Context, globalConfig GlobalConfig, args Args) (dat
 			wg.Add(1)
 
 			go func(i int) {
-				if _, err := job(ctx, globalConfig, jobConfig.Jobs[i].Args); err != nil {
-					if !isInEncryptedContext(ctx) {
-						log.Println("error running job:", err)
-					}
+				if _, err := job(ctx, logger, globalConfig, jobConfig.Jobs[i].Args); err != nil {
+					logger.Error("error running job", zap.Error(err))
 				}
 
 				wg.Done()

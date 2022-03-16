@@ -35,6 +35,8 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/runner"
 	"github.com/Arriven/db1000n/src/runner/config"
@@ -82,6 +84,18 @@ func main() {
 		flag.CommandLine.Usage()
 
 		return
+	}
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal("failed to create zap logger", err)
+	}
+
+	if *debug {
+		logger, err = zap.NewDevelopment()
+		if err != nil {
+			log.Fatal("failed to create zap logger", err)
+		}
 	}
 
 	configPathsArray := strings.Split(*configPaths, ",")
@@ -145,7 +159,7 @@ func main() {
 		cancel()
 	}()
 
-	r.Run(ctx)
+	r.Run(ctx, logger)
 }
 
 func setUpPprof(pprof string, debug bool) {

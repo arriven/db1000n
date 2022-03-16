@@ -3,7 +3,6 @@ package http
 
 import (
 	"crypto/tls"
-	"log"
 	"math/rand"
 	"net"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
@@ -60,7 +60,7 @@ type ClientConfig struct {
 }
 
 // NewClient creates a fasthttp client based on the config.
-func NewClient(clientConfig ClientConfig, debug bool) *fasthttp.Client {
+func NewClient(clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
 	const (
 		defaultMaxConnsPerHost = 1000
 		defaultTimeout         = 90 * time.Second
@@ -87,20 +87,18 @@ func NewClient(clientConfig ClientConfig, debug bool) *fasthttp.Client {
 		TLSConfig:                     tlsConfig,
 		Dial: dialViaProxyFunc(templates.ParseAndExecute(clientConfig.ProxyURLs, nil),
 			fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout),
-			debug),
+			logger),
 	}
 }
 
-func dialViaProxyFunc(proxyListCSV string, backup fasthttp.DialFunc, debug bool) fasthttp.DialFunc {
+func dialViaProxyFunc(proxyListCSV string, backup fasthttp.DialFunc, logger *zap.Logger) fasthttp.DialFunc {
 	if len(proxyListCSV) == 0 {
 		return backup
 	}
 
 	proxyURLs := strings.Split(proxyListCSV, ",")
 
-	if debug {
-		log.Printf("proxyURLs: %v", proxyURLs)
-	}
+	logger.Debug("proxyURLs parsed", zap.Strings("proxyURLs", proxyURLs))
 
 	// Return closure to select a random proxy on each call
 	return func(addr string) (net.Conn, error) {
