@@ -9,7 +9,6 @@ import (
 
 	"github.com/Arriven/db1000n/src/core/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
-	"go.uber.org/zap"
 )
 
 func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
