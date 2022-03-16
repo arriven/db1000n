@@ -122,9 +122,12 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
+	country := ""
+	isCountryAllowed := false
 	if *countryList != "" {
 		countries := strings.Split(*countryList, ",")
-		if !utils.CheckCountry(countries, *strictCountryCheck) {
+		isCountryAllowed, country = utils.CheckCountry(countries, *strictCountryCheck)
+		if !isCountryAllowed {
 			return
 		}
 	}
