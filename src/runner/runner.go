@@ -49,6 +49,8 @@ func New(cfg *Config) (*Runner, error) {
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	clientID := uuid.New()
 
+	metrics.IncClient(clientID.String())
+
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 
 	defer refreshTimer.Stop()
