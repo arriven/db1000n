@@ -35,6 +35,7 @@ type Config struct {
 	SeedDomains     []string      // Used to generate domain names using the Distinct Heavy Hitter algorithm
 	Delay           time.Duration // The delay between two packets to send
 	ParallelQueries int
+	ClientID        string
 }
 
 // DNSBlaster is a main worker struct for the package
@@ -53,7 +54,7 @@ func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *
 
 	nameservers, err := getNameservers(config.RootDomain, config.Protocol)
 	if err != nil {
-		metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
+		metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail, config.ClientID)
 
 		return fmt.Errorf("failed to resolve nameservers for the root domain [rootDomain=%s]: %w",
 			config.RootDomain, err)
@@ -82,8 +83,8 @@ func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *
 
 			defer utils.PanicHandler(logger)
 
-			if err := blaster.ExecuteStressTest(ctx, logger, nameserver, parameters); err != nil {
-				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
+			if err := blaster.ExecuteStressTest(ctx, logger, nameserver, parameters, config.ClientID); err != nil {
+				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail, config.ClientID)
 				logger.Debug("stress test finished with error",
 					zap.String("nameserver", nameserver),
 					zap.String("proto", config.Protocol),
@@ -114,7 +115,7 @@ type StressTestParameters struct {
 }
 
 // ExecuteStressTest executes a stress test based on parameters
-func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters) error {
+func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters, clientID string) error {
 	defer utils.PanicHandler(logger)
 
 	var (
@@ -134,7 +135,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger
 
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
 	if err != nil {
-		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
+		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail, clientID)
 
 		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %w", err)
 	}
@@ -164,7 +165,7 @@ blastLoop:
 		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
 				defer utils.PanicHandler(logger)
-				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery)
+				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery, clientID)
 				awaitGroup.Done()
 			}()
 		}
@@ -227,14 +228,14 @@ func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *Quer
 }
 
 // SimpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
-func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSClient *dns.Client, parameters *QueryParameters) {
+func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSClient *dns.Client, parameters *QueryParameters, clientID string) {
 	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 	seedDomain := getSeedDomain(parameters.QName)
 
 	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
 		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.HostAndPort), zap.Error(err))
-		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
+		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail, clientID)
 
 		return
 	}
@@ -248,13 +249,13 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSCl
 
 	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
 	if err != nil {
-		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
+		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail, clientID)
 		logger.Debug("failed to complete the DNS query", zap.Error(err))
 
 		return
 	}
 
-	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess)
+	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess, clientID)
 }
 
 const (

@@ -48,6 +48,8 @@ func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		jobConfig.Duration = defaultDuration
 	}
 
+	jobConfig.ClientID = globalConfig.ClientID
+
 	shouldStop := make(chan bool)
 
 	go func() {

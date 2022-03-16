@@ -47,7 +47,7 @@ func New(cfg *Config) (*Runner, error) {
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
-	clientID := uuid.New()
+	clientID := uuid.MustParse(r.config.Global.ClientID)
 
 	metrics.IncClient(clientID.String())
 

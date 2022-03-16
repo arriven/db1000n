@@ -45,6 +45,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/Arriven/db1000n/src/utils/updater"
+	"github.com/google/uuid"
 )
 
 const (
@@ -140,7 +141,13 @@ func main() {
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor, SkipEncrypted: *skipEncrytedJobs, Debug: *debug},
+		Global: jobs.GlobalConfig{
+			ProxyURL:      *systemProxy,
+			ScaleFactor:   *scaleFactor,
+			SkipEncrypted: *skipEncrytedJobs,
+			Debug:         *debug,
+			ClientID:      uuid.NewString(),
+		},
 	})
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)

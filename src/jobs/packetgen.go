@@ -102,7 +102,8 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 				host,
 				hostPort,
 				protocolLabelValue,
-				metrics.StatusFail)
+				metrics.StatusFail,
+				globalConfig.ClientID)
 
 			return nil, err
 		}
@@ -111,7 +112,8 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 			host,
 			hostPort,
 			protocolLabelValue,
-			metrics.StatusSuccess)
+			metrics.StatusSuccess,
+			globalConfig.ClientID)
 
 		trafficMonitor.Add(uint64(n))
 	}

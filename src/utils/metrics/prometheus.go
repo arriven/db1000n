@@ -93,27 +93,27 @@ var (
 		prometheus.CounterOpts{
 			Name: "db1000n_dns_blast_total",
 			Help: "Number of dns queries",
-		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel})
+		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel, ClientIDLabel})
 	httpCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "db1000n_http_request_total",
 			Help: "Number of http queries",
-		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel})
+		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel, ClientIDLabel})
 	packetgenCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "db1000n_packetgen_total",
 			Help: "Number of packet generation transfers",
-		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel})
+		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel, ClientIDLabel})
 	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "db1000n_slowloris_total",
 			Help: "Number of sent raw tcp/udp packets",
-		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel})
+		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel, ClientIDLabel})
 	rawnetCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "db1000n_rawnet_total",
 			Help: "Number of sent raw tcp/udp packets",
-		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel})
+		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel, ClientIDLabel})
 	clientCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "db1000n_client_total",
 		Help: "Number of clients",
@@ -289,58 +289,64 @@ func pushMetrics(ctx context.Context, gateways []string) {
 }
 
 // IncDNSBlast increments counter of sent dns queries
-func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
+func IncDNSBlast(rootDomain, seedDomain, protocol, status, id string) {
 	dnsBlastCounter.With(prometheus.Labels{
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
 		DNSBlastProtocolLabel:   protocol,
 		StatusLabel:             status,
+		ClientIDLabel:           id,
 	}).Inc()
 }
 
 // IncHTTP increments counter of sent http queries
-func IncHTTP(host, method, status string) {
+func IncHTTP(host, method, status, id string) {
 	httpCounter.With(prometheus.Labels{
 		HTTPMethodLabel:          method,
 		HTTPDestinationHostLabel: host,
 		StatusLabel:              status,
+		ClientIDLabel:            id,
 	}).Inc()
 }
 
 // IncPacketgen increments counter of sent raw packets
-func IncPacketgen(host, hostPort, protocol, status string) {
+func IncPacketgen(host, hostPort, protocol, status, id string) {
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
 		PacketgenDstHostPortLabel: hostPort,
 		PacketgenProtocolLabel:    protocol,
 		StatusLabel:               status,
+		ClientIDLabel:             id,
 	}).Inc()
 }
 
 // IncSlowLoris increments counter of sent raw ethernet+ip+tcp/udp packets
-func IncSlowLoris(address, protocol, status string) {
+func IncSlowLoris(address, protocol, status, id string) {
 	slowlorisCounter.With(prometheus.Labels{
 		SlowlorisAddressLabel:  address,
 		SlowlorisProtocolLabel: protocol,
 		StatusLabel:            status,
+		ClientIDLabel:          id,
 	}).Inc()
 }
 
 // IncRawnetTCP increments counter of sent raw tcp packets
-func IncRawnetTCP(address, status string) {
+func IncRawnetTCP(address, status, id string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "tcp",
 		StatusLabel:         status,
+		ClientIDLabel:       id,
 	}).Inc()
 }
 
 // IncRawnetUDP increments counter of sent raw tcp packets
-func IncRawnetUDP(address, status string) {
+func IncRawnetUDP(address, status, id string) {
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "udp",
 		StatusLabel:         status,
+		ClientIDLabel:       id,
 	}).Inc()
 }
 
