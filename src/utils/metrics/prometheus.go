@@ -83,33 +83,42 @@ const (
 	RawnetProtocolLabel = `protocol`
 )
 
+// Client related values and labels
+const (
+	ClientIDLabel = "id"
+)
+
 // registered metrics
 var (
 	dnsBlastCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "dns_blast_total",
+			Name: "db1000n_dns_blast_total",
 			Help: "Number of dns queries",
 		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel})
 	httpCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_request_total",
+			Name: "db1000n_http_request_total",
 			Help: "Number of http queries",
 		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel})
 	packetgenCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "packetgen_total",
+			Name: "db1000n_packetgen_total",
 			Help: "Number of packet generation transfers",
 		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel})
 	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "slowloris_total",
+			Name: "db1000n_slowloris_total",
 			Help: "Number of sent raw tcp/udp packets",
 		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel})
 	rawnetCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "rawnet_total",
+			Name: "db1000n_rawnet_total",
 			Help: "Number of sent raw tcp/udp packets",
 		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel})
+	clientCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "db1000n_client_total",
+		Help: "Number of clients",
+	}, []string{ClientIDLabel})
 )
 
 func registerMetrics() {
@@ -118,6 +127,7 @@ func registerMetrics() {
 	prometheus.MustRegister(packetgenCounter)
 	prometheus.MustRegister(slowlorisCounter)
 	prometheus.MustRegister(rawnetCounter)
+	prometheus.MustRegister(clientCounter)
 }
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
@@ -332,5 +342,11 @@ func IncRawnetUDP(address, status string) {
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "udp",
 		StatusLabel:         status,
+	}).Inc()
+}
+
+func IncClient(id string) {
+	clientCounter.With(prometheus.Labels{
+		ClientIDLabel: id,
 	}).Inc()
 }
