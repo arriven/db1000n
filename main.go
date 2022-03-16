@@ -35,6 +35,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
@@ -140,7 +141,13 @@ func main() {
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ScaleFactor: *scaleFactor, SkipEncrypted: *skipEncrytedJobs, Debug: *debug},
+		Global: jobs.GlobalConfig{
+			ProxyURL:      *systemProxy,
+			ScaleFactor:   *scaleFactor,
+			SkipEncrypted: *skipEncrytedJobs,
+			Debug:         *debug,
+			ClientID:      uuid.NewString(),
+		},
 	})
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)

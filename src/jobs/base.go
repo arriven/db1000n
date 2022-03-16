@@ -19,6 +19,7 @@ type GlobalConfig struct {
 	ScaleFactor   int
 	SkipEncrypted bool
 	Debug         bool
+	ClientID      string
 }
 
 const (
