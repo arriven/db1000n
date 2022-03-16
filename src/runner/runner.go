@@ -96,7 +96,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 	var jobInstancesCount int
 
 	for i := range cfg.Jobs {
-		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
+		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(logger, cfg.Jobs[i].Filter, clientID.ID())) != "true" {
 			logger.Info("There is a filter defined for a job but this client doesn't pass it - skip the job")
 
 			continue

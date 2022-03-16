@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
@@ -151,10 +151,10 @@ func Parse(input string) (*template.Template, error) {
 }
 
 // Execute template, returns empty string in case of errors
-func Execute(tpl *template.Template, data interface{}) string {
+func Execute(logger *zap.Logger, tpl *template.Template, data interface{}) string {
 	var res strings.Builder
 	if err := tpl.Execute(&res, data); err != nil {
-		log.Printf("Error executing template: %v", err)
+		logger.Error("error executing template", zap.Error(err))
 
 		return ""
 	}
@@ -163,17 +163,17 @@ func Execute(tpl *template.Template, data interface{}) string {
 }
 
 // ParseAndExecute template, returns input string in case of errors. Expensive operation.
-func ParseAndExecute(input string, data interface{}) string {
+func ParseAndExecute(logger *zap.Logger, input string, data interface{}) string {
 	tpl, err := Parse(input)
 	if err != nil {
-		log.Printf("Error parsing template: %v", err)
+		logger.Error("error parsing template", zap.Error(err))
 
 		return input
 	}
 
 	var output strings.Builder
 	if err = tpl.Execute(&output, data); err != nil {
-		log.Printf("Error executing template: %v", err)
+		logger.Error("error executing template", zap.Error(err))
 
 		return input
 	}
@@ -182,15 +182,15 @@ func ParseAndExecute(input string, data interface{}) string {
 }
 
 // ParseAndExecuteMapStruct is like ParseAndExecute but takes mapstructure as input
-func ParseAndExecuteMapStruct(input map[string]interface{}, data interface{}) map[string]interface{} {
+func ParseAndExecuteMapStruct(logger *zap.Logger, input map[string]interface{}, data interface{}) map[string]interface{} {
 	tpl, err := ParseMapStruct(input)
 	if err != nil {
-		log.Printf("Error parsing template: %v", err)
+		logger.Error("error parsing template", zap.Error(err))
 
 		return input
 	}
 
-	return tpl.Execute(data)
+	return tpl.Execute(logger, data)
 }
 
 // MapStruct is a helper structure to parse configs in a format accepted by mapstructure package
@@ -227,15 +227,15 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 }
 
 // Execute same as regular Execute
-func (tpl *MapStruct) Execute(data interface{}) map[string]interface{} {
+func (tpl *MapStruct) Execute(logger *zap.Logger, data interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 
 	for key, value := range tpl.tpl {
 		switch v := value.(type) {
 		case *template.Template:
-			result[key] = Execute(v, data)
+			result[key] = Execute(logger, v, data)
 		case *MapStruct:
-			result[key] = v.Execute(data)
+			result[key] = v.Execute(logger, data)
 		default:
 			result[key] = v
 		}

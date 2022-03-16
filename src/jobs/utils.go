@@ -13,12 +13,6 @@ import (
 )
 
 func logJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	if isInEncryptedContext(ctx) {
-		logger.Error("logs disabled in encrypted context")
-
-		return nil, nil
-	}
-
 	var jobConfig struct {
 		Text string
 	}
@@ -27,7 +21,7 @@ func logJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	logger.Info(templates.ParseAndExecute(jobConfig.Text, ctx))
+	logger.Info(templates.ParseAndExecute(logger, jobConfig.Text, ctx))
 
 	return nil, nil
 }
@@ -41,7 +35,7 @@ func setVarJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfi
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	return templates.ParseAndExecute(jobConfig.Value, ctx), nil
+	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
 }
 
 func checkJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
@@ -53,7 +47,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	if templates.ParseAndExecute(jobConfig.Value, ctx) != "true" {
+	if templates.ParseAndExecute(logger, jobConfig.Value, ctx) != "true" {
 		return nil, fmt.Errorf("validation failed %v", jobConfig.Value)
 	}
 
@@ -63,7 +57,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig
 func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig
@@ -99,7 +93,7 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig

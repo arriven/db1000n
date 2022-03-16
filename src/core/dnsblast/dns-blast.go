@@ -42,7 +42,7 @@ type DNSBlaster struct{}
 
 // Start starts the job based on provided configuration
 func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *Config) error {
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	logger.Debug("igniting the blaster",
 		zap.String("rootDomain", config.RootDomain),
@@ -80,7 +80,7 @@ func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *
 				defer wg.Done()
 			}
 
-			defer utils.PanicHandler()
+			defer utils.PanicHandler(logger)
 
 			if err := blaster.ExecuteStressTest(ctx, logger, nameserver, parameters); err != nil {
 				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
@@ -115,7 +115,7 @@ type StressTestParameters struct {
 
 // ExecuteStressTest executes a stress test based on parameters
 func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters) error {
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var (
 		awaitGroup    sync.WaitGroup
@@ -163,7 +163,7 @@ blastLoop:
 		awaitGroup.Add(parameters.ParallelQueries)
 		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
-				defer utils.PanicHandler()
+				defer utils.PanicHandler(logger)
 				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery)
 				awaitGroup.Done()
 			}()

@@ -25,7 +25,7 @@ type httpJobConfig struct {
 func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
@@ -35,7 +35,7 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 	}
 
 	var clientConfig http.ClientConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
+	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Client, ctx), &clientConfig); err != nil {
 		logger.Debug("error parsing client config", zap.Error(err))
 
 		return nil, err
@@ -48,7 +48,7 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 	client := http.NewClient(clientConfig, logger)
 
 	var requestConfig http.RequestConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Request, ctx), &requestConfig); err != nil {
+	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Request, ctx), &requestConfig); err != nil {
 		logger.Debug("error parsing request config", zap.Error(err))
 
 		return nil, err
@@ -108,7 +108,7 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig httpJobConfig
 	if err := utils.Decode(args, &jobConfig); err != nil {
@@ -118,7 +118,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	}
 
 	var clientConfig http.ClientConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(jobConfig.Client, ctx), &clientConfig); err != nil {
+	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Client, ctx), &clientConfig); err != nil {
 		logger.Debug("error parsing client config", zap.Error(err))
 
 		return nil, err
@@ -152,7 +152,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
-		if err := utils.Decode(requestTpl.Execute(ctx), &requestConfig); err != nil {
+		if err := utils.Decode(requestTpl.Execute(logger, ctx), &requestConfig); err != nil {
 			logger.Debug("error executing request template", zap.Error(err))
 
 			return nil, err

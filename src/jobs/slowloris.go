@@ -13,7 +13,7 @@ import (
 func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig *slowloris.Config
 	if err := utils.Decode(args, &jobConfig); err != nil {

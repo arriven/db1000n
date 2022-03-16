@@ -23,9 +23,9 @@ type rawnetConfig struct {
 }
 
 func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
-	jobConfig, err := parseRawNetJobArgs(args)
+	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 
 	// Write to conn until error
 	for jobConfig.Next(ctx) {
-		n, err := conn.Write([]byte(templates.Execute(jobConfig.bodyTpl, nil)))
+		n, err := conn.Write([]byte(templates.Execute(logger, jobConfig.bodyTpl, ctx)))
 		trafficMonitor.Add(uint64(n))
 
 		if err != nil {
@@ -79,9 +79,9 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 }
 
 func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
-	jobConfig, err := parseRawNetJobArgs(args)
+	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
 	if err != nil {
 		return nil, err
 	}
@@ -108,14 +108,14 @@ func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 	defer conn.Close()
 
 	for jobConfig.Next(ctx) {
-		sendUDP(udpAddr, conn, jobConfig.bodyTpl, trafficMonitor)
+		sendUDP(ctx, logger, udpAddr, conn, jobConfig.bodyTpl, trafficMonitor)
 	}
 
 	return nil, nil
 }
 
-func sendUDP(a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, trafficMonitor *metrics.Writer) {
-	n, err := conn.Write([]byte(templates.Execute(bodyTpl, nil)))
+func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, trafficMonitor *metrics.Writer) {
+	n, err := conn.Write([]byte(templates.Execute(logger, bodyTpl, ctx)))
 	if err != nil {
 		metrics.IncRawnetUDP(a.String(), metrics.StatusFail)
 
@@ -126,7 +126,7 @@ func sendUDP(a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, traf
 	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
 }
 
-func parseRawNetJobArgs(args Args) (tpl *rawnetConfig, err error) {
+func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args Args) (tpl *rawnetConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
 
@@ -143,7 +143,7 @@ func parseRawNetJobArgs(args Args) (tpl *rawnetConfig, err error) {
 		return nil, fmt.Errorf("error parsing body template %q: %w", jobConfig.Body, err)
 	}
 
-	targetAddress := strings.TrimSpace(templates.ParseAndExecute(jobConfig.Address, nil))
+	targetAddress := strings.TrimSpace(templates.ParseAndExecute(logger, jobConfig.Address, ctx))
 
 	return &rawnetConfig{BasicJobConfig: jobConfig.BasicJobConfig, addr: targetAddress, bodyTpl: bodyTpl}, nil
 }

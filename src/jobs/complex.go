@@ -3,7 +3,6 @@ package jobs
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
@@ -16,7 +15,7 @@ import (
 func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig
@@ -48,7 +47,7 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig
@@ -65,7 +64,7 @@ func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	for i := range jobConfig.Jobs {
 		job := Get(jobConfig.Jobs[i].Type)
 		if job == nil {
-			log.Printf("Unknown job %q", jobConfig.Jobs[i].Type)
+			logger.Warn("Unknown job", zap.String("type", jobConfig.Jobs[i].Type))
 
 			continue
 		}

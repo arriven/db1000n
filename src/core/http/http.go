@@ -85,7 +85,7 @@ func NewClient(clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
-		Dial: dialViaProxyFunc(templates.ParseAndExecute(clientConfig.ProxyURLs, nil),
+		Dial: dialViaProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, nil),
 			fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout),
 			logger),
 	}

@@ -19,7 +19,7 @@ import (
 func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	type packetgenJobConfig struct {
 		BasicJobConfig
@@ -37,9 +37,9 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		return nil, err
 	}
 
-	host := templates.ParseAndExecute(jobConfig.Host, nil)
+	host := templates.ParseAndExecute(logger, jobConfig.Host, nil)
 
-	port, err := strconv.Atoi(templates.ParseAndExecute(jobConfig.Port, nil))
+	port, err := strconv.Atoi(templates.ParseAndExecute(logger, jobConfig.Port, nil))
 	if err != nil {
 		logger.Debug("error parsing port", zap.Error(err))
 
@@ -85,7 +85,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		packetConfigRaw := packetTpl.Execute(ctx)
+		packetConfigRaw := packetTpl.Execute(logger, ctx)
 		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
 		var packetConfig packetgen.PacketConfig
