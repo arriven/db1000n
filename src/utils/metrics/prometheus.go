@@ -29,7 +29,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -221,7 +220,7 @@ var PushGatewayCA string
 func getTLSConfig() (*tls.Config, error) {
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
-		return nil, fmt.Errorf("can't get system cert pool: %w", err)
+		rootCAs = x509.NewCertPool()
 	}
 
 	if PushGatewayCA != "" {
