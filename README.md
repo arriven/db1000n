@@ -11,3 +11,5 @@ Feel free to use it in your load tests (wink-wink).
 
 The software is provided as is under no guarantee.
 I will update both the repo and this doc as I go during following days (date of writing this is 26th of February 2022, third day of Russian invasion into Ukraine).
+
+[Gitlab mirror](https://gitlab.com/db1000n/db1000n.git)
