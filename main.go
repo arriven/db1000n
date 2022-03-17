@@ -123,10 +123,13 @@ func main() {
 	}
 
 	country := ""
-	isCountryAllowed := false
+
+	var isCountryAllowed bool
+
 	if *countryList != "" {
 		countries := strings.Split(*countryList, ",")
 		isCountryAllowed, country = utils.CheckCountry(countries, *strictCountryCheck)
+
 		if !isCountryAllowed {
 			return
 		}
@@ -138,6 +141,7 @@ func main() {
 	clientID := uuid.NewString()
 	if *prometheusOn {
 		metrics.InitMetrics(clientID, country)
+
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
 	}
 

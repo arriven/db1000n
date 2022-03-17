@@ -89,12 +89,12 @@ const (
 
 // registered metrics
 var (
-	dnsBlastCounter  *prometheus.CounterVec = nil
-	httpCounter      *prometheus.CounterVec = nil
-	packetgenCounter *prometheus.CounterVec = nil
-	slowlorisCounter *prometheus.CounterVec = nil
-	rawnetCounter    *prometheus.CounterVec = nil
-	clientCounter    *prometheus.CounterVec = nil
+	dnsBlastCounter  *prometheus.CounterVec
+	httpCounter      *prometheus.CounterVec
+	packetgenCounter *prometheus.CounterVec
+	slowlorisCounter *prometheus.CounterVec
+	rawnetCounter    *prometheus.CounterVec
+	clientCounter    *prometheus.CounterVec
 )
 
 func InitMetrics(clientID, country string) {
@@ -102,6 +102,7 @@ func InitMetrics(clientID, country string) {
 	if country != "" {
 		constLabels[CountryLabel] = country
 	}
+
 	dnsBlastCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "db1000n_dns_blast_total",

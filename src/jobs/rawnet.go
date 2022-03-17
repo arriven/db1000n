@@ -40,13 +40,13 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		sendTCP(ctx, logger, jobConfig, globalConfig, trafficMonitor, processedTrafficMonitor)
+		sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
 	}
 
 	return nil, nil
 }
 
-func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, globalConfig GlobalConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
+func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.addr)
 	if err != nil {
 		return
@@ -108,13 +108,13 @@ func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 	defer conn.Close()
 
 	for jobConfig.Next(ctx) {
-		sendUDP(ctx, logger, udpAddr, conn, jobConfig.bodyTpl, globalConfig, trafficMonitor)
+		sendUDP(ctx, logger, udpAddr, conn, jobConfig.bodyTpl, trafficMonitor)
 	}
 
 	return nil, nil
 }
 
-func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, globalConfig GlobalConfig, trafficMonitor *metrics.Writer) {
+func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.UDPConn, bodyTpl *template.Template, trafficMonitor *metrics.Writer) {
 	n, err := conn.Write([]byte(templates.Execute(logger, bodyTpl, ctx)))
 	if err != nil {
 		metrics.IncRawnetUDP(a.String(), metrics.StatusFail)
