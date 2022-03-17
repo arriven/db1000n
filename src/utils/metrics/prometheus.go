@@ -152,7 +152,6 @@ func ValidatePrometheusPushGateways(value string) bool {
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
 func ExportPrometheusMetrics(ctx context.Context, gateways string) {
-
 	registerMetrics()
 
 	if gateways != "" {

@@ -17,6 +17,7 @@ import (
 func serveMetrics(ctx context.Context) {
 	// We don't expect that rendering metrics should take a lot of time and needs long timeout
 	const timeout = 30 * time.Second
+
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
