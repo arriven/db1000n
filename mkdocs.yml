@@ -38,6 +38,7 @@ theme:
         name: Switch to light mode
 
 markdown_extensions:
+  - mdx_truly_sane_lists
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg

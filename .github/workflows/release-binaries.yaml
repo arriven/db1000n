@@ -10,11 +10,15 @@ jobs:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
         goos: [linux, windows, darwin]
-        goarch: ["386", amd64, arm64]
+        goarch: ["386", amd64, arm, arm64]
         exclude:
           - goarch: "386"
             goos: darwin
+          - goarch: arm
+            goos: darwin
           - goarch: arm64
+            goos: windows
+          - goarch: arm
             goos: windows
     steps:
       - uses: actions/checkout@v2
@@ -24,3 +28,8 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           build_command: make
+        env:
+          ENCRYPTION_KEYS: ${{ secrets.ENCRYPTION_KEYS }}
+          CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
+          PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}
+          DEFAULT_CONFIG_VALUE: ${{ secrets.DEFAULT_CONFIG }}

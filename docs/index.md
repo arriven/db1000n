@@ -94,14 +94,3 @@ Thanks for your help!
 You will find some answers on our [FAQ](/db1000n/faq/)
 
 ---
-
-## Contacts
-
-- [Telegram group (main)](https://t.me/ddos_separ)
-- [Telegram group (reserve)](https://t.me/+z_-Tk4zT4IxmNGQy)
-- [Telegram chat](https://t.me/+9GPKhDPGHPAzZjdi)
-- [Instagram](https://instagram.com/ddos_attack_separ)
-- [Facebook](https://www.facebook.com/ddos.attack.separ)
-- [Contact bot](https://t.me/ddosseparbot)
-
----

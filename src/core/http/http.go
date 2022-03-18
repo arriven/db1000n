@@ -3,7 +3,6 @@ package http
 
 import (
 	"crypto/tls"
-	"log"
 	"math/rand"
 	"net"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
@@ -59,34 +59,14 @@ type ClientConfig struct {
 	ProxyURLs       string         `mapstructure:"proxy_urls"`
 }
 
-// NewClient produces a client from a structure
-func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) {
-	const defaultTimeout = 90 * time.Second
+// NewClient creates a fasthttp client based on the config.
+func NewClient(clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
+	const (
+		defaultMaxConnsPerHost = 1000
+		defaultTimeout         = 90 * time.Second
+	)
 
-	timeout := defaultTimeout
-	if clientConfig.Timeout != nil {
-		timeout = *clientConfig.Timeout
-	}
-
-	readTimeout := timeout
-	if clientConfig.ReadTimeout != nil {
-		readTimeout = *clientConfig.ReadTimeout
-	}
-
-	writeTimeout := timeout
-	if clientConfig.WriteTimeout != nil {
-		writeTimeout = *clientConfig.WriteTimeout
-	}
-
-	idleTimeout := timeout
-	if clientConfig.IdleTimeout != nil {
-		idleTimeout = *clientConfig.IdleTimeout
-	}
-
-	maxIdleConns := 1000
-	if clientConfig.MaxIdleConns != nil {
-		maxIdleConns = *clientConfig.MaxIdleConns
-	}
+	timeout := nonNilDurationOrDefault(clientConfig.Timeout, defaultTimeout)
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
@@ -95,52 +75,49 @@ func NewClient(clientConfig ClientConfig, debug bool) (client *fasthttp.Client) 
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
-	proxy := func() string { return "" }
-
-	proxylist := templates.ParseAndExecute(clientConfig.ProxyURLs, nil)
-	if proxylist != "" {
-		if debug {
-			log.Printf("List of proxies: %s", proxylist)
-		}
-
-		proxyURLs := strings.Split(proxylist, ",")
-
-		if debug {
-			log.Printf("proxyURLs: %v", proxyURLs)
-		}
-
-		// Return random proxy from the list
-		proxy = func() string {
-			if len(proxyURLs) == 0 {
-				return ""
-			}
-
-			return proxyURLs[rand.Intn(len(proxyURLs))] //nolint:gosec // Cryptographically secure random not required
-		}
-	}
-
 	return &fasthttp.Client{
-		ReadTimeout:                   readTimeout,
-		WriteTimeout:                  writeTimeout,
 		MaxConnDuration:               timeout,
-		MaxIdleConnDuration:           idleTimeout,
-		MaxConnsPerHost:               maxIdleConns,
+		ReadTimeout:                   nonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
+		WriteTimeout:                  nonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
+		MaxIdleConnDuration:           nonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
+		MaxConnsPerHost:               nonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
-		// increase DNS cache time to an hour instead of default minute
-		Dial: fastHTTPProxyDial(proxy, fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout)),
+		Dial: dialViaProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, nil),
+			fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout),
+			logger),
 	}
 }
 
-func fastHTTPProxyDial(proxyFunc func() string, backup fasthttp.DialFunc) fasthttp.DialFunc {
-	return func(addr string) (net.Conn, error) {
-		proxy := proxyFunc()
-		if proxy == "" {
-			return backup(addr)
-		}
-
-		return fasthttpproxy.FasthttpSocksDialer(proxy)(addr)
+func dialViaProxyFunc(proxyListCSV string, backup fasthttp.DialFunc, logger *zap.Logger) fasthttp.DialFunc {
+	if len(proxyListCSV) == 0 {
+		return backup
 	}
+
+	proxyURLs := strings.Split(proxyListCSV, ",")
+
+	logger.Debug("proxyURLs parsed", zap.Strings("proxyURLs", proxyURLs))
+
+	// Return closure to select a random proxy on each call
+	return func(addr string) (net.Conn, error) {
+		return fasthttpproxy.FasthttpSocksDialer(proxyURLs[rand.Intn(len(proxyURLs))])(addr) //nolint:gosec // Cryptographically secure random not required
+	}
+}
+
+func nonNilDurationOrDefault(d *time.Duration, dflt time.Duration) time.Duration {
+	if d != nil {
+		return *d
+	}
+
+	return dflt
+}
+
+func nonNilIntOrDefault(i *int, dflt int) int {
+	if i != nil {
+		return *i
+	}
+
+	return dflt
 }

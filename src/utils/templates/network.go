@@ -1,27 +1,4 @@
-// MIT License
-
-// Copyright (c) [2022] [Arriven (https://github.com/Arriven)]
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
-// Package packetgen [allows sending customized tcp/udp traffic. Inspired by https://github.com/bilalcaliskan/syn-flood]
-package packetgen
+package templates
 
 import (
 	"fmt"
@@ -83,8 +60,7 @@ func LocalMacAddres() string {
 	return ""
 }
 
-// LocalIP returns the first non loopback local IP of the host
-func LocalIP() string {
+func localIP(filter func(ip net.IP) bool) string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return ""
@@ -93,7 +69,7 @@ func LocalIP() string {
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
+			if filter(ipnet.IP) {
 				return ipnet.IP.String()
 			}
 		}
@@ -102,18 +78,37 @@ func LocalIP() string {
 	return ""
 }
 
-// ResolveHost function gets a string and returns the ip address
-func ResolveHost(host string) (string, error) {
+func resolveHost(host string, filter func(ip net.IP) bool) (string, error) {
 	addrs, err := net.LookupIP(host)
 	if err != nil {
 		return "", err
 	}
 
 	for _, addr := range addrs {
-		if addr.To4() != nil {
+		if filter(addr) {
 			return addr.String(), nil
 		}
 	}
 
 	return "", fmt.Errorf("no addrs found for host %v", host)
+}
+
+// LocalIPV4 returns the first non loopback local ipv4 of the host
+func LocalIPV4() string {
+	return localIP(func(ip net.IP) bool { return ip.To4() != nil })
+}
+
+// ResolveHostIPV4 function gets a string and returns the ipv4 address
+func ResolveHostIPV4(host string) (string, error) {
+	return resolveHost(host, func(ip net.IP) bool { return ip.To4() != nil })
+}
+
+// LocalIPV6 returns the first non loopback local ipv4 of the host
+func LocalIPV6() string {
+	return localIP(func(ip net.IP) bool { return ip.To4() == nil })
+}
+
+// ResolveHostIPV6 function gets a string and returns the ipv4 address
+func ResolveHostIPV6(host string) (string, error) {
+	return resolveHost(host, func(ip net.IP) bool { return ip.To4() == nil })
 }

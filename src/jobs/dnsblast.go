@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/Arriven/db1000n/src/core/dnsblast"
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -25,10 +27,10 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error) {
+func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler()
+	defer utils.PanicHandler(logger)
 
 	var jobConfig dnsBlastConfig
 	if err = utils.Decode(args, &jobConfig); err != nil {
@@ -78,12 +80,13 @@ func dnsBlastJob(ctx context.Context, globalConfig GlobalConfig, args Args, debu
 	//
 	// Blast the Job!
 	//
-	err = dnsblast.Start(ctx, &wg, &dnsblast.Config{
+	err = dnsblast.Start(ctx, logger, &wg, &dnsblast.Config{
 		RootDomain:      jobConfig.RootDomain,
 		Protocol:        jobConfig.Protocol,
 		SeedDomains:     jobConfig.SeedDomains,
 		ParallelQueries: jobConfig.ParallelQueries,
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
+		ClientID:        globalConfig.ClientID,
 	})
 
 	wg.Wait()

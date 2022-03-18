@@ -40,3 +40,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            "ENCRYPTION_KEYS=${{ secrets.ENCRYPTION_KEYS }}"
+            "CA_PATH_VALUE=${{ secrets.PROMETHEUS_ROOT_CA }}"
+            "PROMETHEUS_BASIC_AUTH=${{ secrets.PROMETHEUS_BASIC_AUTH }}"
+            "DEFAULT_CONFIG_VALUE=${{ secrets.DEFAULT_CONFIG }}"

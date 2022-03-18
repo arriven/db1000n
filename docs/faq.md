@@ -85,6 +85,6 @@
 
         Generate traffic from within, from their internal address.
         Russia can close its propaganda to the world,
-        but they cannot close tit to their citizens
+        but they cannot close it to their citizens
 
 ---

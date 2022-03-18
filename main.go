@@ -31,8 +31,12 @@ import (
 	pprofhttp "net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/runner"
@@ -41,6 +45,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
+	"github.com/Arriven/db1000n/src/utils/updater"
 )
 
 const (
@@ -62,17 +67,42 @@ func main() {
 	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
 	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
 	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
-	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", false), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
-	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""), "Comma separated list of prometheus push gateways")
+	skipEncrytedJobs := flag.Bool("skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false), "set to true if you want to only run plaintext jobs from the config for security considerations")
+	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
+	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"), "Comma separated list of prometheus push gateways")
 	doAutoUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
 	doRestartOnUpdate := flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true), "Allows application to restart upon successful update (ignored if auto-update is disabled)")
 	skipUpdateCheckOnStart := flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false), "Allows to skip the update check at the startup (usually set automatically by the previous version)")
 	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency", utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", DefaultUpdateCheckFrequency), "How often to run auto-update checks")
+	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false), "enable strict country check; will also exit if IP can't be determined")
+	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
+	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
+	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"), "Destination config file to write (only applies if updater-mode is enabled")
 
 	flag.Parse()
 
 	if *help {
 		flag.CommandLine.Usage()
+
+		return
+	}
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal("failed to create zap logger", err)
+	}
+
+	if *debug {
+		logger, err = zap.NewDevelopment()
+		if err != nil {
+			log.Fatal("failed to create zap logger", err)
+		}
+	}
+
+	configPathsArray := strings.Split(*configPaths, ",")
+
+	if *updaterMode {
+		updater.Run(*destinationConfig, configPathsArray, []byte(*backupConfig))
 
 		return
 	}
@@ -92,22 +122,43 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
+	country := ""
+
+	var isCountryAllowed bool
+
+	if *countryList != "" {
+		countries := strings.Split(*countryList, ",")
+		isCountryAllowed, country = utils.CheckCountry(countries, *strictCountryCheck)
+
+		if !isCountryAllowed {
+			return
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go utils.CheckCountry(ctx, []string{"Ukraine"})
-
+	clientID := uuid.NewString()
 	if *prometheusOn {
+		metrics.InitMetrics(clientID, country)
+
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
 	}
 
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:    *configPaths,
+		ConfigPaths:    configPathsArray,
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global:         jobs.GlobalConfig{ProxyURL: *systemProxy, ProxyListURL: *proxiesURL, ScaleFactor: *scaleFactor},
-	}, *debug)
+		Global: jobs.GlobalConfig{
+			ProxyURL:      *systemProxy,
+      ProxyListURL: *proxiesURL,
+			ScaleFactor:   *scaleFactor,
+			SkipEncrypted: *skipEncrytedJobs,
+			Debug:         *debug,
+			ClientID:      clientID,
+		},
+	})
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}
@@ -125,7 +176,7 @@ func main() {
 		cancel()
 	}()
 
-	r.Run(ctx)
+	r.Run(ctx, logger)
 }
 
 func setUpPprof(pprof string, debug bool) {
@@ -165,36 +216,35 @@ func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateChec
 	}
 }
 
-//nolint:nestif // The nested if linter is disabled as it would add unnecessary function splitting. This function is quite obvious
 func runUpdate(doRestartOnUpdate bool) {
 	log.Println("Running a check for a newer version...")
 
 	isUpdateFound, newVersion, changeLog, err := ota.DoAutoUpdate()
 	if err != nil {
-		log.Printf("Auto-Update is failed: %s", err)
+		log.Printf("Auto-Update failed: %s", err)
 
 		return
 	}
 
-	if isUpdateFound {
-		log.Printf("Newer version of the application is found [version=%s]\n", newVersion)
-		log.Printf("What's new:\n%s", changeLog)
-
-		if doRestartOnUpdate {
-			log.Println("Auto restart is enabled, restarting the application to run a new version")
-
-			additionalArgs := []string{
-				"-skip-update-check-on-start",
-			}
-
-			if err = ota.Restart(additionalArgs...); err != nil {
-				log.Printf("Failed to restart the application after the update to the new version: %s", err)
-				log.Printf("Restart the application manually to apply changes!\n")
-			}
-		} else {
-			log.Println("Auto restart is disabled, restart the application manually to apply changes!")
-		}
-	} else {
+	if !isUpdateFound {
 		log.Println("We are running the latest version, OK!")
+
+		return
+	}
+
+	log.Printf("Newer version of the application is found [version=%s]", newVersion)
+	log.Printf("What's new:\n%s", changeLog)
+
+	if !doRestartOnUpdate {
+		log.Println("Auto restart is disabled, restart the application manually to apply changes!")
+
+		return
+	}
+
+	log.Println("Auto restart is enabled, restarting the application to run a new version")
+
+	if err = ota.Restart("-skip-update-check-on-start"); err != nil {
+		log.Printf("Failed to restart the application after the update to the new version: %s", err)
+		log.Println("Restart the application manually to apply changes!")
 	}
 }

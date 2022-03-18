@@ -2,18 +2,24 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 // PanicHandler just stub it in the beginning of every major module invocation to prevent single module failure from crashing the whole app
-func PanicHandler() {
+func PanicHandler(logger *zap.Logger) {
 	if err := recover(); err != nil {
-		log.Printf("caught panic: %v", err)
+		logger.Error("caught panic", zap.Any("err", err))
 	}
 }
 
@@ -80,7 +86,7 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 
 // Decode is an alias to a mapstructure.NewDecoder({Squash: true}).Decode()
 func Decode(input interface{}, output interface{}) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, Result: output})
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, Result: output})
 	if err != nil {
 		log.Printf("Error parsing job config: %v", err)
 
@@ -88,4 +94,32 @@ func Decode(input interface{}, output interface{}) error {
 	}
 
 	return decoder.Decode(input)
+}
+
+func Unmarshal(input []byte, output interface{}, format string) error {
+	switch format {
+	case "", "json":
+		if err := json.Unmarshal(input, output); err != nil {
+			return err
+		}
+	case "yaml":
+		if err := yaml.Unmarshal(input, output); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown config format: %v", format)
+	}
+
+	return nil
+}
+
+func OpenBrowser(url string) {
+	switch runtime.GOOS {
+	case "windows":
+		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		_ = exec.Command("open", url).Start()
+	}
+
+	log.Printf("Please open %s", url)
 }

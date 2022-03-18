@@ -26,11 +26,12 @@
 ### Для новачків
 
 1. Завантажте останню версію програми для вашої платформи:
-    - [Windows](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-windows-386.zip)
-    - [Mac M1](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-arm64.tar.gz)
-    - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-amd64.tar.gz)
-    - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-386.zip)
-    - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-amd64.tar.gz)
+
+   - [Windows](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-windows-386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-darwin-amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/download/{{ git_latest_version_tag }}/db1000n-{{ git_latest_version_tag }}-linux-amd64.tar.gz)
 
 1. Розпакуйте архів
 1. Запустіть файл з архіву
@@ -91,16 +92,5 @@ docker run --rm -it --pull always ghcr.io/arriven/db1000n
 ## Я все ще маю питання
 
 Ви можете знайти деякі відповіді на сторінці [FAQ](/db1000n/uk/faq/)
-
----
-
-## Контакти
-
-- [Telegram група (головна)](https://t.me/ddos_separ)
-- [Telegram група (запасна)](https://t.me/+z_-Tk4zT4IxmNGQy)
-- [Telegram чат](https://t.me/+9GPKhDPGHPAzZjdi)
-- [Instagram](https://instagram.com/ddos_attack_separ)
-- [Facebook](https://www.facebook.com/ddos.attack.separ)
-- [Чат бот](https://t.me/ddosseparbot)
 
 ---

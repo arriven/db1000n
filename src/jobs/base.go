@@ -4,6 +4,10 @@ package jobs
 import (
 	"context"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // Args comment for linter
@@ -11,13 +15,24 @@ type Args = map[string]interface{}
 
 // GlobalConfig is a struct meant to pass commandline arguments to every job
 type GlobalConfig struct {
-	ProxyURL     string
-	ProxyListURL string
-	ScaleFactor  int
+	ProxyURL      string
+  ProxyListURL  string
+	ScaleFactor   int
+	SkipEncrypted bool
+	Debug         bool
+	ClientID      string
+}
+
+const (
+	isEncryptedContextKey = "is_in_encrypted_context"
+)
+
+func isInEncryptedContext(ctx context.Context) bool {
+	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
 }
 
 // Job comment for linter
-type Job = func(ctx context.Context, globalConfig GlobalConfig, args Args, debug bool) (data interface{}, err error)
+type Job = func(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error)
 
 // Config comment for linter
 type Config struct {
@@ -57,6 +72,8 @@ func Get(t string) Job {
 		return checkJob
 	case "loop":
 		return loopJob
+	case "encrypted":
+		return encryptedJob
 	default:
 		return nil
 	}

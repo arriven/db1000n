@@ -2,12 +2,17 @@
 package runner
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/runner/config"
@@ -18,7 +23,7 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths    string            // Comma-separated config location URLs
+	ConfigPaths    []string          // Comma-separated config location URLs
 	BackupConfig   []byte            // Raw backup config
 	RefreshTimeout time.Duration     // How often to refresh config
 	Format         string            // json or yaml
@@ -31,27 +36,23 @@ type Runner struct {
 	configPaths    []string
 	refreshTimeout time.Duration
 	configFormat   string
-	configFetcher  *config.Fetcher
-
-	debug bool
 }
 
 // New runner according to the config
-func New(cfg *Config, debug bool) (*Runner, error) {
+func New(cfg *Config) (*Runner, error) {
 	return &Runner{
 		config:         cfg,
-		configPaths:    strings.Split(cfg.ConfigPaths, ","),
-		configFetcher:  config.NewFetcher(cfg.BackupConfig),
+		configPaths:    cfg.ConfigPaths,
 		refreshTimeout: cfg.RefreshTimeout,
 		configFormat:   cfg.Format,
-
-		debug: debug,
 	}, nil
 }
 
 // Run the runner and block until Stop() is called
-func (r *Runner) Run(ctx context.Context) {
-	clientID := uuid.New()
+func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
+	clientID := uuid.MustParse(r.config.Global.ClientID)
+
+	metrics.IncClient()
 
 	refreshTimer := time.NewTicker(r.refreshTimeout)
 
@@ -59,13 +60,24 @@ func (r *Runner) Run(ctx context.Context) {
 
 	var cancel context.CancelFunc
 
-	for {
-		if cfg := r.configFetcher.Update(r.configPaths, r.configFormat); cfg != nil {
-			if cancel != nil {
-				cancel()
-			}
+	lastKnownConfig := &config.RawConfig{Body: r.config.BackupConfig}
 
-			cancel = r.runJobs(ctx, cfg, clientID)
+	for {
+		rawConfig := config.FetchRawConfig(r.configPaths, lastKnownConfig)
+
+		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) { // Only restart jobs if the new config differs from the current one
+			cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
+			if cfg != nil {
+				lastKnownConfig = rawConfig
+
+				if cancel != nil {
+					cancel()
+				}
+
+				cancel = r.runJobs(ctx, logger, cfg, clientID)
+			}
+		} else {
+			log.Println("The config has not changed. Keep calm and carry on!")
 		}
 
 		// Wait for refresh timer or stop signal
@@ -79,25 +91,25 @@ func (r *Runner) Run(ctx context.Context) {
 			return
 		}
 
-		dumpMetrics(clientID.String(), r.debug)
+		dumpMetrics(clientID.String(), r.config.Global.Debug)
 	}
 }
 
-func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.UUID) (cancel context.CancelFunc) {
+func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Config, clientID uuid.UUID) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
 
 	for i := range cfg.Jobs {
-		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(cfg.Jobs[i].Filter, clientID.ID())) != "true" {
-			log.Println("There is a filter defined for a job but this client doesn't pass it - skip the job")
+		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(logger, cfg.Jobs[i].Filter, clientID.ID())) != "true" {
+			logger.Info("There is a filter defined for a job but this client doesn't pass it - skip the job")
 
 			continue
 		}
 
 		job := jobs.Get(cfg.Jobs[i].Type)
 		if job == nil {
-			log.Printf("Unknown job %q", cfg.Jobs[i].Type)
+			logger.Error("unknown job", zap.String("type", cfg.Jobs[i].Type))
 
 			continue
 		}
@@ -112,16 +124,16 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.Config, clientID uuid.
 
 		cfgMap := make(map[string]interface{})
 		if err := utils.Decode(cfg.Jobs[i], &cfgMap); err != nil {
-			log.Fatal("failed to encode cfg map")
+			logger.Fatal("failed to encode cfg map")
 		}
 
 		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
 			go func(i int) {
-				_, err := job(ctx, r.config.Global, cfg.Jobs[i].Args, r.debug)
+				_, err := job(ctx, logger, r.config.Global, cfg.Jobs[i].Args)
 				if err != nil {
-					log.Println("error running job:", err)
+					logger.Error("error running job", zap.Error(err))
 				}
 			}(i)
 
@@ -148,15 +160,27 @@ func dumpMetrics(clientID string, debug bool) {
 		log.Println("error reporting statistics:", err)
 	}
 
-	if bytesGenerated > 0 {
-		log.Println("Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
-		log.Println("Attack is successful! Russian warship, go fuck yourself!")
-		log.Printf("The app has generated approximately %v bytes of traffic\n", bytesGenerated)
+	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
 
-		if bytesProcessed > 0 {
-			log.Printf("Of which for %v bytes we received some response from the target", bytesProcessed)
-		}
+	if bytesGenerated > 0 {
+		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		fmt.Fprintln(networkStatsWriter, "!Attack is successful! Russian warship, go fuck yourself!")
+
+		const BytesInMegabytes = 1024 * 1024
+		megabytesGenerated := float64(bytesGenerated) / BytesInMegabytes
+		megabytesProcessed := float64(bytesProcessed) / BytesInMegabytes
+
+		const PercentConversionMultilpier = 100
+		responsePercent := float64(bytesProcessed) / float64(bytesGenerated) * PercentConversionMultilpier
+
+		fmt.Fprint(networkStatsWriter, "---------Traffic stats---------\n")
+		fmt.Fprintf(networkStatsWriter, "[\tGenerated\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesGenerated, bytesGenerated)
+		fmt.Fprintf(networkStatsWriter, "[\tReceived\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesProcessed, bytesProcessed)
+		fmt.Fprintf(networkStatsWriter, "[\tResponse rate\t]\t%.1f\t%%\n", responsePercent)
+		fmt.Fprint(networkStatsWriter, "-------------------------------\n\n")
 	} else {
-		log.Println("The app doesn't seem to generate any traffic, please contact your admin")
+		fmt.Fprintln(networkStatsWriter, "[Error] No traffic generated. If you see this message a lot - contact admins")
 	}
+
+	networkStatsWriter.Flush()
 }

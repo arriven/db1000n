@@ -95,15 +95,45 @@ services:
       interval: 30s
       retries: 3
 
+  # [OPTIONAL]
+  # run db1000n in updater mode, which will fetch configuration bypassing VPN and store it in shared volume
+  updater:
+    image: ghcr.io/arriven/db1000n
+    restart: unless-stopped
+    labels:
+      autoheal: "true"
+    entrypoint: "./db1000n --updater-mode"
+    volumes:
+      - ./config:/usr/src/app/config:z
+    environment:
+      UPDATER_DESTINATION_CONFIG: "config/config.json"
+    healthcheck:
+      test: [ "CMD", "test", "-f", "config/config.json" ]
+      timeout: 5s
+      interval: 5s
+      retries: 5
+
   # this Docker container will use VPN 01
+  # it will use config.json created by 'updater' container above
+  # this is set by specifying same volume and -c config/config.json
   db1000n_01:
     image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
-      - ovpn_01
+      ovpn_01:
+        condition: service_healthy
+      updater:
+        condition: service_healthy
     network_mode: "service:ovpn_01"
     labels:
         autoheal: "true"
+    # set single country to check IP against and exit container if IP matches country OR IP cannot be determined
+    environment:
+      STRICT_COUNTRY_CHECK: "true"
+      COUNTRY_LIST: "Country"
+      CONFIG: "config/config.json"
+    volumes:
+      - ./config:/usr/src/app/config:z
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -111,14 +141,26 @@ services:
       retries: 3
 
   # this Docker container will use VPN 02
+  # it will use config.json created by 'updater' container above
+  # this is set by specifying same volume and -c config/config.json
   db1000n_02:
     image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
-      - ovpn_02
+      ovpn_02:
+        condition: service_healthy
+      updater:
+        condition: service_healthy
     network_mode: "service:ovpn_02"
     labels:
         autoheal: "true"
+    # set multiple countries to check IP against and exit container if IP matches country OR IP cannot be determined
+    environment:
+      STRICT_COUNTRY_CHECK: "true"
+      COUNTRY_LIST: "Country, Another Country"
+      CONFIG: "config/config.json"
+    volumes:
+      - ./config:/usr/src/app/config:z
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s
@@ -126,14 +168,20 @@ services:
       retries: 3
 
   # this Docker container will use VPN 03
+  # it will download config itself and won't access shared volume so those options are undefined here
   db1000n_03:
     image: ghcr.io/arriven/db1000n-advanced
     restart: unless-stopped
     depends_on:
-      - ovpn_03
+      ovpn_03:
+        condition: service_healthy
     network_mode: "service:ovpn_03"
     labels:
         autoheal: "true"
+    # set single country to check IP against but do not exit container if IP matches country
+    environment:
+      STRICT_COUNTRY_CHECK: "false"
+      COUNTRY_LIST: "Country"
     healthcheck:
       test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
       timeout: 10s

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO="Arriven/db1000n"
+REPO=${REPO:-"Arriven/db1000n"}
 INSTALL_OS="unknown"
 
 case "$OSTYPE" in
@@ -15,7 +15,7 @@ case "$OSTYPE" in
   *)        echo "unknown: $OSTYPE"; exit 1 ;;
 esac
 
-if [ -z ${OSARCH+x} ];
+if [ -z "${OSARCH+x}" ];
 then
   OSARCH=$(uname -m);
 fi
@@ -24,6 +24,8 @@ INSTALL_ARCH="unknown"
 case "$OSARCH" in
   x86_64*)  INSTALL_ARCH="amd64" ;;
   i386*)    INSTALL_ARCH="386" ;; 
+  armv6l)   INSTALL_ARCH="arm" ;;
+  armv7l)   INSTALL_ARCH="arm" ;;
   arm*)     INSTALL_ARCH="arm64" ;;
   *)        echo "unknown: $OSARCH"; exit 1 ;;
 esac

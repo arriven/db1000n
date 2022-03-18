@@ -3,59 +3,98 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"os/exec"
-	"runtime"
+	"strings"
+	"time"
 )
 
-func openBrowser(url string) {
-	switch runtime.GOOS {
-	case "windows":
-		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		_ = exec.Command("open", url).Start()
+// CheckCountry allows to check which country the app is running from
+func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
+	type IPInfo struct {
+		Country string `json:"country"`
+		IP      string `json:"ip"`
 	}
 
-	log.Printf("Please open %s", url)
-}
+	ipInfo := IPInfo{}
 
-// CheckCountry allows to check which country the app is running from
-func CheckCountry(ctx context.Context, countriesToAvoid []string) {
 	const ipCheckerURI = "https://api.myip.com/"
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
-	if err != nil {
-		return
-	}
+	const requestTimeout = 3 * time.Second
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
+	retries := 0
+	for ipInfo.IP == "" && retries <= 3 {
+		log.Printf("Checking IP address, attempt #%d", retries)
 
-		return
-	}
+		time.Sleep(1 * time.Second)
+		retries++
 
-	defer resp.Body.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 
-	var ipInfo struct {
-		Country string `json:"country"`
-	}
+		defer cancel()
 
-	if err = json.NewDecoder(resp.Body).Decode(&ipInfo); err != nil {
-		log.Println("Can't check country. Please manually check that VPN is enabled or that you have non-Ukrainian IP address.")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
+		if err != nil {
+			continue
+		}
 
-		return
-	}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
 
-	for _, country := range countriesToAvoid {
-		if ipInfo.Country == country {
-			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
-			openBrowser("https://arriven.github.io/db1000n/vpn/")
+			continue
+		}
 
-			return
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Can't close connection to: %s", ipCheckerURI)
+
+				return
+			}
+		}()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
+			continue
+		}
+
+		err = json.Unmarshal(body, &ipInfo)
+		if err != nil {
+			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
+			continue
 		}
 	}
 
-	log.Printf("Current country: %s", ipInfo.Country)
+	if ipInfo.Country == "" {
+		if strictCountryCheck {
+			log.Println("Strict country check mode is enabled, exiting")
+
+			return false, ""
+		}
+
+		return true, ""
+	}
+
+	for _, country := range countriesToAvoid {
+		if ipInfo.Country == strings.TrimSpace(country) {
+			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
+			OpenBrowser("https://arriven.github.io/db1000n/vpn/")
+
+			if strictCountryCheck {
+				log.Println("Strict country check mode is enabled, exiting")
+
+				return false, ipInfo.Country
+			}
+
+			return true, ipInfo.Country
+		}
+	}
+
+	log.Printf("Current country: %s (%s)", ipInfo.Country, ipInfo.IP)
+
+	return true, ipInfo.Country
 }

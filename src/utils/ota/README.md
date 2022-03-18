@@ -4,8 +4,8 @@ Lots of maintainers run their needles on a bare metal machines.
 As long as this project is so frequently updated, it might be
 a good idea to let them update it without the hassle.
 
-- [V] Enabled automatic time-based version check
-- [V] Enabled application self-restart after it downloaded the update
+- [x] Enabled automatic time-based version check
+- [x] Enabled application self-restart after it downloaded the update
 
 ## Description
 
@@ -90,6 +90,6 @@ $ ./db1000n -enable-self-update -self-update-check-frequency=5m -restart-on-upda
 
 ## References
 
-1. Graceful restart with zero downtime for TCP connection -  [https://github.com/Scalingo/go-graceful-restart-example](https://github.com/Scalingo/go-graceful-restart-example)
+1. Graceful restart with zero downtime for TCP connection - [https://github.com/Scalingo/go-graceful-restart-example](https://github.com/Scalingo/go-graceful-restart-example)
 1. Graceful restart with zero downtime for TCP connection (two variants) [https://github.com/rcrowley/goagain](https://github.com/rcrowley/goagain)
 1. Graceful restart with zero downtime for TCP connection (alternative) [https://grisha.org/blog/2014/06/03/graceful-restart-in-golang](https://grisha.org/blog/2014/06/03/graceful-restart-in-golang)

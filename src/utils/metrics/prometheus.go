@@ -37,7 +37,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"github.com/Arriven/db1000n/src/utils"
@@ -82,34 +81,64 @@ const (
 	RawnetProtocolLabel = `protocol`
 )
 
+// Client related values and labels
+const (
+	ClientIDLabel = `id`
+	CountryLabel  = `country`
+)
+
 // registered metrics
 var (
+	dnsBlastCounter  *prometheus.CounterVec
+	httpCounter      *prometheus.CounterVec
+	packetgenCounter *prometheus.CounterVec
+	slowlorisCounter *prometheus.CounterVec
+	rawnetCounter    *prometheus.CounterVec
+	clientCounter    *prometheus.CounterVec
+)
+
+func InitMetrics(clientID, country string) {
+	constLabels := prometheus.Labels{ClientIDLabel: clientID}
+	if country != "" {
+		constLabels[CountryLabel] = country
+	}
+
 	dnsBlastCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "dns_blast_total",
-			Help: "Number of dns queries",
+			Name:        "db1000n_dns_blast_total",
+			Help:        "Number of dns queries",
+			ConstLabels: constLabels,
 		}, []string{DNSBlastRootDomainLabel, DNSBlastSeedDomainLabel, DNSBlastProtocolLabel, StatusLabel})
 	httpCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_request_total",
-			Help: "Number of http queries",
+			Name:        "db1000n_http_request_total",
+			Help:        "Number of http queries",
+			ConstLabels: constLabels,
 		}, []string{HTTPDestinationHostLabel, HTTPMethodLabel, StatusLabel})
 	packetgenCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "packetgen_total",
-			Help: "Number of packet generation transfers",
+			Name:        "db1000n_packetgen_total",
+			Help:        "Number of packet generation transfers",
+			ConstLabels: constLabels,
 		}, []string{PacketgenHostLabel, PacketgenDstHostPortLabel, PacketgenProtocolLabel, StatusLabel})
 	slowlorisCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "slowloris_total",
-			Help: "Number of sent raw tcp/udp packets",
+			Name:        "db1000n_slowloris_total",
+			Help:        "Number of sent raw tcp/udp packets",
+			ConstLabels: constLabels,
 		}, []string{SlowlorisAddressLabel, SlowlorisProtocolLabel, StatusLabel})
 	rawnetCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "rawnet_total",
-			Help: "Number of sent raw tcp/udp packets",
+			Name:        "db1000n_rawnet_total",
+			Help:        "Number of sent raw tcp/udp packets",
+			ConstLabels: constLabels,
 		}, []string{RawnetAddressLabel, RawnetProtocolLabel, StatusLabel})
-)
+	clientCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name:        "db1000n_client_total",
+		Help:        "Number of clients",
+		ConstLabels: constLabels,
+	}, []string{})
+}
 
 func registerMetrics() {
 	prometheus.MustRegister(dnsBlastCounter)
@@ -117,6 +146,7 @@ func registerMetrics() {
 	prometheus.MustRegister(packetgenCounter)
 	prometheus.MustRegister(slowlorisCounter)
 	prometheus.MustRegister(rawnetCounter)
+	prometheus.MustRegister(clientCounter)
 }
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
@@ -143,39 +173,13 @@ func ValidatePrometheusPushGateways(value string) bool {
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
 func ExportPrometheusMetrics(ctx context.Context, gateways string) {
-	// We don't expect that rendering metrics should take a lot of time and needs long timeout
-	const timeout = 30 * time.Second
-
 	registerMetrics()
-
-	http.Handle("/metrics", promhttp.HandlerFor(
-		prometheus.DefaultGatherer,
-		promhttp.HandlerOpts{
-			// Opt into OpenMetrics to support exemplars.
-			EnableOpenMetrics: true,
-			Timeout:           timeout,
-		},
-	))
-
-	server := &http.Server{
-		Addr:    "0.0.0.0:9090",
-		Handler: nil,
-	}
-	go func(ctx context.Context, server *http.Server) {
-		<-ctx.Done()
-
-		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Println("failure shutting down prometheus server:", err)
-		}
-	}(ctx, server)
 
 	if gateways != "" {
 		go pushMetrics(ctx, strings.Split(gateways, ","))
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal()
-	}
+	serveMetrics(ctx)
 }
 
 // BasicAuth client's credentials for push gateway encrypted with utils/crypto.go#EncryptionKeys[0] key
@@ -210,7 +214,7 @@ var PushGatewayCA string
 func getTLSConfig() (*tls.Config, error) {
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
-		log.Println("Can't get system cert pool")
+		rootCAs = x509.NewCertPool()
 	}
 
 	if PushGatewayCA != "" {
@@ -298,12 +302,13 @@ func IncHTTP(host, method, status string) {
 }
 
 // IncPacketgen increments counter of sent raw packets
-func IncPacketgen(host, hostPort, protocol, status string) {
+func IncPacketgen(host, hostPort, protocol, status, id string) {
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
 		PacketgenDstHostPortLabel: hostPort,
 		PacketgenProtocolLabel:    protocol,
 		StatusLabel:               status,
+		ClientIDLabel:             id,
 	}).Inc()
 }
 
@@ -332,4 +337,8 @@ func IncRawnetUDP(address, status string) {
 		RawnetProtocolLabel: "udp",
 		StatusLabel:         status,
 	}).Inc()
+}
+
+func IncClient() {
+	clientCounter.With(prometheus.Labels{}).Inc()
 }

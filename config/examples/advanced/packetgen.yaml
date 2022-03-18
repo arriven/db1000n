@@ -1,0 +1,23 @@
+jobs:
+  - type: packetgen
+    args:
+      connection:
+        name: "ip4:tcp"
+        address: "0.0.0.0"
+      packet:
+        network:
+          type: ipv4
+          data:
+            src_ip: "{{ local_ip }}"
+            dst_ip: '{{ resolve_host "localhost" }}'
+        transport:
+          type: tcp
+          data:
+            src_port: "{{ random_port }}"
+            dst_port: "{{ random_port }}"
+            flags:
+              syn: true
+        application:
+          type: raw
+          data:
+            payload: "test"
