@@ -32,7 +32,7 @@ func TestSerialize(t *testing.T) {
 				},
 			},
 		},
-		"application": map[string]interface{}{
+		"payload": map[string]interface{}{
 			"type": "raw",
 			"data": map[string]interface{}{
 				"payload": "test",
