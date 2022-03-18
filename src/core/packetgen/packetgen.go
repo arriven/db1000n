@@ -24,11 +24,9 @@
 package packetgen
 
 import (
-	"fmt"
+	"net"
 
 	"github.com/google/gopacket"
-	"golang.org/x/net/ipv4"
-	"golang.org/x/net/ipv6"
 )
 
 type Packet struct {
@@ -74,25 +72,6 @@ func (p Packet) Serialize(payloadBuf gopacket.SerializeBuffer) (err error) {
 	return SerializeLayers(payloadBuf, p.Link, p.Network, p.Transport, p.Payload)
 }
 
-func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
-	if p.Network == nil {
-		return nil, fmt.Errorf("no network layer present in packet")
-	}
-
-	ipHeaderBuf := gopacket.NewSerializeBuffer()
-	if err = Serialize(ipHeaderBuf, p.Network); err != nil {
-		return nil, err
-	}
-
-	return ipv4.ParseHeader(ipHeaderBuf.Bytes())
-}
-
-func (p Packet) IPV6() (ipHeader *ipv6.Header, err error) {
-	ipHeaderBuf := gopacket.NewSerializeBuffer()
-
-	if err = Serialize(ipHeaderBuf, p.Network); err != nil {
-		return nil, err
-	}
-
-	return ipv6.ParseHeader(ipHeaderBuf.Bytes())
+func (p Packet) IP() net.IP {
+	return p.Network.NetworkFlow().Dst().Raw()
 }

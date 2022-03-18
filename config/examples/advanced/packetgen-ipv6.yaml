@@ -1,0 +1,23 @@
+jobs:
+  - type: packetgen
+    args:
+      connection:
+        name: "ip6:tcp"
+        address: "::1"
+      packet:
+        network:
+          type: ipv6
+          data:
+            src_ip: "{{ local_ipv6 }}"
+            dst_ip: '{{ resolve_host_ipv6 "localhost" }}'
+        transport:
+          type: tcp
+          data:
+            src_port: "{{ random_port }}"
+            dst_port: "{{ random_port }}"
+            flags:
+              syn: true
+        application:
+          type: raw
+          data:
+            payload: "test"
