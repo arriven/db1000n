@@ -32,10 +32,10 @@ import (
 )
 
 type Packet struct {
-	Link        gopacket.LinkLayer
-	Network     gopacket.NetworkLayer
-	Transport   gopacket.TransportLayer
-	Application gopacket.ApplicationLayer
+	Link      gopacket.LinkLayer
+	Network   gopacket.NetworkLayer
+	Transport gopacket.TransportLayer
+	Payload   gopacket.Layer
 }
 
 type LayerConfig struct {
@@ -44,10 +44,10 @@ type LayerConfig struct {
 }
 
 type PacketConfig struct {
-	Link        LayerConfig
-	Network     LayerConfig
-	Transport   LayerConfig
-	Application LayerConfig
+	Link      LayerConfig
+	Network   LayerConfig
+	Transport LayerConfig
+	Payload   LayerConfig
 }
 
 func (c PacketConfig) Build() (result Packet, err error) {
@@ -63,7 +63,7 @@ func (c PacketConfig) Build() (result Packet, err error) {
 		return Packet{}, err
 	}
 
-	if result.Application, err = BuildApplicationLayer(c.Application); err != nil {
+	if result.Payload, err = BuildPayload(c.Payload); err != nil {
 		return Packet{}, err
 	}
 
@@ -71,7 +71,7 @@ func (c PacketConfig) Build() (result Packet, err error) {
 }
 
 func (p Packet) Serialize(payloadBuf gopacket.SerializeBuffer) (err error) {
-	return SerializeLayers(payloadBuf, p.Link, p.Network, p.Transport, p.Application)
+	return SerializeLayers(payloadBuf, p.Link, p.Network, p.Transport, p.Payload)
 }
 
 func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
