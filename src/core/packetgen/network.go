@@ -19,6 +19,7 @@ func BuildNetworkLayer(c LayerConfig) (gopacket.NetworkLayer, error) {
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return buildIPV4Packet(packetConfig), nil
 	default:
 		return nil, fmt.Errorf("unsupported network layer type %s", c.Type)

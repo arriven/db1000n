@@ -18,12 +18,14 @@ func BuildTransportLayer(c LayerConfig, network gopacket.NetworkLayer) (gopacket
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return buildTCPPacket(packetConfig, network), nil
 	case "udp":
 		var packetConfig UDPPacketConfig
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return buildUDPPacket(packetConfig, network), nil
 	default:
 		return nil, fmt.Errorf("unsupported link layer type %s", c.Type)
@@ -44,6 +46,7 @@ func buildUDPPacket(c UDPPacketConfig, network gopacket.NetworkLayer) *layers.UD
 	if err := result.SetNetworkLayerForChecksum(network); err != nil {
 		return nil
 	}
+
 	return result
 }
 
@@ -93,5 +96,6 @@ func buildTCPPacket(c TCPPacketConfig, network gopacket.NetworkLayer) *layers.TC
 	if err := result.SetNetworkLayerForChecksum(network); err != nil {
 		return nil
 	}
+
 	return result
 }

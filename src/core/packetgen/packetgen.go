@@ -54,29 +54,24 @@ func (c PacketConfig) Build() (result Packet, err error) {
 	if result.Link, err = BuildLinkLayer(c.Link); err != nil {
 		return Packet{}, err
 	}
+
 	if result.Network, err = BuildNetworkLayer(c.Network); err != nil {
 		return Packet{}, err
 	}
+
 	if result.Transport, err = BuildTransportLayer(c.Transport, result.Network); err != nil {
 		return Packet{}, err
 	}
+
 	if result.Application, err = BuildApplicationLayer(c.Application); err != nil {
 		return Packet{}, err
 	}
+
 	return result, nil
 }
 
 func (p Packet) Serialize(payloadBuf gopacket.SerializeBuffer) (err error) {
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	return gopacket.SerializeLayers(payloadBuf, opts,
-		p.Link.(gopacket.SerializableLayer),
-		p.Network.(gopacket.SerializableLayer),
-		p.Transport.(gopacket.SerializableLayer),
-		p.Application.(gopacket.SerializableLayer))
+	return SerializeLayers(payloadBuf, p.Link, p.Network, p.Transport, p.Application)
 }
 
 func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
@@ -85,12 +80,7 @@ func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
 	}
 
 	ipHeaderBuf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	if err = p.Network.(gopacket.SerializableLayer).SerializeTo(ipHeaderBuf, opts); err != nil {
+	if err = Serialize(ipHeaderBuf, p.Network); err != nil {
 		return nil, err
 	}
 
@@ -99,12 +89,8 @@ func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
 
 func (p Packet) IPV6() (ipHeader *ipv6.Header, err error) {
 	ipHeaderBuf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
 
-	if err = p.Network.(gopacket.SerializableLayer).SerializeTo(ipHeaderBuf, opts); err != nil {
+	if err = Serialize(ipHeaderBuf, p.Network); err != nil {
 		return nil, err
 	}
 

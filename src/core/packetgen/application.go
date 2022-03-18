@@ -16,9 +16,11 @@ func BuildApplicationLayer(c LayerConfig) (gopacket.ApplicationLayer, error) {
 		var packetConfig struct {
 			Payload string
 		}
+
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return gopacket.Payload([]byte(packetConfig.Payload)), nil
 	default:
 		return nil, fmt.Errorf("unsupported application layer type %s", c.Type)

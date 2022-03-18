@@ -19,6 +19,7 @@ func BuildLinkLayer(c LayerConfig) (gopacket.LinkLayer, error) {
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return buildEthernetPacket(packetConfig), nil
 	default:
 		return nil, fmt.Errorf("unsupported link layer type %s", c.Type)

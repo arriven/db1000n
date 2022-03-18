@@ -46,6 +46,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 		return nil, err
 	}
+
 	payloadBuf := gopacket.NewSerializeBuffer()
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -96,5 +97,6 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 		trafficMonitor.Add(uint64(len(payloadBuf.Bytes())))
 	}
+
 	return nil, nil
 }
