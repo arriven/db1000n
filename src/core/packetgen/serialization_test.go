@@ -12,6 +12,8 @@ import (
 )
 
 func TestSerialize(t *testing.T) {
+	t.Parallel()
+
 	configTpl := map[string]interface{}{
 		"network": map[string]interface{}{
 			"type": "ipv4",
@@ -39,7 +41,6 @@ func TestSerialize(t *testing.T) {
 	}
 
 	logger := zap.NewExample()
-	defer logger.Sync()
 
 	config := templates.ParseAndExecuteMapStruct(logger, configTpl, nil)
 
@@ -47,6 +48,7 @@ func TestSerialize(t *testing.T) {
 	if err := utils.Decode(config, &packetConfig); err != nil {
 		t.Fatal(err)
 	}
+
 	logger.Debug("deserialized packet config", zap.Any("packet", packetConfig))
 
 	packet, err := packetConfig.Build()
@@ -62,7 +64,12 @@ func TestSerialize(t *testing.T) {
 	logger.Debug("serialized packet", zap.Any("layers", buf.Layers()))
 
 	packetData := gopacket.NewPacket(buf.Bytes(), layers.LayerTypeIPv4, gopacket.Default)
+	if packetData.ErrorLayer() != nil {
+		t.Fatal("error deserializing packet", string(packetData.ErrorLayer().LayerPayload()))
+	}
+
 	logger.Debug("deserialized packet data", zap.Any("packet", packetData.String()))
+
 	if string(packetData.ApplicationLayer().Payload()) != "test" {
 		t.Fatal("bad payload", string(packetData.ApplicationLayer().Payload()))
 	}
