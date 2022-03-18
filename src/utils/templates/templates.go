@@ -17,8 +17,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-
-	"github.com/Arriven/db1000n/src/core/packetgen"
 )
 
 var proxiesURL = "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json"
@@ -124,14 +122,14 @@ func Parse(input string) (*template.Template, error) {
 		"random_uuid":          randomUUID,
 		"random_int_n":         rand.Intn,
 		"random_int":           rand.Int,
-		"random_payload":       packetgen.RandomPayload,
-		"random_ip":            packetgen.RandomIP,
-		"random_port":          packetgen.RandomPort,
-		"random_mac_addr":      packetgen.RandomMacAddr,
+		"random_payload":       RandomPayload,
+		"random_ip":            RandomIP,
+		"random_port":          RandomPort,
+		"random_mac_addr":      RandomMacAddr,
 		"random_user_agent":    uarand.GetRandom,
-		"local_ip":             packetgen.LocalIP,
-		"local_mac_addr":       packetgen.LocalMacAddres,
-		"resolve_host":         packetgen.ResolveHost,
+		"local_ip":             LocalIP,
+		"local_mac_addr":       LocalMacAddres,
+		"resolve_host":         ResolveHost,
 		"base64_encode":        base64.StdEncoding.EncodeToString,
 		"base64_decode":        base64.StdEncoding.DecodeString,
 		"json_encode":          json.Marshal,

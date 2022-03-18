@@ -5,11 +5,6 @@ jobs:
         name: "ip4:tcp"
         address: "0.0.0.0"
       packet:
-        link:
-          type: ethernet
-          data:
-            src_mac: "{{ random_mac_addr }}"
-            dst_mac: "{{ random_mac_addr }}"
         network:
           type: ipv4
           data:
