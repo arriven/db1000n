@@ -15,6 +15,10 @@ func SerializeLayers(payloadBuf gopacket.SerializeBuffer, layers ...gopacket.Lay
 	serializableLayers := make([]gopacket.SerializableLayer, 0, len(layers))
 
 	for _, layer := range layers {
+		if layer == nil {
+			continue
+		}
+
 		serializableLayer, err := toSerializable(layer)
 		if err != nil {
 			return err
