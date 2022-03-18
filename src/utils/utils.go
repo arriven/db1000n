@@ -86,7 +86,7 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 
 // Decode is an alias to a mapstructure.NewDecoder({Squash: true}).Decode()
 func Decode(input interface{}, output interface{}) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, Result: output})
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, Result: output})
 	if err != nil {
 		log.Printf("Error parsing job config: %v", err)
 

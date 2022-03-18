@@ -2,12 +2,10 @@ package jobs
 
 import (
 	"context"
-	"log"
-	"strconv"
 	"time"
 
+	"github.com/google/gopacket"
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
@@ -23,10 +21,8 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 	type packetgenJobConfig struct {
 		BasicJobConfig
-		Packet  map[string]interface{}
-		Network packetgen.NetworkConfig
-		Host    string
-		Port    string
+		Packet     map[string]interface{}
+		Connection packetgen.ConnectionConfig
 	}
 
 	var jobConfig packetgenJobConfig
@@ -37,21 +33,11 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		return nil, err
 	}
 
-	host := templates.ParseAndExecute(logger, jobConfig.Host, nil)
-
-	port, err := strconv.Atoi(templates.ParseAndExecute(logger, jobConfig.Port, nil))
+	rawConn, err := packetgen.OpenRawConnectionV4(jobConfig.Connection)
 	if err != nil {
-		logger.Debug("error parsing port", zap.Error(err))
+		logger.Debug("error building raw connection", zap.Error(err))
 
 		return nil, err
-	}
-
-	if jobConfig.Network.Address == "" {
-		jobConfig.Network.Address = "0.0.0.0"
-	}
-
-	if jobConfig.Network.Name == "" {
-		jobConfig.Network.Name = "ip4:tcp"
 	}
 
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
@@ -60,63 +46,55 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 		return nil, err
 	}
-
-	if !isInEncryptedContext(ctx) {
-		log.Printf("Attacking %v:%v", host, port)
-	}
-
-	protocolLabelValue := "tcp"
-	if _, ok := jobConfig.Packet["udp"]; ok {
-		protocolLabelValue = "udp"
-	}
-
-	const base10 = 10
-
-	hostPort := host + ":" + strconv.FormatInt(int64(port), base10)
-
-	rawConn, err := packetgen.OpenRawConnection(jobConfig.Network)
-	if err != nil {
-		logger.Debug("error building raw connection", zap.Error(err))
-
-		return nil, err
-	}
+	payloadBuf := gopacket.NewSerializeBuffer()
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
+		if err := payloadBuf.Clear(); err != nil {
+			logger.Debug("error clearing payload buffer", zap.Error(err))
+
+			return nil, err
+		}
+
 		packetConfigRaw := packetTpl.Execute(logger, ctx)
 		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
 		var packetConfig packetgen.PacketConfig
-		if err := mapstructure.WeakDecode(packetConfigRaw, &packetConfig); err != nil {
+		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
 			logger.Debug("error parsing packet config", zap.Error(err))
 
 			return nil, err
 		}
 
-		n, err := packetgen.SendPacket(packetConfig, rawConn, host, port)
+		packet, err := packetConfig.Build()
 		if err != nil {
-			logger.Debug("error sending packet", zap.Error(err))
-			metrics.IncPacketgen(
-				host,
-				hostPort,
-				protocolLabelValue,
-				metrics.StatusFail,
-				globalConfig.ClientID)
+			logger.Debug("error building packet", zap.Error(err))
 
 			return nil, err
 		}
 
-		metrics.IncPacketgen(
-			host,
-			hostPort,
-			protocolLabelValue,
-			metrics.StatusSuccess,
-			globalConfig.ClientID)
+		if err = packet.Serialize(payloadBuf); err != nil {
+			logger.Debug("error serializing packet", zap.Error(err))
 
-		trafficMonitor.Add(uint64(n))
+			return nil, err
+		}
+
+		ipHeader, err := packet.IPV4()
+		if err != nil {
+			logger.Debug("error building ip header", zap.Error(err))
+
+			return nil, err
+		}
+
+		if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
+			logger.Debug("error sending packet", zap.Error(err))
+
+			return nil, err
+		}
+
+		trafficMonitor.Add(uint64(len(payloadBuf.Bytes())))
 	}
-
 	return nil, nil
 }

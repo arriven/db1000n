@@ -24,198 +24,89 @@
 package packetgen
 
 import (
-	"net"
+	"fmt"
 
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 )
 
-// NetworkConfig describes which network to use when sending packets
-type NetworkConfig struct {
-	Name    string
-	Address string
+type Packet struct {
+	Link        gopacket.LinkLayer
+	Network     gopacket.NetworkLayer
+	Transport   gopacket.TransportLayer
+	Application gopacket.ApplicationLayer
 }
 
-// PacketConfig stores full packet configuration
+type LayerConfig struct {
+	Type string
+	Data map[string]interface{}
+}
+
 type PacketConfig struct {
-	Ethernet EthernetPacketConfig
-	IP       IPPacketConfig
-	TCP      *TCPPacketConfig
-	UDP      *UDPPacketConfig
-	Payload  string
+	Link        LayerConfig
+	Network     LayerConfig
+	Transport   LayerConfig
+	Application LayerConfig
 }
 
-// BuildPacket is used to build and serialize packet based on the provided configuration
-func BuildPacket(c PacketConfig) (payloadBuf gopacket.SerializeBuffer, ipHeader *ipv4.Header, err error) {
-	var (
-		udpPacket *layers.UDP
-		tcpPacket *layers.TCP
-	)
+func (c PacketConfig) Build() (result Packet, err error) {
+	if result.Link, err = BuildLinkLayer(c.Link); err != nil {
+		return Packet{}, err
+	}
+	if result.Network, err = BuildNetworkLayer(c.Network); err != nil {
+		return Packet{}, err
+	}
+	if result.Transport, err = BuildTransportLayer(c.Transport, result.Network); err != nil {
+		return Packet{}, err
+	}
+	if result.Application, err = BuildApplicationLayer(c.Application); err != nil {
+		return Packet{}, err
+	}
+	return result, nil
+}
 
-	ipPacket := buildIPPacket(c.IP)
-
-	switch {
-	case c.UDP != nil:
-		udpPacket = buildUDPPacket(*c.UDP)
-		if err = udpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			return nil, nil, err
-		}
-	case c.TCP != nil:
-		tcpPacket = buildTCPPacket(*c.TCP)
-		if err = tcpPacket.SetNetworkLayerForChecksum(ipPacket); err != nil {
-			return nil, nil, err
-		}
+func (p Packet) Serialize(payloadBuf gopacket.SerializeBuffer) (err error) {
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
 	}
 
-	// Serialize.  Note:  we only serialize the TCP layer, because the
-	// socket we get with net.ListenPacket wraps our data in IPv4 packets
-	// already.  We do still need the IP layer to compute checksums
-	// correctly, though.
+	return gopacket.SerializeLayers(payloadBuf, opts,
+		p.Link.(gopacket.SerializableLayer),
+		p.Network.(gopacket.SerializableLayer),
+		p.Transport.(gopacket.SerializableLayer),
+		p.Application.(gopacket.SerializableLayer))
+}
+
+func (p Packet) IPV4() (ipHeader *ipv4.Header, err error) {
+	if p.Network == nil {
+		return nil, fmt.Errorf("no network layer present in packet")
+	}
+
 	ipHeaderBuf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{
 		FixLengths:       true,
 		ComputeChecksums: true,
 	}
 
-	if err = ipPacket.SerializeTo(ipHeaderBuf, opts); err != nil {
-		return nil, nil, err
-	}
-
-	if ipHeader, err = ipv4.ParseHeader(ipHeaderBuf.Bytes()); err != nil {
-		return nil, nil, err
-	}
-
-	ethernetLayer := buildEthernetPacket(c.Ethernet)
-	payloadBuf = gopacket.NewSerializeBuffer()
-	pyl := gopacket.Payload(c.Payload)
-
-	if udpPacket != nil {
-		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, udpPacket, pyl); err != nil {
-			return nil, nil, err
-		}
-	} else if tcpPacket != nil {
-		if err = gopacket.SerializeLayers(payloadBuf, opts, ethernetLayer, tcpPacket, pyl); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return payloadBuf, ipHeader, nil
-}
-
-// OpenRawConnection opens a raw ip network connection based on the provided config
-func OpenRawConnection(c NetworkConfig) (*ipv4.RawConn, error) {
-	packetConn, err := net.ListenPacket(c.Name, c.Address)
-	if err != nil {
+	if err = p.Network.(gopacket.SerializableLayer).SerializeTo(ipHeaderBuf, opts); err != nil {
 		return nil, err
 	}
 
-	return ipv4.NewRawConn(packetConn)
+	return ipv4.ParseHeader(ipHeaderBuf.Bytes())
 }
 
-// SendPacket is used to generate and send the packet over the network
-func SendPacket(c PacketConfig, rawConn *ipv4.RawConn, destinationHost string, destinationPort int) (int, error) {
-	payloadBuf, ipHeader, err := BuildPacket(c)
-	if err != nil {
-		return 0, err
+func (p Packet) IPV6() (ipHeader *ipv6.Header, err error) {
+	ipHeaderBuf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
 	}
 
-	if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
-		return 0, err
+	if err = p.Network.(gopacket.SerializableLayer).SerializeTo(ipHeaderBuf, opts); err != nil {
+		return nil, err
 	}
 
-	return len(payloadBuf.Bytes()), nil
-}
-
-// IPPacketConfig describes ip layer configuration
-type IPPacketConfig struct {
-	SrcIP string `mapstructure:"src_ip"`
-	DstIP string `mapstructure:"dst_ip"`
-}
-
-// buildIpPacket generates a layers.IPv4 and returns it with source IP address and destination IP address
-func buildIPPacket(c IPPacketConfig) *layers.IPv4 {
-	const ipv4 = 4
-
-	return &layers.IPv4{
-		SrcIP:    net.ParseIP(c.SrcIP).To4(),
-		DstIP:    net.ParseIP(c.DstIP).To4(),
-		Version:  ipv4,
-		Protocol: layers.IPProtocolTCP,
-	}
-}
-
-// UDPPacketConfig describes udp layer configuration
-type UDPPacketConfig struct {
-	SrcPort int `mapstructure:"src_port,string"`
-	DstPort int `mapstructure:"dst_port,string"`
-}
-
-func buildUDPPacket(c UDPPacketConfig) *layers.UDP {
-	return &layers.UDP{
-		SrcPort: layers.UDPPort(c.SrcPort),
-		DstPort: layers.UDPPort(c.DstPort),
-	}
-}
-
-// TCPFlagsConfig stores flags to be set on tcp layer
-type TCPFlagsConfig struct {
-	SYN bool
-	ACK bool
-	FIN bool
-	RST bool
-	PSH bool
-	URG bool
-	ECE bool
-	CWR bool
-	NS  bool
-}
-
-// TCPPacketConfig describes tcp layer configuration
-type TCPPacketConfig struct {
-	SrcPort int `mapstructure:"src_port,string"`
-	DstPort int `mapstructure:"dst_port,string"`
-	Seq     uint32
-	Ack     uint32
-	Window  uint16
-	Urgent  uint16
-	Flags   TCPFlagsConfig
-}
-
-// buildTCPPacket generates a layers.TCP and returns it with source port and destination port
-func buildTCPPacket(c TCPPacketConfig) *layers.TCP {
-	return &layers.TCP{
-		SrcPort: layers.TCPPort(c.SrcPort),
-		DstPort: layers.TCPPort(c.DstPort),
-		Window:  c.Window,
-		Urgent:  c.Urgent,
-		Seq:     c.Seq,
-		Ack:     c.Ack,
-		SYN:     c.Flags.SYN,
-		ACK:     c.Flags.ACK,
-		FIN:     c.Flags.FIN,
-		RST:     c.Flags.RST,
-		PSH:     c.Flags.PSH,
-		URG:     c.Flags.URG,
-		ECE:     c.Flags.ECE,
-		CWR:     c.Flags.CWR,
-		NS:      c.Flags.NS,
-	}
-}
-
-// EthernetPacketConfig describes ethernet layer configuration
-type EthernetPacketConfig struct {
-	SrcMAC string `mapstructure:"src_mac"`
-	DstMAC string `mapstructure:"dst_mac"`
-}
-
-// buildEthernetPacket generates an layers.Ethernet and returns it with source MAC address and destination MAC address
-func buildEthernetPacket(c EthernetPacketConfig) *layers.Ethernet {
-	srcMac := net.HardwareAddr(c.SrcMAC)
-	dstMac := net.HardwareAddr(c.DstMAC)
-
-	return &layers.Ethernet{
-		SrcMAC: net.HardwareAddr{srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]},
-		DstMAC: net.HardwareAddr{dstMac[0], dstMac[1], dstMac[2], dstMac[3], dstMac[4], dstMac[5]},
-	}
+	return ipv6.ParseHeader(ipHeaderBuf.Bytes())
 }
