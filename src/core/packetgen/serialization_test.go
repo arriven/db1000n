@@ -62,7 +62,7 @@ func TestSerialize(t *testing.T) {
 	logger.Debug("serialized packet", zap.Any("layers", buf.Layers()))
 
 	packetData := gopacket.NewPacket(buf.Bytes(), layers.LayerTypeIPv4, gopacket.Default)
-	logger.Info("deserialized packet data", zap.Any("packet", packetData.String()))
+	logger.Debug("deserialized packet data", zap.Any("packet", packetData.String()))
 	if string(packetData.ApplicationLayer().Payload()) != "test" {
 		t.Fatal("bad payload", string(packetData.ApplicationLayer().Payload()))
 	}
