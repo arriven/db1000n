@@ -60,8 +60,7 @@ func LocalMacAddres() string {
 	return ""
 }
 
-// LocalIP returns the first non loopback local IP of the host
-func LocalIP() string {
+func localIP(filter func(ip net.IP) bool) string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return ""
@@ -70,7 +69,7 @@ func LocalIP() string {
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
+			if filter(ipnet.IP) {
 				return ipnet.IP.String()
 			}
 		}
@@ -79,18 +78,37 @@ func LocalIP() string {
 	return ""
 }
 
-// ResolveHost function gets a string and returns the ip address
-func ResolveHost(host string) (string, error) {
+func resolveHost(host string, filter func(ip net.IP) bool) (string, error) {
 	addrs, err := net.LookupIP(host)
 	if err != nil {
 		return "", err
 	}
 
 	for _, addr := range addrs {
-		if addr.To4() != nil {
+		if filter(addr) {
 			return addr.String(), nil
 		}
 	}
 
 	return "", fmt.Errorf("no addrs found for host %v", host)
+}
+
+// LocalIPV4 returns the first non loopback local ipv4 of the host
+func LocalIPV4() string {
+	return localIP(func(ip net.IP) bool { return ip.To4() != nil })
+}
+
+// ResolveHostIPV4 function gets a string and returns the ipv4 address
+func ResolveHostIPV4(host string) (string, error) {
+	return resolveHost(host, func(ip net.IP) bool { return ip.To4() != nil })
+}
+
+// LocalIPV6 returns the first non loopback local ipv4 of the host
+func LocalIPV6() string {
+	return localIP(func(ip net.IP) bool { return ip.To4() == nil })
+}
+
+// ResolveHostIPV6 function gets a string and returns the ipv4 address
+func ResolveHostIPV6(host string) (string, error) {
+	return resolveHost(host, func(ip net.IP) bool { return ip.To4() == nil })
 }

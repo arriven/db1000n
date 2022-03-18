@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/google/gopacket"
@@ -33,7 +34,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		return nil, err
 	}
 
-	rawConn, err := packetgen.OpenRawConnectionV4(jobConfig.Connection)
+	rawConn, err := packetgen.OpenRawConnection(jobConfig.Connection)
 	if err != nil {
 		logger.Debug("error building raw connection", zap.Error(err))
 
@@ -82,14 +83,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 			return nil, err
 		}
 
-		ipHeader, err := packet.IPV4()
-		if err != nil {
-			logger.Debug("error building ip header", zap.Error(err))
-
-			return nil, err
-		}
-
-		if err = rawConn.WriteTo(ipHeader, payloadBuf.Bytes(), nil); err != nil {
+		if _, err = rawConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()}); err != nil {
 			logger.Debug("error sending packet", zap.Error(err))
 
 			return nil, err

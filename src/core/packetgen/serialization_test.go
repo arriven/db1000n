@@ -16,10 +16,10 @@ func TestSerialize(t *testing.T) {
 
 	configTpl := map[string]interface{}{
 		"network": map[string]interface{}{
-			"type": "ipv4",
+			"type": "ipv6",
 			"data": map[string]interface{}{
-				"src_ip": "{{ local_ip }}",
-				"dst_ip": "{{ local_ip }}",
+				"src_ip": "{{ local_ipv6 }}",
+				"dst_ip": "{{ local_ipv6 }}",
 			},
 		},
 		"transport": map[string]interface{}{
@@ -63,7 +63,7 @@ func TestSerialize(t *testing.T) {
 
 	logger.Debug("serialized packet", zap.Any("layers", buf.Layers()))
 
-	packetData := gopacket.NewPacket(buf.Bytes(), layers.LayerTypeIPv4, gopacket.Default)
+	packetData := gopacket.NewPacket(buf.Bytes(), layers.LayerTypeIPv6, gopacket.Default)
 	if packetData.ErrorLayer() != nil {
 		t.Fatal("error deserializing packet", string(packetData.ErrorLayer().LayerPayload()))
 	}
