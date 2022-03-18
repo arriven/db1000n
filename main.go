@@ -122,9 +122,15 @@ func main() {
 		templates.SetProxiesURL(*proxiesURL)
 	}
 
+	country := ""
+
+	var isCountryAllowed bool
+
 	if *countryList != "" {
 		countries := strings.Split(*countryList, ",")
-		if !utils.CheckCountry(countries, *strictCountryCheck) {
+		isCountryAllowed, country = utils.CheckCountry(countries, *strictCountryCheck)
+
+		if !isCountryAllowed {
 			return
 		}
 	}
@@ -132,7 +138,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	clientID := uuid.NewString()
 	if *prometheusOn {
+		metrics.InitMetrics(clientID, country)
+
 		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
 	}
 
@@ -146,7 +155,7 @@ func main() {
 			ScaleFactor:   *scaleFactor,
 			SkipEncrypted: *skipEncrytedJobs,
 			Debug:         *debug,
-			ClientID:      uuid.NewString(),
+			ClientID:      clientID,
 		},
 	})
 	if err != nil {

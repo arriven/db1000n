@@ -11,7 +11,7 @@ import (
 )
 
 // CheckCountry allows to check which country the app is running from
-func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) bool {
+func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
 	type IPInfo struct {
 		Country string `json:"country"`
 		IP      string `json:"ip"`
@@ -73,10 +73,10 @@ func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) bool {
 		if strictCountryCheck {
 			log.Println("Strict country check mode is enabled, exiting")
 
-			return false
+			return false, ""
 		}
 
-		return true
+		return true, ""
 	}
 
 	for _, country := range countriesToAvoid {
@@ -87,14 +87,14 @@ func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) bool {
 			if strictCountryCheck {
 				log.Println("Strict country check mode is enabled, exiting")
 
-				return false
+				return false, ipInfo.Country
 			}
 
-			return true
+			return true, ipInfo.Country
 		}
 	}
 
 	log.Printf("Current country: %s (%s)", ipInfo.Country, ipInfo.IP)
 
-	return true
+	return true, ipInfo.Country
 }
