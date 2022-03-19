@@ -35,6 +35,7 @@ func BuildPayload(c LayerConfig) (gopacket.Layer, error) {
 		if err := utils.Decode(c.Data, &packetConfig); err != nil {
 			return nil, err
 		}
+
 		return buildDNSPacket(packetConfig), nil
 	default:
 		return nil, fmt.Errorf("unsupported layer type %s", c.Type)
@@ -56,7 +57,7 @@ func buildICMPV4Packet(c ICMPV4PacketConfig) *layers.ICMPv4 {
 }
 
 type DNSPacketConfig struct {
-	Id      uint16
+	ID      uint16
 	Qr      bool
 	OpCode  uint8 `mapstructure:"code"`
 	QDCount uint16
@@ -64,9 +65,9 @@ type DNSPacketConfig struct {
 
 func buildDNSPacket(c DNSPacketConfig) *layers.DNS {
 	return &layers.DNS{
-		ID:      c.Id,
+		ID:      c.ID,
 		QR:      c.Qr,
 		OpCode:  layers.DNSOpCode(c.OpCode),
-		QDCount: uint16(c.QDCount),
+		QDCount: c.QDCount,
 	}
 }
