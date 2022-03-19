@@ -50,6 +50,7 @@ func New(cfg *Config) (*Runner, error) {
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
+	ctx = context.WithValue(ctx, templates.ContextKey("global"), r.config.Global)
 	clientID := uuid.MustParse(r.config.Global.ClientID)
 
 	metrics.IncClient()
@@ -101,7 +102,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 	var jobInstancesCount int
 
 	for i := range cfg.Jobs {
-		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(logger, cfg.Jobs[i].Filter, clientID.ID())) != "true" {
+		if len(cfg.Jobs[i].Filter) != 0 && strings.TrimSpace(templates.ParseAndExecute(logger, cfg.Jobs[i].Filter, ctx)) != "true" {
 			logger.Info("There is a filter defined for a job but this client doesn't pass it - skip the job")
 
 			continue

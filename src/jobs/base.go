@@ -15,11 +15,12 @@ type Args = map[string]interface{}
 
 // GlobalConfig is a struct meant to pass commandline arguments to every job
 type GlobalConfig struct {
-	ProxyURL      string
-	ScaleFactor   int
-	SkipEncrypted bool
-	Debug         bool
-	ClientID      string
+	ProxyURL            string
+	ScaleFactor         int
+	SkipEncrypted       bool
+	Debug               bool
+	ClientID            string
+	EnablePrimitiveJobs bool
 }
 
 const (
