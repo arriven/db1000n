@@ -56,15 +56,17 @@ func buildICMPV4Packet(c ICMPV4PacketConfig) *layers.ICMPv4 {
 }
 
 type DNSPacketConfig struct {
-	Id     uint16
-	Qr     bool
-	OpCode uint8 `mapstructure:"code"`
+	Id      uint16
+	Qr      bool
+	OpCode  uint8 `mapstructure:"code"`
+	QDCount uint16
 }
 
 func buildDNSPacket(c DNSPacketConfig) *layers.DNS {
 	return &layers.DNS{
-		ID:     c.Id,
-		QR:     c.Qr,
-		OpCode: layers.DNSOpCode(c.OpCode),
+		ID:      c.Id,
+		QR:      c.Qr,
+		OpCode:  layers.DNSOpCode(c.OpCode),
+		QDCount: uint16(c.QDCount),
 	}
 }
