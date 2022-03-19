@@ -75,7 +75,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 					cancel()
 				}
 
-				cancel = r.runJobs(ctx, logger, cfg, clientID)
+				cancel = r.runJobs(ctx, logger, cfg)
 			}
 		} else {
 			log.Println("The config has not changed. Keep calm and carry on!")
@@ -96,7 +96,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	}
 }
 
-func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Config, clientID uuid.UUID) (cancel context.CancelFunc) {
+func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Config) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
