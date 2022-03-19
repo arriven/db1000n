@@ -9,7 +9,6 @@
     },
     {
       "type": "http",
-      "filter": "{{ eq (mod . 2) 0 }}",
       "args": {
         "request": {
           "method": "GET",
@@ -35,6 +34,7 @@
     },
     {
       "type": "udp",
+      "filter": "{{ (.Value (ctx_key \"global\")).EnablePrimitiveJobs }}",
       "count": 100,
       "args": {
         "address": "localhost:9191",
@@ -55,6 +55,7 @@
     },
     {
       "type": "dns-blast",
+      "filter": "{{ (.Value (ctx_key \"global\")).EnablePrimitiveJobs }}",
       "args": {
         "root_domain": "example.com",
         "protocol": "udp",
@@ -71,6 +72,7 @@
     },
     {
       "type": "packetgen",
+      "filter": "{{ (.Value (ctx_key \"global\")).EnablePrimitiveJobs }}",
       "args": {
         "host": "{{ resolve_host \"localhost\" }}",
         "port": "{{ random_port }}",
