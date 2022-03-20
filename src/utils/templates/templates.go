@@ -70,6 +70,7 @@ func cookieString(cookies map[string]string) string {
 func toStringSlice(input string) (output []string, err error) {
 	// yaml is superset of json so this also handles json
 	err = yaml.Unmarshal([]byte(input), &output)
+
 	return output, err
 }
 
