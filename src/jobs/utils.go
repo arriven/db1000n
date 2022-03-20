@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/net/proxy"
+	"math/rand"
+	"net"
+	"net/url"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
@@ -128,4 +133,19 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 	}
 
 	return job(context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true), zap.NewNop(), globalConfig, jobCfg.Args)
+}
+
+func getProxyConnection(proxyURLs string, addr string) (dialer net.Conn, err error) {
+	client := proxy.FromEnvironmentUsing(&net.Dialer{})
+
+	if proxyURLs != "" {
+		proxyURLs := strings.Split(proxyURLs, ",")
+		u, err := url.Parse(proxyURLs[rand.Intn(len(proxyURLs))])
+		if err != nil {
+			return nil, err
+		}
+		client, err = proxy.FromURL(u, &net.Dialer{})
+	}
+
+	return client.Dial("tcp", addr)
 }

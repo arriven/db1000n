@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -122,4 +123,18 @@ func OpenBrowser(url string) {
 	}
 
 	log.Printf("Please open %s", url)
+}
+
+func ParseProxyUrl(proxyAddr string) (*url.URL, error) {
+	if proxyAddr != "" {
+		u, err := url.Parse(proxyAddr)
+		if err != nil {
+			return nil, err
+		}
+		switch u.Scheme {
+		case "socks5", "socks5h", "http":
+			return u, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid scheme, should be one of http:// or socks5://")
 }

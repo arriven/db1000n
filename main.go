@@ -117,6 +117,13 @@ func main() {
 		log.Fatal("Invalid value for --prometheus_gateways")
 	}
 
+	if *systemProxy != "" {
+		_, err = utils.ParseProxyUrl(*systemProxy)
+		if err != nil {
+			log.Fatalf("Invalid value for --proxy: %v", err)
+		}
+	}
+
 	country := ""
 
 	var isCountryAllowed bool
