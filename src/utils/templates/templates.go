@@ -25,9 +25,13 @@ func getProxylistURL() string {
 	return proxiesURL
 }
 
-// SetProxiesURL is used to override the default proxylist url
-func SetProxiesURL(url string) {
-	proxiesURL = url
+// SetProxiesURL is used to override the default proxylist url with a non-empty url.
+func SetProxiesURL(url *string) {
+	if *url == "" {
+		return
+	}
+
+	proxiesURL = *url
 }
 
 func getProxylist() (urls []string) {

@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -12,89 +11,80 @@ import (
 
 // CheckCountry allows to check which country the app is running from
 func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
-	type IPInfo struct {
-		Country string `json:"country"`
-		IP      string `json:"ip"`
-	}
+	const maxFetchRetries = 3
 
-	ipInfo := IPInfo{}
+	var country, ip string
 
-	const ipCheckerURI = "https://api.myip.com/"
-
-	const requestTimeout = 3 * time.Second
-
-	retries := 0
-	for ipInfo.IP == "" && retries <= 3 {
+	for retries := 1; ; retries++ {
 		log.Printf("Checking IP address, attempt #%d", retries)
 
-		time.Sleep(1 * time.Second)
-		retries++
+		var err error
+		if country, ip, err = fetchLocationInfo(); err != nil {
+			if retries < maxFetchRetries {
+				time.Sleep(time.Second)
 
-		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-
-		defer cancel()
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
-		if err != nil {
-			continue
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-
-			continue
-		}
-
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				log.Printf("Can't close connection to: %s", ipCheckerURI)
-
-				return
+				continue
 			}
-		}()
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-
-			continue
-		}
-
-		err = json.Unmarshal(body, &ipInfo)
-		if err != nil {
-			log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
-
-			continue
-		}
-	}
-
-	if ipInfo.Country == "" {
-		if strictCountryCheck {
-			log.Println("Strict country check mode is enabled, exiting")
-
-			return false, ""
-		}
-
-		return true, ""
-	}
-
-	for _, country := range countriesToAvoid {
-		if ipInfo.Country == strings.TrimSpace(country) {
-			log.Printf("Current country: %s. You might need to enable VPN.", ipInfo.Country)
-			OpenBrowser("https://arriven.github.io/db1000n/vpn/")
 
 			if strictCountryCheck {
-				log.Println("Strict country check mode is enabled, exiting")
+				log.Printf("Failed to check the country info in %d attempts while in strict mode", maxFetchRetries)
 
-				return false, ipInfo.Country
+				return false, ""
 			}
 
-			return true, ipInfo.Country
+			return true, ""
+		}
+
+		break
+	}
+
+	log.Printf("Current country: %s (%s)", country, ip)
+
+	for i := range countriesToAvoid {
+		if country == strings.TrimSpace(countriesToAvoid[i]) {
+			log.Println("You might need to enable VPN.")
+			openBrowser("https://arriven.github.io/db1000n/vpn/")
+
+			return !strictCountryCheck, country
 		}
 	}
 
-	log.Printf("Current country: %s (%s)", ipInfo.Country, ipInfo.IP)
+	return true, country
+}
 
-	return true, ipInfo.Country
+func fetchLocationInfo() (country, ip string, err error) {
+	const (
+		ipCheckerURI   = "https://api.myip.com/"
+		requestTimeout = 3 * time.Second
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
+	if err != nil {
+		return "", "", err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
+		return "", "", err
+	}
+
+	defer resp.Body.Close()
+
+	ipInfo := struct {
+		Country string `json:"country"`
+		IP      string `json:"ip"`
+	}{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&ipInfo); err != nil {
+		log.Println("Can't check users country. Please manually check that VPN is enabled or that you have non Ukrainian IP address.")
+
+		return "", "", err
+	}
+
+	return ipInfo.Country, ipInfo.IP, nil
 }

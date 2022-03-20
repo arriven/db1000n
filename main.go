@@ -48,37 +48,48 @@ import (
 	"github.com/Arriven/db1000n/src/utils/updater"
 )
 
-const (
-	DefaultUpdateCheckFrequency = 24 * time.Hour
-)
-
 func main() {
+	const defaultUpdateCheckFrequency = 24 * time.Hour
+
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
+	// Config
 	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
 	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
+	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
 	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute), "refresh timeout for updating the config")
-	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
-	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
-	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
-	help := flag.Bool("h", false, "print help message and exit")
+
+	// Proxying
 	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
 	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
-	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
+
+	// Jobs
+	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
 	skipEncrytedJobs := flag.Bool("skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false), "set to true if you want to only run plaintext jobs from the config for security considerations")
 	enablePrimitiveJobs := flag.Bool("enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true), "set to true if you want to run primitive jobs that are less resource-efficient")
+
+	// Prometheus
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true), "Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
 	prometheusPushGateways := flag.String("prometheus_gateways", utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"), "Comma separated list of prometheus push gateways")
+
+	// Auto-update
 	doAutoUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false), "Enable the application automatic updates on the startup")
 	doRestartOnUpdate := flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true), "Allows application to restart upon successful update (ignored if auto-update is disabled)")
 	skipUpdateCheckOnStart := flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false), "Allows to skip the update check at the startup (usually set automatically by the previous version)")
-	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency", utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", DefaultUpdateCheckFrequency), "How often to run auto-update checks")
-	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false), "enable strict country check; will also exit if IP can't be determined")
-	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
+	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency", utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", defaultUpdateCheckFrequency), "How often to run auto-update checks")
 	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
 	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"), "Destination config file to write (only applies if updater-mode is enabled")
+
+	// Country check
+	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
+	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false), "enable strict country check; will also exit if IP can't be determined")
+
+	// Misc
+	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
+	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
+	help := flag.Bool("h", false, "print help message and exit")
 
 	flag.Parse()
 
@@ -88,16 +99,9 @@ func main() {
 		return
 	}
 
-	logger, err := zap.NewProduction()
+	logger, err := newZapLogger(*debug)
 	if err != nil {
 		log.Fatal("failed to create zap logger", err)
-	}
-
-	if *debug {
-		logger, err = zap.NewDevelopment()
-		if err != nil {
-			log.Fatal("failed to create zap logger", err)
-		}
 	}
 
 	configPathsArray := strings.Split(*configPaths, ",")
@@ -114,37 +118,15 @@ func main() {
 
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
+	templates.SetProxiesURL(proxiesURL)
 
-	if !metrics.ValidatePrometheusPushGateways(*prometheusPushGateways) {
-		log.Fatal("Invalid value for --prometheus_gateways")
-	}
-
-	if *proxiesURL != "" {
-		templates.SetProxiesURL(*proxiesURL)
-	}
-
-	country := ""
-
-	var isCountryAllowed bool
-
-	if *countryList != "" {
-		countries := strings.Split(*countryList, ",")
-		isCountryAllowed, country = utils.CheckCountry(countries, *strictCountryCheck)
-
-		if !isCountryAllowed {
-			return
-		}
-	}
+	clientID := uuid.NewString()
+	country := checkCountryOrFail(strings.Split(*countryList, ","), *strictCountryCheck)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	clientID := uuid.NewString()
-	if *prometheusOn {
-		metrics.InitMetrics(clientID, country)
-
-		go metrics.ExportPrometheusMetrics(ctx, *prometheusPushGateways)
-	}
+	initMetricsOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
 
 	r, err := runner.New(&runner.Config{
 		ConfigPaths:    configPathsArray,
@@ -164,20 +146,16 @@ func main() {
 		log.Panicf("Error initializing runner: %v", err)
 	}
 
-	go func() {
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs,
-			syscall.SIGTERM,
-			syscall.SIGABRT,
-			syscall.SIGHUP,
-			syscall.SIGINT,
-		)
-		<-sigs
-		log.Println("Terminating")
-		cancel()
-	}()
-
+	go cancelOnSignal(cancel)
 	r.Run(ctx, logger)
+}
+
+func newZapLogger(debug bool) (*zap.Logger, error) {
+	if debug {
+		return zap.NewDevelopment()
+	}
+
+	return zap.NewProduction()
 }
 
 func setUpPprof(pprof string, debug bool) {
@@ -201,11 +179,32 @@ func setUpPprof(pprof string, debug bool) {
 	}()
 }
 
+func checkCountryOrFail(blacklist []string, strict bool) string {
+	isCountryAllowed, country := utils.CheckCountry(blacklist, strict)
+	if !isCountryAllowed {
+		log.Fatalf("%q is not an allowed country, exiting", country)
+	}
+
+	return country
+}
+
+func initMetricsOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, clientID, country string) {
+	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
+		log.Fatal("Invalid value for --prometheus_gateways")
+	}
+
+	if prometheusOn {
+		metrics.InitMetrics(clientID, country)
+
+		go metrics.ExportPrometheusMetrics(ctx, prometheusPushGateways)
+	}
+}
+
 func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateCheckFrequency time.Duration) {
 	if !skipUpdateCheckOnStart {
 		runUpdate(doRestartOnUpdate)
 	} else {
-		log.Printf("Version update on startup is skipped, next update check is scheduled in %s",
+		log.Printf("Version update on startup is skipped, next update check is scheduled in %v",
 			autoUpdateCheckFrequency)
 	}
 
@@ -245,7 +244,20 @@ func runUpdate(doRestartOnUpdate bool) {
 	log.Println("Auto restart is enabled, restarting the application to run a new version")
 
 	if err = ota.Restart("-skip-update-check-on-start"); err != nil {
-		log.Printf("Failed to restart the application after the update to the new version: %s", err)
+		log.Printf("Failed to restart the application after the update to the new version: %v", err)
 		log.Println("Restart the application manually to apply changes!")
 	}
+}
+
+func cancelOnSignal(cancel context.CancelFunc) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs,
+		syscall.SIGTERM,
+		syscall.SIGABRT,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+	)
+	<-sigs
+	log.Println("Terminating")
+	cancel()
 }

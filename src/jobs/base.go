@@ -45,38 +45,23 @@ type Config struct {
 
 // Get job by type name
 func Get(t string) Job {
-	switch t {
-	case "http", "http-flood":
-		return fastHTTPJob
-	case "http-request":
-		return singleRequestJob
-	case "tcp":
-		return tcpJob
-	case "udp":
-		return udpJob
-	case "slow-loris":
-		return slowLorisJob
-	case "packetgen":
-		return packetgenJob
-	case "dns-blast":
-		return dnsBlastJob
-	case "sequence":
-		return sequenceJob
-	case "parallel":
-		return parallelJob
-	case "log":
-		return logJob
-	case "set-value":
-		return setVarJob
-	case "check":
-		return checkJob
-	case "loop":
-		return loopJob
-	case "encrypted":
-		return encryptedJob
-	default:
-		return nil
-	}
+	return map[string]Job{
+		"http":         fastHTTPJob,
+		"http-flood":   fastHTTPJob,
+		"http-request": singleRequestJob,
+		"tcp":          tcpJob,
+		"udp":          udpJob,
+		"slow-loris":   slowLorisJob,
+		"packetgen":    packetgenJob,
+		"dns-blast":    dnsBlastJob,
+		"sequence":     sequenceJob,
+		"parallel":     parallelJob,
+		"log":          logJob,
+		"set-value":    setVarJob,
+		"check":        checkJob,
+		"loop":         loopJob,
+		"encrypted":    encryptedJob,
+	}[t]
 }
 
 // BasicJobConfig comment for linter
