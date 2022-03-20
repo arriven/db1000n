@@ -41,8 +41,8 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 		return nil, err
 	}
 
-	if globalConfig.ProxyURL != "" {
-		clientConfig.ProxyURLs = globalConfig.ProxyURL
+	if globalConfig.ProxyURLs != "" {
+		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
 	client := http.NewClient(clientConfig, logger)
@@ -124,8 +124,8 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 		return nil, err
 	}
 
-	if globalConfig.ProxyURL != "" {
-		clientConfig.ProxyURLs = globalConfig.ProxyURL
+	if globalConfig.ProxyURLs != "" {
+		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
 	client := http.NewClient(clientConfig, logger)

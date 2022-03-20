@@ -44,7 +44,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
-	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/Arriven/db1000n/src/utils/updater"
 )
 
@@ -64,8 +63,7 @@ func main() {
 	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
-	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
-	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
+	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default (can be a comma-separated list or a template)")
 	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
 	skipEncrytedJobs := flag.Bool("skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false), "set to true if you want to only run plaintext jobs from the config for security considerations")
 	enablePrimitiveJobs := flag.Bool("enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true), "set to true if you want to run primitive jobs that are less resource-efficient")
@@ -119,10 +117,6 @@ func main() {
 		log.Fatal("Invalid value for --prometheus_gateways")
 	}
 
-	if *proxiesURL != "" {
-		templates.SetProxiesURL(*proxiesURL)
-	}
-
 	country := ""
 
 	var isCountryAllowed bool
@@ -152,7 +146,7 @@ func main() {
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
 		Global: jobs.GlobalConfig{
-			ProxyURL:            *systemProxy,
+			ProxyURLs:           *systemProxy,
 			ScaleFactor:         *scaleFactor,
 			SkipEncrypted:       *skipEncrytedJobs,
 			Debug:               *debug,
