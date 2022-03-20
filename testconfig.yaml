@@ -2,6 +2,13 @@ jobs:
   - type: sequence
     args:
       jobs:
+        - type: set-value
+          name: proxylist
+          args:
+            value: '{{ join (get_url "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json" | to_string_slice) "," }}'
+        - type: log
+          args:
+            text: '{{ .Value (ctx_key "data.proxylist") }}'
         - type: http
           args:
             count: 1
@@ -9,11 +16,12 @@ jobs:
               method: GET
               path: 'https://localhost:8080/search?searchid={{ index (.Value (ctx_key "config")) "args" "jobs" 0 "type" }}&l10n=ru&reqenc=&text={{ random_uuid }}'
             client:
-              timeout: 1s
+              # timeout: 1s
+              proxy_urls: '{{ .Value (ctx_key "data.proxylist") }}'
         - type: http
           args:
             request:
               method: GET
               path: "https://localhost:8090/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}"
             client:
-              proxy_urls: '{{ join get_proxylist "," }}'
+              proxy_urls: '{{ .Value (ctx_key "data.proxylist") }}'

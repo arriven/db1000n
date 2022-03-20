@@ -19,54 +19,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var proxiesURL = "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json"
-
-func getProxylistURL() string {
-	return proxiesURL
-}
-
-// SetProxiesURL is used to override the default proxylist url
-func SetProxiesURL(url string) {
-	proxiesURL = url
-}
-
-func getProxylist() (urls []string) {
-	return getProxylistByURL(getProxylistURL())
-}
-
-func getProxylistByURL(url string) (urls []string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil
-	}
-
-	defer resp.Body.Close()
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
-
-	err = json.Unmarshal(b, &urls)
-	if err != nil {
-		// try to parse response body as plain text with newline delimiter
-		urls = strings.Split(string(b), "\n")
-		if len(urls) == 0 {
-			return nil
-		}
-	}
-
-	return urls
-}
-
 func getURLContent(url string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -115,40 +67,42 @@ func cookieString(cookies map[string]string) string {
 	return strings.Trim(strings.TrimSpace(s), ";")
 }
 
+func toStringSlice(input string) (output []string, err error) {
+	// yaml is superset of json so this also handles json
+	err = yaml.Unmarshal([]byte(input), &output)
+	return output, err
+}
+
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
 	return template.New("tpl").Funcs(template.FuncMap{
-		"random_uuid":          randomUUID,
-		"random_int_n":         rand.Intn,
-		"random_int":           rand.Int,
-		"random_payload":       RandomPayload,
-		"random_ip":            RandomIP,
-		"random_port":          RandomPort,
-		"random_mac_addr":      RandomMacAddr,
-		"random_user_agent":    uarand.GetRandom,
-		"local_ip":             LocalIPV4,
-		"local_ipv4":           LocalIPV4,
-		"local_ipv6":           LocalIPV6,
-		"local_mac_addr":       LocalMacAddres,
-		"resolve_host":         ResolveHostIPV4,
-		"resolve_host_ipv4":    ResolveHostIPV4,
-		"resolve_host_ipv6":    ResolveHostIPV6,
-		"base64_encode":        base64.StdEncoding.EncodeToString,
-		"base64_decode":        base64.StdEncoding.DecodeString,
-		"json_encode":          json.Marshal,
-		"json_decode":          json.Unmarshal,
-		"yaml_encode":          yaml.Marshal,
-		"yaml_decode":          yaml.Unmarshal,
-		"join":                 strings.Join,
-		"get_url":              getURLContent,
-		"proxylist_url":        getProxylistURL,
-		"get_proxylist":        getProxylist,
-		"get_proxylist_by_url": getProxylistByURL,
-		"mod":                  mod,
-		"ctx_key":              ctxKey,
-		"split":                strings.Split,
-		"cookie_string":        cookieString,
+		"random_uuid":       randomUUID,
+		"random_int_n":      rand.Intn,
+		"random_int":        rand.Int,
+		"random_payload":    RandomPayload,
+		"random_ip":         RandomIP,
+		"random_port":       RandomPort,
+		"random_mac_addr":   RandomMacAddr,
+		"random_user_agent": uarand.GetRandom,
+		"local_ip":          LocalIPV4,
+		"local_ipv4":        LocalIPV4,
+		"local_ipv6":        LocalIPV6,
+		"local_mac_addr":    LocalMacAddres,
+		"resolve_host":      ResolveHostIPV4,
+		"resolve_host_ipv4": ResolveHostIPV4,
+		"resolve_host_ipv6": ResolveHostIPV6,
+		"base64_encode":     base64.StdEncoding.EncodeToString,
+		"base64_decode":     base64.StdEncoding.DecodeString,
+		"to_json":           json.Marshal,
+		"to_yaml":           yaml.Marshal,
+		"to_string_slice":   toStringSlice,
+		"join":              strings.Join,
+		"get_url":           getURLContent,
+		"mod":               mod,
+		"ctx_key":           ctxKey,
+		"split":             strings.Split,
+		"cookie_string":     cookieString,
 	}).Parse(strings.ReplaceAll(input, "\\", ""))
 }
 
