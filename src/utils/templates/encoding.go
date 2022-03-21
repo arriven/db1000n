@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/Arriven/db1000n/src/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,7 +30,7 @@ func toYAML(v interface{}) string {
 // m["Error"] in the returned map.
 func fromYAML(str string) map[string]interface{} {
 	m := map[string]interface{}{}
-	if err := yaml.Unmarshal([]byte(str), &m); err != nil {
+	if err := utils.Unmarshal([]byte(str), &m, "yaml"); err != nil {
 		m["Error"] = err.Error()
 	}
 
@@ -44,7 +45,7 @@ func fromYAML(str string) map[string]interface{} {
 // the first and only item in the returned array.
 func fromYAMLArray(str string) []interface{} {
 	a := []interface{}{}
-	if err := yaml.Unmarshal([]byte(str), &a); err != nil {
+	if err := utils.Unmarshal([]byte(str), &a, "yaml"); err != nil {
 		a = []interface{}{err.Error()}
 	}
 
@@ -73,7 +74,7 @@ func toJSON(v interface{}) string {
 // m["Error"] in the returned map.
 func fromJSON(str string) map[string]interface{} {
 	m := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(str), &m); err != nil {
+	if err := utils.Unmarshal([]byte(str), &m, "json"); err != nil {
 		m["Error"] = err.Error()
 	}
 
@@ -88,7 +89,7 @@ func fromJSON(str string) map[string]interface{} {
 // the first and only item in the returned array.
 func fromJSONArray(str string) []interface{} {
 	a := []interface{}{}
-	if err := json.Unmarshal([]byte(str), &a); err != nil {
+	if err := utils.Unmarshal([]byte(str), &a, "json"); err != nil {
 		a = []interface{}{err.Error()}
 	}
 
@@ -97,7 +98,7 @@ func fromJSONArray(str string) []interface{} {
 
 func fromStringArray(str string) []string {
 	a := []string{}
-	if err := yaml.Unmarshal([]byte(str), &a); err != nil {
+	if err := utils.Unmarshal([]byte(str), &a, "yaml"); err != nil {
 		a = []string{err.Error()}
 	}
 

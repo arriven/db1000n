@@ -2,7 +2,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -98,11 +97,7 @@ func Decode(input interface{}, output interface{}) error {
 
 func Unmarshal(input []byte, output interface{}, format string) error {
 	switch format {
-	case "", "json":
-		if err := json.Unmarshal(input, output); err != nil {
-			return err
-		}
-	case "yaml":
+	case "", "json", "yaml":
 		if err := yaml.Unmarshal(input, output); err != nil {
 			return err
 		}
