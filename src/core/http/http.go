@@ -2,17 +2,16 @@
 package http
 
 import (
+	"context"
 	"crypto/tls"
-	"math/rand"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/corpix/uarand"
 	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttpproxy"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -60,13 +59,13 @@ type ClientConfig struct {
 }
 
 // NewClient creates a fasthttp client based on the config.
-func NewClient(clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
+func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
 	const (
 		defaultMaxConnsPerHost = 1000
 		defaultTimeout         = 90 * time.Second
 	)
 
-	timeout := nonNilDurationOrDefault(clientConfig.Timeout, defaultTimeout)
+	timeout := utils.NonNilDurationOrDefault(clientConfig.Timeout, defaultTimeout)
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
@@ -77,47 +76,21 @@ func NewClient(clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
 
 	return &fasthttp.Client{
 		MaxConnDuration:               timeout,
-		ReadTimeout:                   nonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
-		WriteTimeout:                  nonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
-		MaxIdleConnDuration:           nonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
-		MaxConnsPerHost:               nonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
+		ReadTimeout:                   utils.NonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
+		WriteTimeout:                  utils.NonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
+		MaxIdleConnDuration:           utils.NonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
+		MaxConnsPerHost:               utils.NonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
-		Dial: dialViaProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, nil),
-			fasthttpproxy.FasthttpProxyHTTPDialerTimeout(timeout),
-			logger),
+		Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
 	}
 }
 
-func dialViaProxyFunc(proxyListCSV string, backup fasthttp.DialFunc, logger *zap.Logger) fasthttp.DialFunc {
-	if len(proxyListCSV) == 0 {
-		return backup
-	}
-
-	proxyURLs := strings.Split(proxyListCSV, ",")
-
-	logger.Debug("proxyURLs parsed", zap.Strings("proxyURLs", proxyURLs))
-
+func dialViaProxyFunc(proxyFunc utils.ProxyFunc, network string) fasthttp.DialFunc {
 	// Return closure to select a random proxy on each call
 	return func(addr string) (net.Conn, error) {
-		return fasthttpproxy.FasthttpSocksDialer(proxyURLs[rand.Intn(len(proxyURLs))])(addr) //nolint:gosec // Cryptographically secure random not required
+		return proxyFunc(network, addr)
 	}
-}
-
-func nonNilDurationOrDefault(d *time.Duration, dflt time.Duration) time.Duration {
-	if d != nil {
-		return *d
-	}
-
-	return dflt
-}
-
-func nonNilIntOrDefault(i *int, dflt int) int {
-	if i != nil {
-		return *i
-	}
-
-	return dflt
 }
