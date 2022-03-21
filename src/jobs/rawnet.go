@@ -18,20 +18,26 @@ import (
 
 type rawnetConfig struct {
 	BasicJobConfig
-	addr    string
-	bodyTpl *template.Template
+	addr      string
+	bodyTpl   *template.Template
+	proxyURLs string
+	timeout   time.Duration
 }
 
 func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler(logger)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	if globalConfig.ProxyURLs != "" {
+		jobConfig.proxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
+	}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
@@ -47,15 +53,10 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 }
 
 func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", jobConfig.addr)
+	conn, err := utils.GetProxyFunc(jobConfig.proxyURLs, jobConfig.timeout)("tcp", jobConfig.addr)
 	if err != nil {
-		return
-	}
-
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		logger.Debug("error connecting via tcp", zap.Reflect("addr", tcpAddr), zap.Error(err))
-		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+		logger.Debug("error connecting via tcp", zap.String("addr", jobConfig.addr), zap.Error(err))
+		metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusFail)
 
 		return
 	}
@@ -68,26 +69,26 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 		trafficMonitor.Add(uint64(n))
 
 		if err != nil {
-			metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusFail)
+			metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusFail)
 
 			return
 		}
 
 		processedTrafficMonitor.Add(uint64(n))
-		metrics.IncRawnetTCP(tcpAddr.String(), metrics.StatusSuccess)
+		metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusSuccess)
 	}
 }
 
 func udpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	defer utils.PanicHandler(logger)
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	udpAddr, err := net.ResolveUDPAddr("udp", jobConfig.addr)
 	if err != nil {
@@ -130,8 +131,10 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args Args) (tpl
 	var jobConfig struct {
 		BasicJobConfig
 
-		Address string
-		Body    string
+		Address   string
+		Body      string
+		ProxyURLs string `mapstructure:"proxy_urls"`
+		Timeout   *time.Duration
 	}
 
 	if err := utils.Decode(args, &jobConfig); err != nil {
@@ -144,6 +147,13 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args Args) (tpl
 	}
 
 	targetAddress := strings.TrimSpace(templates.ParseAndExecute(logger, jobConfig.Address, ctx))
+	proxyURLs := templates.ParseAndExecute(logger, jobConfig.ProxyURLs, ctx)
 
-	return &rawnetConfig{BasicJobConfig: jobConfig.BasicJobConfig, addr: targetAddress, bodyTpl: bodyTpl}, nil
+	return &rawnetConfig{
+		BasicJobConfig: jobConfig.BasicJobConfig,
+		addr:           targetAddress,
+		bodyTpl:        bodyTpl,
+		proxyURLs:      proxyURLs,
+		timeout:        utils.NonNilDurationOrDefault(jobConfig.Timeout, time.Minute),
+	}, nil
 }

@@ -83,6 +83,22 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 	return v
 }
 
+func NonNilDurationOrDefault(d *time.Duration, dflt time.Duration) time.Duration {
+	if d != nil {
+		return *d
+	}
+
+	return dflt
+}
+
+func NonNilIntOrDefault(i *int, dflt int) int {
+	if i != nil {
+		return *i
+	}
+
+	return dflt
+}
+
 // Decode is an alias to a mapstructure.NewDecoder({Squash: true}).Decode()
 func Decode(input interface{}, output interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, Result: output})
