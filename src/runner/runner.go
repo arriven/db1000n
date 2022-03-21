@@ -61,10 +61,10 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 	var cancel context.CancelFunc
 
-	lastKnownConfig := &config.RawConfig{Body: r.config.BackupConfig}
+	lastKnownConfig := &config.RawConfig{}
 
 	for {
-		rawConfig := config.FetchRawConfig(r.configPaths, lastKnownConfig)
+		rawConfig := config.FetchRawConfig(r.configPaths, nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: r.config.BackupConfig}))
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) { // Only restart jobs if the new config differs from the current one
 			cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
@@ -94,6 +94,14 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 		dumpMetrics(clientID.String(), r.config.Global.Debug)
 	}
+}
+
+func nonNilConfigOrDefault(c, defaultConfig *config.RawConfig) *config.RawConfig {
+	if c.Body != nil {
+		return c
+	}
+
+	return defaultConfig
 }
 
 func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Config) (cancel context.CancelFunc) {
