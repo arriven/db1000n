@@ -4,8 +4,6 @@ package templates
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -16,7 +14,6 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 func getURLContent(url string) (string, error) {
@@ -58,22 +55,6 @@ func ctxKey(key string) ContextKey {
 	return ContextKey(key)
 }
 
-func cookieString(cookies map[string]string) string {
-	s := ""
-	for key, value := range cookies {
-		s = fmt.Sprintf("%s %s=%s;", s, key, value)
-	}
-
-	return strings.Trim(strings.TrimSpace(s), ";")
-}
-
-func toStringSlice(input string) (output []string, err error) {
-	// yaml is superset of json so this also handles json
-	err = yaml.Unmarshal([]byte(input), &output)
-
-	return output, err
-}
-
 // Parse a template
 func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
@@ -95,14 +76,18 @@ func Parse(input string) (*template.Template, error) {
 		"resolve_host_ipv6": ResolveHostIPV6,
 		"base64_encode":     base64.StdEncoding.EncodeToString,
 		"base64_decode":     base64.StdEncoding.DecodeString,
-		"to_json":           json.Marshal,
-		"to_yaml":           yaml.Marshal,
-		"to_string_slice":   toStringSlice,
+		"to_yaml":           toYAML,
+		"from_yaml":         fromYAML,
+		"from_yaml_array":   fromYAMLArray,
+		"to_json":           toJSON,
+		"from_json":         fromJSON,
+		"from_json_array":   fromJSONArray,
+		"from_string_array": fromStringArray,
 		"join":              strings.Join,
+		"split":             strings.Split,
 		"get_url":           getURLContent,
 		"mod":               mod,
 		"ctx_key":           ctxKey,
-		"split":             strings.Split,
 		"cookie_string":     cookieString,
 	}).Parse(strings.ReplaceAll(input, "\\", ""))
 }

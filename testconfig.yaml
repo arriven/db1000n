@@ -5,7 +5,7 @@ jobs:
         - type: set-value
           name: proxylist
           args:
-            value: '{{ join (get_url "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json" | to_string_slice) "," }}'
+            value: '{{ join (get_url "https://raw.githubusercontent.com/Arriven/db1000n/main/proxylist.json" | from_string_array) "," }}'
         - type: log
           args:
             text: '{{ .Value (ctx_key "data.proxylist") }}'
