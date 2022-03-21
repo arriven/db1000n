@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"strings"
 )
 
 // RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
@@ -111,4 +112,13 @@ func LocalIPV6() string {
 // ResolveHostIPV6 function gets a string and returns the ipv4 address
 func ResolveHostIPV6(host string) (string, error) {
 	return resolveHost(host, func(ip net.IP) bool { return ip.To4() == nil })
+}
+
+func cookieString(cookies map[string]string) string {
+	s := ""
+	for key, value := range cookies {
+		s = fmt.Sprintf("%s %s=%s;", s, key, value)
+	}
+
+	return strings.Trim(strings.TrimSpace(s), ";")
 }

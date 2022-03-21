@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/core/slowloris"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
@@ -17,7 +18,7 @@ func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 	defer utils.PanicHandler(logger)
 
 	var jobConfig *slowloris.Config
-	if err := utils.Decode(args, &jobConfig); err != nil {
+	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, args, ctx), &jobConfig); err != nil {
 		return nil, err
 	}
 
@@ -46,6 +47,15 @@ func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 	if jobConfig.Duration == 0 {
 		const defaultDuration = 10 * time.Second
 		jobConfig.Duration = defaultDuration
+	}
+
+	if jobConfig.Timeout == 0 {
+		const defaultTimeout = 10 * time.Second
+		jobConfig.Timeout = defaultTimeout
+	}
+
+	if globalConfig.ProxyURLs != "" {
+		jobConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
 	jobConfig.ClientID = globalConfig.ClientID

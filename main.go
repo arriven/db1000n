@@ -44,7 +44,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
-	"github.com/Arriven/db1000n/src/utils/templates"
 	"github.com/Arriven/db1000n/src/utils/updater"
 )
 
@@ -58,12 +57,11 @@ func main() {
 	// Config
 	configPaths := flag.String("c", utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"), "path to config files, separated by a comma, each path can be a web endpoint")
 	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
-	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "json"), "config format")
+	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "yaml"), "config format")
 	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute), "refresh timeout for updating the config")
 
 	// Proxying
-	proxiesURL := flag.String("proxylist-url", utils.GetEnvStringDefault("PROXYLIST_URL", ""), "url to fetch proxylist")
-	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default")
+	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""), "system proxy to set by default (can be a comma-separated list or a template)")
 
 	// Jobs
 	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1), "used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
@@ -118,7 +116,6 @@ func main() {
 
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
-	templates.SetProxiesURL(proxiesURL)
 
 	clientID := uuid.NewString()
 	country := checkCountryOrFail(strings.Split(*countryList, ","), *strictCountryCheck)
@@ -134,7 +131,7 @@ func main() {
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
 		Global: jobs.GlobalConfig{
-			ProxyURL:            *systemProxy,
+			ProxyURLs:           *systemProxy,
 			ScaleFactor:         *scaleFactor,
 			SkipEncrypted:       *skipEncrytedJobs,
 			Debug:               *debug,
