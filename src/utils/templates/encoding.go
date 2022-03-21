@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/Arriven/db1000n/src/utils"
 	"gopkg.in/yaml.v3"
+
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // toYAML takes an interface, marshals it to yaml, and returns a string. It will
