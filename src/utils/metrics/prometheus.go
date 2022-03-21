@@ -97,6 +97,7 @@ var (
 	clientCounter    *prometheus.CounterVec
 )
 
+// InitMetrics initializes prometheus counters
 func InitMetrics(clientID, country string) {
 	constLabels := prometheus.Labels{ClientIDLabel: clientID}
 	if country != "" {
@@ -284,6 +285,10 @@ func pushMetrics(ctx context.Context, gateways []string) {
 
 // IncDNSBlast increments counter of sent dns queries
 func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
+	if dnsBlastCounter == nil {
+		return
+	}
+
 	dnsBlastCounter.With(prometheus.Labels{
 		DNSBlastRootDomainLabel: rootDomain,
 		DNSBlastSeedDomainLabel: seedDomain,
@@ -294,6 +299,10 @@ func IncDNSBlast(rootDomain, seedDomain, protocol, status string) {
 
 // IncHTTP increments counter of sent http queries
 func IncHTTP(host, method, status string) {
+	if httpCounter == nil {
+		return
+	}
+
 	httpCounter.With(prometheus.Labels{
 		HTTPMethodLabel:          method,
 		HTTPDestinationHostLabel: host,
@@ -303,6 +312,10 @@ func IncHTTP(host, method, status string) {
 
 // IncPacketgen increments counter of sent raw packets
 func IncPacketgen(host, hostPort, protocol, status, id string) {
+	if packetgenCounter == nil {
+		return
+	}
+
 	packetgenCounter.With(prometheus.Labels{
 		PacketgenHostLabel:        host,
 		PacketgenDstHostPortLabel: hostPort,
@@ -314,6 +327,10 @@ func IncPacketgen(host, hostPort, protocol, status, id string) {
 
 // IncSlowLoris increments counter of sent raw ethernet+ip+tcp/udp packets
 func IncSlowLoris(address, protocol, status string) {
+	if slowlorisCounter == nil {
+		return
+	}
+
 	slowlorisCounter.With(prometheus.Labels{
 		SlowlorisAddressLabel:  address,
 		SlowlorisProtocolLabel: protocol,
@@ -323,6 +340,10 @@ func IncSlowLoris(address, protocol, status string) {
 
 // IncRawnetTCP increments counter of sent raw tcp packets
 func IncRawnetTCP(address, status string) {
+	if rawnetCounter == nil {
+		return
+	}
+
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "tcp",
@@ -332,6 +353,10 @@ func IncRawnetTCP(address, status string) {
 
 // IncRawnetUDP increments counter of sent raw tcp packets
 func IncRawnetUDP(address, status string) {
+	if rawnetCounter == nil {
+		return
+	}
+
 	rawnetCounter.With(prometheus.Labels{
 		RawnetAddressLabel:  address,
 		RawnetProtocolLabel: "udp",
@@ -339,6 +364,11 @@ func IncRawnetUDP(address, status string) {
 	}).Inc()
 }
 
+// IncClient increments counter of calls from the current client ID
 func IncClient() {
+	if clientCounter == nil {
+		return
+	}
+
 	clientCounter.With(prometheus.Labels{}).Inc()
 }
