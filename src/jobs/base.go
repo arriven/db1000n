@@ -44,6 +44,7 @@ type Config struct {
 }
 
 // Get job by type name
+//nolint:cyclop // The string map alternative is orders of magnitude slower
 func Get(t string) Job {
 	switch t {
 	case "http", "http-flood":

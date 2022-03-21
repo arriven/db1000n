@@ -1636,7 +1636,7 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
-    # - cyclop
+    - cyclop
     - deadcode
     - decorder
     - depguard

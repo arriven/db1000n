@@ -124,7 +124,7 @@ func Unmarshal(input []byte, output interface{}, format string) error {
 	return nil
 }
 
-func OpenBrowser(url string) {
+func openBrowser(url string) {
 	switch runtime.GOOS {
 	case "windows":
 		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()

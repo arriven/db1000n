@@ -12,7 +12,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func logJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func logJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
 	var jobConfig struct {
 		Text string
 	}
@@ -26,7 +26,7 @@ func logJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func setVarJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -38,7 +38,7 @@ func setVarJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfi
 	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
 }
 
-func checkJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func checkJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
 	var jobConfig struct {
 		Value string
 	}

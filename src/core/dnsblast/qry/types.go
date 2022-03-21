@@ -22,6 +22,7 @@ func ResponseCode(rc int) string {
 }
 
 // Qtype is used to conver string representation of query type into proper dns format
+//nolint:cyclop // The string map alternative is orders of magnitude slower
 func Qtype(qt string) uint16 {
 	switch qt {
 	case "None":
