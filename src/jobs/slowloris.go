@@ -58,8 +58,6 @@ func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		jobConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
-	jobConfig.ClientID = globalConfig.ClientID
-
 	shouldStop := make(chan bool)
 
 	go func() {

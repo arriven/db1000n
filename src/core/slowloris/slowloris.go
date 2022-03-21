@@ -26,7 +26,6 @@ type Config struct {
 	Duration         time.Duration // Duration
 	Path             string        // Target Path. Http POST must be allowed for this Path
 	HostHeader       string        // Host header value in case it is different than the hostname in Path
-	ClientID         string
 	ProxyURLs        string
 	Timeout          time.Duration
 }
