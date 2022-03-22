@@ -65,22 +65,23 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 	for {
 		rawConfig := config.FetchRawConfig(r.configPaths, nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: r.config.BackupConfig}))
+		cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
 
-		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) { // Only restart jobs if the new config differs from the current one
-			cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
-			if cfg != nil {
-				lastKnownConfig = rawConfig
+		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
+			log.Println("New config received, applying")
 
-				if cancel != nil {
-					cancel()
-				}
+			lastKnownConfig = rawConfig
 
-				if rawConfig.Encrypted {
-					log.Println("config is encrypted, disabling logs")
-					cancel = r.runJobs(jobs.EncryptedContext(ctx), zap.NewNop(), cfg)
-				} else {
-					cancel = r.runJobs(ctx, logger, cfg)
-				}
+			if cancel != nil {
+				cancel()
+			}
+
+			if rawConfig.Encrypted {
+				log.Println("Config is encrypted, disabling logs")
+
+				cancel = r.runJobs(jobs.EncryptedContext(ctx), zap.NewNop(), cfg)
+			} else {
+				cancel = r.runJobs(ctx, logger, cfg)
 			}
 		} else {
 			log.Println("The config has not changed. Keep calm and carry on!")

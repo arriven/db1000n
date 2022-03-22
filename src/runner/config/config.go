@@ -124,13 +124,9 @@ func Unmarshal(body []byte, format string) *Config {
 		return nil
 	}
 
-	log.Println("New config received, applying")
-
 	var config Config
 
 	if err := utils.Unmarshal(body, &config, format); err != nil {
-		log.Printf("Failed to unmarshal job configs, will keep the current one: %v", err)
-
 		return nil
 	}
 
