@@ -3,7 +3,7 @@ package qry
 
 import "github.com/miekg/dns"
 
-// ResponseCode convert numerical response code value to string
+// ResponseCode converts numerical response code value to string.
 func ResponseCode(rc int) string {
 	rcodes := map[int]string{
 		0: "NOERROR",
@@ -21,8 +21,8 @@ func ResponseCode(rc int) string {
 	return rcodes[rc]
 }
 
-// Qtype is used to conver string representation of query type into proper dns format
-//nolint:cyclop // The string map alternative is orders of magnitude slower
+// Qtype converts string representation of query type into a proper DNS format.
+//nolint:cyclop,gocyclo,maintidx // The string map alternative is orders of magnitude slower
 func Qtype(qt string) uint16 {
 	switch qt {
 	case "None":
