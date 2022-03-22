@@ -77,6 +77,79 @@ cat encrypted_config.json | base64 | tr -d '\n'
 YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCAwS1pOUXlLM004L1NxcDRwL21CaUl3IDE4Cjc1cEZtcmZZZHJieFRvd0hhM0RVVVMxb2VMY0RmQzBkUkJQMXE2UWdyMUEKLS0tIHlSK1VFMkNOSHovbzRqUlJ3RW5VclphRy9TU0NQSG8vMzJUZ1c4RUozZncKD6zE4MONozWBfQYn9HG31DW100o2oFpn6iACQAvCDyXkgSeuQtRFjPwCIW5q2Dltq7Srkc8b81/ZynC59uqkmDJefGyNPzTk3ilRl6wcLOhCP1TD7YtCtZ/7ZpoGpNMiDD6XhKnOmz10sBSy1SXt54+zFVcuQ1ITRi4E2WmiFRjTa8T+ZMwurW+F+iwOu6+z8/0sKQaG5SrKA74GI9D6iRQnqiPg2Abr97Vq7X2Fjvz2NqFjcB0dD29XijHcLCdXQ1DcI3gx94SdMmmfeU5ub2ArsH/4nA8XlS7YE7BirUihgHD4/KIr52dc+Fst6i7SBH433d/Y3Pmhi89FHY8+sGyPFXNG+SeLLHafcR6bLLGyk0iGa2bZaBqUGovYNojni8KSrLRPXTgCyeNAOS7Gpamwi1Xco7m7nEEmAv9vpEvtOUx83pGBOkgu3oSV0t3jmp+OUvcwMMQ=
 ```
 
+### Encrypt only part of the config
+
+You can encrypt a single job and add it to plaintext config (nothing stopping you from encrypting it further afterwards) via `encrypted` job entry:
+
+```json
+{
+  "jobs": [
+    {
+      "type": "encrypted",
+      "args": {
+        "format": "json",
+        "data": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCB5eCtiMzQ5RWlZRXo4dTNpRE8veHdRIDE4CmYyb2d0YXlnaXptS25sbUJlQUVaUHpRbngwaUdBYUpJRStHbFltdUVNNkUKLS0tIG5oUUVCd041TWJoNWNCQjhvODk4eUFpUldmUFUvaStpanRsdCtWR0RrSVkK2ehc+JYVl+f5VgLKV0mG/J4CQrtHn+FFV5AAcKiLEAjU6MNDaVqBI6Qm9RunLZ51wAA13DLZkPJH39DcsS77H3HmgLpRQ7DMFG2AIDxWysIt2Yi2hVVn9Ogea73twGa8FOpk2kk0Z7NSHCCcpTJd1Db4cwYJiIFaqfBXR+VZtNk3qBgUMStN1CiOyJxvHbnc6tbfeqq042LImKsaLvFzB2y5H/ec9BonHimrP/aZv6dhequs"
+      }
+    },
+    {
+      "type": "tcp",
+      "count": 100,
+      "args": {
+        "address": "localhost:9090",
+        "body": "more_test",
+        "interval_ms": 1000
+      }
+    }
+  ]
+}
+```
+
+Where `args.format` represents the encoding format you used for the data before encryption and `args.data` is a single ecrypted job.
+
+To encrypt a single job use same steps as to encrypt the whole config but use a file that contains just the job definition:
+
+```json
+{
+  "type": "tcp",
+  "count": 100,
+  "args": {
+    "address": "localhost:9090",
+    "body": "more_test",
+    "interval_ms": 1000
+  }
+}
+```
+
+_Note:_ each single decryption needs at least 256mb of RAM to set up an encryption key (this is implemented by `age` as hardening against bruteforce attempts). Due to that encrypting multiple jobs separately may be inefficient and it's advised to use `parallel` job to group multiple independed jobs into one:
+
+```json
+{
+  "type": "parallel",
+  "args": {
+    "jobs": [
+      {
+        "type": "tcp",
+        "count": 100,
+        "args": {
+          "address": "localhost:9090",
+          "body": "{{ random_payload 100 }}",
+          "interval_ms": 1000
+        }
+      },
+      {
+        "type": "tcp",
+        "count": 100,
+        "args": {
+          "address": "localhost:9091",
+          "body": "{{ random_payload 100 }}",
+          "interval_ms": 1000
+        }
+      }
+    ]
+  }
+}
+```
+
 ### Embedding encrypted config as default backup config into binary
 
 Export env variable as it printed:
