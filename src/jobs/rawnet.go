@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/core/packetgen"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
@@ -58,6 +59,8 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 }
 
 func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
+	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize) // track sending of SYN packet
+
 	conn, err := utils.GetProxyFunc(jobConfig.proxyURLs, jobConfig.timeout)("tcp", jobConfig.addr)
 	if err != nil {
 		logger.Debug("error connecting via tcp", zap.String("addr", jobConfig.addr), zap.Error(err))
@@ -68,10 +71,13 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 
 	defer conn.Close()
 
+	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)                // if we got here we had to also send ACK packet
+	processedTrafficMonitor.Add(2 * (packetgen.TCPHeaderSize + packetgen.IPHeaderSize)) // if we got here the connection was successful and thus track both SYN and ACK
+
 	// Write to conn until error
 	for jobConfig.Next(ctx) {
 		n, err := conn.Write([]byte(templates.Execute(logger, jobConfig.bodyTpl, ctx)))
-		trafficMonitor.Add(uint64(n))
+		trafficMonitor.Add(uint64(n) + packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
 
 		if err != nil {
 			metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusFail)
@@ -132,7 +138,7 @@ func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.
 		return
 	}
 
-	trafficMonitor.Add(uint64(n))
+	trafficMonitor.Add(uint64(n) + packetgen.UDPHeaderSize + packetgen.IPHeaderSize)
 	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
 }
 
