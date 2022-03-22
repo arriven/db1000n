@@ -87,7 +87,8 @@ func Start(stopChan chan bool, logger *zap.Logger, config *Config) error {
 	return nil
 }
 
-func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Config, activeConnectionsCh chan<- int, targetHostPort string, targetURI *url.URL, requestHeader []byte) {
+func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Config, activeConnectionsCh chan<- int,
+	targetHostPort string, targetURI *url.URL, requestHeader []byte) {
 	isTLS := targetURI.Scheme == "https"
 
 	for {
@@ -169,7 +170,8 @@ func (s SlowLoris) dialVictim(logger *zap.Logger, config *Config, hostPort strin
 	return tlsConn
 }
 
-func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPort string, conn io.ReadWriteCloser, activeConnectionsCh chan<- int, requestHeader []byte) {
+func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPort string, conn io.ReadWriteCloser,
+	activeConnectionsCh chan<- int, requestHeader []byte) {
 	defer conn.Close()
 
 	if _, err := conn.Write(requestHeader); err != nil {
