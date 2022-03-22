@@ -48,8 +48,10 @@
       "args": {
         "request": {
           "method": "GET",
-          "path": "https://localhost:8080/search?searchid={{ random_uuid }}&l10n=ru&reqenc=&text={{ random_uuid }}",
-          "headers": {}
+          "path": "https://127.0.0.1/",
+          "headers": {
+            "HOST": "localhost"
+          }
         }
       }
     },
