@@ -99,7 +99,10 @@ func main() {
 
 	logger, err := newZapLogger(*debug)
 	if err != nil {
-		log.Fatal("failed to create zap logger", err)
+		log.Printf("failed to initialize Zap logger: %s", err)
+		os.Exit(1)
+
+		return
 	}
 
 	configPathsArray := strings.Split(*configPaths, ",")

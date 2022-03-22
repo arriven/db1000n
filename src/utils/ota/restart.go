@@ -1,10 +1,13 @@
-//go:build windows || netbsd || solaris || aix || dragonfly || freebsd || (illumos && !linux && !darwin)
-// +build windows netbsd solaris aix dragonfly freebsd illumos,!linux,!darwin
+//go:build !linux && !darwin && !windows
+// +build !linux,!darwin,!windows
 
 package ota
 
-import "errors"
+import (
+	"fmt"
+	"runtime"
+)
 
 func Restart(extraArgs ...string) error {
-	return errors.New("restart on the Windows system is not available")
+	return fmt.Errorf("restart on the %s system is not available", runtime.GOOS)
 }
