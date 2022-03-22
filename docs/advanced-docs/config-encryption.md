@@ -132,7 +132,7 @@ _Note:_ each single decryption needs at least 256mb of RAM to set up an encrypti
         "count": 100,
         "args": {
           "address": "localhost:9090",
-          "body": "{{ random_payload 100 }}",
+          "body": "payload",
           "interval_ms": 1000
         }
       },
@@ -141,7 +141,7 @@ _Note:_ each single decryption needs at least 256mb of RAM to set up an encrypti
         "count": 100,
         "args": {
           "address": "localhost:9091",
-          "body": "{{ random_payload 100 }}",
+          "body": "payload",
           "interval_ms": 1000
         }
       }
