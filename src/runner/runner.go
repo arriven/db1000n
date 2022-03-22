@@ -75,7 +75,12 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 					cancel()
 				}
 
-				cancel = r.runJobs(ctx, logger, cfg)
+				if rawConfig.Encrypted {
+					log.Println("config is encrypted, disabling logs")
+					cancel = r.runJobs(jobs.EncryptedContext(ctx), zap.NewNop(), cfg)
+				} else {
+					cancel = r.runJobs(ctx, logger, cfg)
+				}
 			}
 		} else {
 			log.Println("The config has not changed. Keep calm and carry on!")

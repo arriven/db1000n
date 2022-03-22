@@ -86,6 +86,10 @@ func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig,
 	return nil, nil
 }
 
+func EncryptedContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true)
+}
+
 func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
@@ -127,5 +131,5 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
 	}
 
-	return job(context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true), zap.NewNop(), globalConfig, jobCfg.Args)
+	return job(EncryptedContext(ctx), zap.NewNop(), globalConfig, jobCfg.Args)
 }

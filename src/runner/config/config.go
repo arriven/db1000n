@@ -23,6 +23,7 @@ type Config struct {
 
 type RawConfig struct {
 	Body         []byte
+	Encrypted    bool
 	lastModified string
 	etag         string
 }
@@ -111,6 +112,7 @@ func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 		log.Println("Decrypted config")
 
 		newConfig.Body = decryptedConfig
+		newConfig.Encrypted = true
 	}
 
 	return newConfig
