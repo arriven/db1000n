@@ -118,3 +118,10 @@ func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
 		}
 	}
 }
+
+// NopWriter implements io.Writer interface to simply track how much data has to be serialized
+type NopWriter struct{}
+
+func (w NopWriter) Write(p []byte) (n int, _ error) {
+	return len(p), nil
+}
