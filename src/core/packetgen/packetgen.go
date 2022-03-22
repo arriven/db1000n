@@ -29,6 +29,13 @@ import (
 	"github.com/google/gopacket"
 )
 
+// Common protocol header sizes to help with metrics
+const (
+	TCPHeaderSize = 25 // 20 for header + at least 5 for options
+	UDPHeaderSize = 8
+	IPHeaderSize  = 20
+)
+
 type Packet struct {
 	Link      gopacket.LinkLayer
 	Network   gopacket.NetworkLayer
