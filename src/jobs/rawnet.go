@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"text/template"
@@ -44,6 +45,10 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 
 	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
 	go processedTrafficMonitor.Update(ctx, time.Second)
+
+	if !isInEncryptedContext(ctx) {
+		log.Printf("Attacking %v", jobConfig.addr)
+	}
 
 	for jobConfig.Next(ctx) {
 		sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
@@ -97,6 +102,10 @@ func udpJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) 
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
+
+	if !isInEncryptedContext(ctx) {
+		log.Printf("Attacking %v", jobConfig.addr)
+	}
 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
