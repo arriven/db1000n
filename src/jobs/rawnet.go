@@ -59,7 +59,8 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, 
 }
 
 func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
-	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize) // track sending of SYN packet
+	// track sending of SYN packet
+	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
 
 	conn, err := utils.GetProxyFunc(jobConfig.proxyURLs, jobConfig.timeout)("tcp", jobConfig.addr)
 	if err != nil {
@@ -71,8 +72,12 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 
 	defer conn.Close()
 
-	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)                // if we got here we had to also send ACK packet
-	processedTrafficMonitor.Add(2 * (packetgen.TCPHeaderSize + packetgen.IPHeaderSize)) // if we got here the connection was successful and thus track both SYN and ACK
+	// if we got here the connection was successful and thus we need to track SYN
+	processedTrafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
+
+	// if we got here we had to also send ACK packet (and get a response)
+	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
+	processedTrafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
 
 	// Write to conn until error
 	for jobConfig.Next(ctx) {
