@@ -9,10 +9,17 @@ variable "name" {
   description = "name of deployment"
 }
 
+variable "arch_ami" {
+  type        = string
+  description = "architecture of the ami"
+  default     = "arm64"
+}
+
+
 variable "instance_type" {
   type        = string
   description = "Instance type"
-  default     = "t2.micro"
+  default     = "t4g.micro"
 }
 
 variable "max_size" {
