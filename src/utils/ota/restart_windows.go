@@ -35,7 +35,7 @@ func Restart(extraArgs ...string) error {
 	cmd := exec.Command("cmd.exe")
 	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: cmdLine}
 
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start the command: %w", err)
 	}
 
