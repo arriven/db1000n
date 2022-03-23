@@ -68,19 +68,29 @@ func InitRequest(c RequestConfig, req *fasthttp.Request) int64 {
 	return dataSize
 }
 
+type Client interface {
+	Do(req *fasthttp.Request, resp *fasthttp.Response) error
+}
+
+type StaticHostConfig struct {
+	Addr  string `mapstructure:"addr"`
+	IsTLS bool   `mapstructure:"is_tls"`
+}
+
 // ClientConfig is a http client configuration structure
 type ClientConfig struct {
-	TLSClientConfig *tls.Config    `mapstructure:"tls_config,omitempty"`
-	Timeout         *time.Duration `mapstructure:"timeout"`
-	ReadTimeout     *time.Duration `mapstructure:"read_timeout"`
-	WriteTimeout    *time.Duration `mapstructure:"write_timeout"`
-	IdleTimeout     *time.Duration `mapstructure:"idle_timeout"`
-	MaxIdleConns    *int           `mapstructure:"max_idle_connections"`
-	ProxyURLs       string         `mapstructure:"proxy_urls"`
+	StaticHost      *StaticHostConfig `mapstructure:"static_host"`
+	TLSClientConfig *tls.Config       `mapstructure:"tls_config,omitempty"`
+	Timeout         *time.Duration    `mapstructure:"timeout"`
+	ReadTimeout     *time.Duration    `mapstructure:"read_timeout"`
+	WriteTimeout    *time.Duration    `mapstructure:"write_timeout"`
+	IdleTimeout     *time.Duration    `mapstructure:"idle_timeout"`
+	MaxIdleConns    *int              `mapstructure:"max_idle_connections"`
+	ProxyURLs       string            `mapstructure:"proxy_urls"`
 }
 
 // NewClient creates a fasthttp client based on the config.
-func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logger) *fasthttp.Client {
+func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logger) Client {
 	const (
 		defaultMaxConnsPerHost = 1000
 		defaultTimeout         = 90 * time.Second
@@ -93,6 +103,23 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	}
 	if clientConfig.TLSClientConfig != nil {
 		tlsConfig = clientConfig.TLSClientConfig
+	}
+
+	if clientConfig.StaticHost != nil {
+		return &fasthttp.HostClient{
+			Addr:                          clientConfig.StaticHost.Addr,
+			IsTLS:                         clientConfig.StaticHost.IsTLS,
+			MaxConnDuration:               timeout,
+			ReadTimeout:                   utils.NonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
+			WriteTimeout:                  utils.NonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
+			MaxIdleConnDuration:           utils.NonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
+			MaxConns:                      utils.NonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
+			NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+			DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+			DisablePathNormalizing:        true,
+			TLSConfig:                     tlsConfig,
+			Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
+		}
 	}
 
 	return &fasthttp.Client{

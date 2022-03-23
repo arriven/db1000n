@@ -1,0 +1,9 @@
+jobs:
+  - type: http
+    args:
+      request:
+        method: GET
+        path: http://lolkek/test
+      client:
+        static_host:
+          addr: 127.0.0.1:8080
