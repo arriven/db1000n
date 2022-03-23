@@ -2,7 +2,7 @@
 name = "db1000n-docs"
 version = "0.1.0"
 description = "Documentation for DB1000N project with MkDocs"
-authors = ["Arriven <https://github.com/Arriven>"]
+authors = ["Bohdan Ivashko <https://github.com/Arriven>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
