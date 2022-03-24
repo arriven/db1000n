@@ -26,6 +26,7 @@ package runner
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -33,7 +34,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
@@ -43,41 +43,50 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-// Config for the job runner
-type Config struct {
-	ConfigPaths    []string           // Comma-separated config location URLs
-	BackupConfig   []byte             // Raw backup config
-	RefreshTimeout time.Duration      // How often to refresh config
-	Format         string             // json or yaml
-	Global         *jobs.GlobalConfig // Passes cmdline and other args to every job
+// ConfigOptions for fetching job configs for the runner
+type ConfigOptions struct {
+	PathsCSV       string        // Comma-separated config location URLs
+	BackupConfig   string        // Raw backup config
+	Format         string        // json or yaml
+	RefreshTimeout time.Duration // How often to refresh config
+}
+
+// NewConfigOptionsWithFlags returns ConfigOptions initialized with command line flags.
+func NewConfigOptionsWithFlags() *ConfigOptions {
+	var res ConfigOptions
+
+	flag.StringVar(&res.PathsCSV, "c",
+		utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"),
+		"path to config files, separated by a comma, each path can be a web endpoint")
+	flag.StringVar(&res.BackupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
+	flag.StringVar(&res.Format, "format", utils.GetEnvStringDefault("CONFIG_FORMAT", "yaml"), "config format")
+	flag.DurationVar(&res.RefreshTimeout, "refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute),
+		"refresh timeout for updating the config")
+
+	return &res
 }
 
 // Runner executes jobs according to the (fetched from remote) configuration
 type Runner struct {
-	config         *Config
-	configPaths    []string
-	refreshTimeout time.Duration
-	configFormat   string
+	cfgOptions    *ConfigOptions
+	globalJobsCfg *jobs.GlobalConfig
 }
 
 // New runner according to the config
-func New(cfg *Config) (*Runner, error) {
+func New(cfgOptions *ConfigOptions, globalJobsCfg *jobs.GlobalConfig) (*Runner, error) {
 	return &Runner{
-		config:         cfg,
-		configPaths:    cfg.ConfigPaths,
-		refreshTimeout: cfg.RefreshTimeout,
-		configFormat:   cfg.Format,
+		cfgOptions:    cfgOptions,
+		globalJobsCfg: globalJobsCfg,
 	}, nil
 }
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
-	ctx = context.WithValue(ctx, templates.ContextKey("global"), r.config.Global)
-	clientID := uuid.MustParse(r.config.Global.ClientID)
+	ctx = context.WithValue(ctx, templates.ContextKey("global"), r.globalJobsCfg)
 
 	metrics.IncClient()
 
-	refreshTimer := time.NewTicker(r.refreshTimeout)
+	refreshTimer := time.NewTicker(r.cfgOptions.RefreshTimeout)
 
 	defer refreshTimer.Stop()
 
@@ -86,8 +95,9 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	lastKnownConfig := &config.RawConfig{}
 
 	for {
-		rawConfig := config.FetchRawConfig(r.configPaths, nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: r.config.BackupConfig}))
-		cfg := config.Unmarshal(rawConfig.Body, r.configFormat)
+		rawConfig := config.FetchRawConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
+			nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: []byte(r.cfgOptions.BackupConfig)}))
+		cfg := config.Unmarshal(rawConfig.Body, r.cfgOptions.Format)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
 			log.Println("New config received, applying")
@@ -120,7 +130,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		dumpMetrics(clientID.String(), r.config.Global.Debug)
+		dumpMetrics(r.globalJobsCfg.ClientID, r.globalJobsCfg.Debug)
 	}
 }
 
@@ -155,8 +165,8 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 			cfg.Jobs[i].Count = 1
 		}
 
-		if r.config.Global.ScaleFactor > 0 {
-			cfg.Jobs[i].Count *= r.config.Global.ScaleFactor
+		if r.globalJobsCfg.ScaleFactor > 0 {
+			cfg.Jobs[i].Count *= r.globalJobsCfg.ScaleFactor
 		}
 
 		cfgMap := make(map[string]interface{})
@@ -170,7 +180,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 			go func(i int) {
 				defer utils.PanicHandler(logger)
 
-				_, err := job(ctx, logger, r.config.Global, cfg.Jobs[i].Args)
+				_, err := job(ctx, logger, r.globalJobsCfg, cfg.Jobs[i].Args)
 				if err != nil {
 					logger.Error("error running job",
 						zap.String("name", cfg.Jobs[i].Name),

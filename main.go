@@ -40,7 +40,6 @@ import (
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/runner"
-	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
@@ -52,17 +51,10 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
-	// Config
-	configPaths := flag.String("c",
-		utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"),
-		"path to config files, separated by a comma, each path can be a web endpoint")
-	backupConfig := flag.String("b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
-	configFormat := flag.String("format", utils.GetEnvStringDefault("CONFIG_FORMAT", "yaml"), "config format")
-	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute),
-		"refresh timeout for updating the config")
-
-	// Jobs
+	runnerConfigOptions := runner.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
+	otaConfig := ota.NewConfigWithFlags()
+	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 
 	// Prometheus
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
@@ -71,16 +63,10 @@ func main() {
 		utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
 		"Comma separated list of prometheus push gateways")
 
-	// OTA
-	otaConfig := ota.NewConfigWithFlags()
-
 	// Config updater
 	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
 	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
 		"Destination config file to write (only applies if updater-mode is enabled")
-
-	// Country check
-	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 
 	// Misc
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
@@ -94,7 +80,7 @@ func main() {
 
 		return
 	case *updaterMode:
-		updater.Run(*destinationConfig, strings.Split(*configPaths, ","), []byte(*backupConfig))
+		updater.Run(*destinationConfig, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig))
 
 		return
 	}
@@ -116,13 +102,7 @@ func main() {
 
 	initMetricsOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
 
-	r, err := runner.New(&runner.Config{
-		ConfigPaths:    strings.Split(*configPaths, ","),
-		BackupConfig:   []byte(*backupConfig),
-		RefreshTimeout: *refreshTimeout,
-		Format:         *configFormat,
-		Global:         jobsGlobalConfig,
-	})
+	r, err := runner.New(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}
