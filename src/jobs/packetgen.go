@@ -24,6 +24,7 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -37,36 +38,28 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	type packetgenJobConfig struct {
+	var jobConfig struct {
 		BasicJobConfig
 		Packet     map[string]interface{}
 		Connection packetgen.ConnectionConfig
 	}
 
-	var jobConfig packetgenJobConfig
-
 	if err := utils.Decode(args, &jobConfig); err != nil {
-		logger.Debug("error parsing job config", zap.Error(err))
-
-		return nil, err
+		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
 	rawConn, err := packetgen.OpenRawConnection(jobConfig.Connection)
 	if err != nil {
-		logger.Debug("error building raw connection", zap.Error(err))
-
-		return nil, err
+		return nil, fmt.Errorf("error building raw connection: %w", err)
 	}
 
 	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
 	if err != nil {
-		logger.Debug("error parsing packet", zap.Error(err))
-
-		return nil, err
+		return nil, fmt.Errorf("error parsing packet: %w", err)
 	}
 
 	payloadBuf := gopacket.NewSerializeBuffer()
@@ -76,9 +69,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args 
 
 	for jobConfig.Next(ctx) {
 		if err := payloadBuf.Clear(); err != nil {
-			logger.Debug("error clearing payload buffer", zap.Error(err))
-
-			return nil, err
+			return nil, fmt.Errorf("error clearing payload buffer: %w", err)
 		}
 
 		packetConfigRaw := packetTpl.Execute(logger, ctx)
@@ -86,31 +77,24 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args 
 
 		var packetConfig packetgen.PacketConfig
 		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
-			logger.Debug("error parsing packet config", zap.Error(err))
-
-			return nil, err
+			return nil, fmt.Errorf("error parsing packet config: %w", err)
 		}
 
 		packet, err := packetConfig.Build()
 		if err != nil {
-			logger.Debug("error building packet", zap.Error(err))
-
-			return nil, err
+			return nil, fmt.Errorf("error building packet: %w", err)
 		}
 
 		if err = packet.Serialize(payloadBuf); err != nil {
-			logger.Debug("error serializing packet", zap.Error(err))
-
-			return nil, err
+			return nil, fmt.Errorf("error serializing packet: %w", err)
 		}
 
-		if _, err = rawConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()}); err != nil {
-			logger.Debug("error sending packet", zap.Error(err))
-
-			return nil, err
+		n, err := rawConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+		if err != nil {
+			return nil, fmt.Errorf("error sending packet: %w", err)
 		}
 
-		trafficMonitor.Add(uint64(len(payloadBuf.Bytes())))
+		trafficMonitor.Add(uint64(n))
 	}
 
 	return nil, nil

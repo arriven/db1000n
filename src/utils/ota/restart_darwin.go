@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-func Restart(extraArgs ...string) error {
+func restart(extraArgs ...string) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to resolve the path to the current executable: %w", err)

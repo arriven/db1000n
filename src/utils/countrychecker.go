@@ -3,13 +3,40 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
-// CheckCountry allows to check which country the app is running from
+type CountryCheckerConfig struct {
+	countryBlackListCSV string
+	strictCountryCheck  bool
+}
+
+// NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
+func NewCountryCheckerConfigWithFlags() *CountryCheckerConfig {
+	var res CountryCheckerConfig
+
+	flag.StringVar(&res.countryBlackListCSV, "country-list", GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
+	flag.BoolVar(&res.strictCountryCheck, "strict-country-check", GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false),
+		"enable strict country check; will also exit if IP can't be determined")
+
+	return &res
+}
+
+// CheckCountryOrFail checks the country of client origin by IP and exits the program if it is in the blacklist.
+func CheckCountryOrFail(cfg *CountryCheckerConfig) string {
+	isCountryAllowed, country := CheckCountry(strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck)
+	if !isCountryAllowed {
+		log.Fatalf("%q is not an allowed country, exiting", country)
+	}
+
+	return country
+}
+
+// CheckCountry checks which country the app is running from and whether it is in the blacklist.
 func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
 	const maxFetchRetries = 3
 

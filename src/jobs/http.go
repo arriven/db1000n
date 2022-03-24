@@ -45,7 +45,7 @@ type httpJobConfig struct {
 	Client  map[string]interface{} // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -120,7 +120,7 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 	}
 }
 
-func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -147,9 +147,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
 		if err := utils.Decode(requestTpl.Execute(logger, ctx), &requestConfig); err != nil {
-			logger.Debug("error executing request template", zap.Error(err))
-
-			return nil, err
+			return nil, fmt.Errorf("error executing request template: %w", err)
 		}
 
 		dataSize := http.InitRequest(requestConfig, req)

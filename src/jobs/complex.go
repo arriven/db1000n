@@ -33,7 +33,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -64,7 +64,7 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	return nil, nil
 }
 
-func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

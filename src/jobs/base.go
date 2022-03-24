@@ -25,36 +25,51 @@ package jobs
 
 import (
 	"context"
+	"flag"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Arriven/db1000n/src/utils/templates"
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // Args comment for linter
 type Args = map[string]interface{}
 
-// GlobalConfig is a struct meant to pass commandline arguments to every job
+// GlobalConfig passes commandline arguments to every job.
 type GlobalConfig struct {
+	ClientID string
+
 	ProxyURLs           string
-	ScaleFactor         int
 	SkipEncrypted       bool
-	Debug               bool
-	ClientID            string
 	EnablePrimitiveJobs bool
+	ScaleFactor         int
+
+	Debug bool
 }
 
-const (
-	isEncryptedContextKey = "is_in_encrypted_context"
-)
+// NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
+func NewGlobalConfigWithFlags() *GlobalConfig {
+	res := GlobalConfig{
+		ClientID: uuid.NewString(),
+	}
 
-func isInEncryptedContext(ctx context.Context) bool {
-	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
+	flag.StringVar(&res.ProxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
+		"system proxy to set by default (can be a comma-separated list or a template)")
+	flag.BoolVar(&res.SkipEncrypted, "skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
+		"set to true if you want to only run plaintext jobs from the config for security considerations")
+	flag.BoolVar(&res.EnablePrimitiveJobs, "enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true),
+		"set to true if you want to run primitive jobs that are less resource-efficient")
+	flag.IntVar(&res.ScaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
+		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
+	flag.BoolVar(&res.Debug, "debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
+
+	return &res
 }
 
 // Job comment for linter
-type Job = func(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error)
+type Job = func(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error)
 
 // Config comment for linter
 type Config struct {
