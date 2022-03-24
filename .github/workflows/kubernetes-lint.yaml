@@ -1,0 +1,17 @@
+name: kubernetes-lint
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'kubernetes/manifests/**'
+
+jobs:
+  kubeval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Kubeval
+        uses: instrumenta/kubeval-action@master

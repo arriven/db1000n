@@ -1,0 +1,24 @@
+name: terraform-ci
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+jobs:
+  validate-fmt-check:
+    runs-on: ubuntu-latest
+    name: Validate and format terraform configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: terraform validate
+        uses: dflook/terraform-validate@v1
+        with:
+          path: terraform
+      - name: terraform fmt
+        uses: dflook/terraform-fmt-check@v1
+        with:
+          path: terraform

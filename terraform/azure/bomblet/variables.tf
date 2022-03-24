@@ -18,10 +18,10 @@ variable "attack_memory" {
   default = "1.5"
 }
 
-variable "attack_environment_variables" { 
+variable "attack_environment_variables" {
   default = {}
 }
 
 variable "attack_commands" {
-  default = ["/usr/src/app/main","-c=https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"]
+  default = ["/usr/src/app/main", "-c=https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"]
 }
