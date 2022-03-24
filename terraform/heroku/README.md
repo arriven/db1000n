@@ -8,7 +8,7 @@
 
 ## Deploy
 
-To deploy run:
+To deploy:
 
 ```sh
 export EMAIL=<place-email-here>
@@ -23,7 +23,7 @@ You can check logs for application with Heroku CLI: [https://devcenter.heroku.co
 
 ## Destroy
 
-To destroy infrastructure use commands:
+To destroy:
 
 ```sh
 export EMAIL=<place-email-here>
