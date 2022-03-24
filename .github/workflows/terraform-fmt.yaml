@@ -1,4 +1,5 @@
-name: markdownlint
+name: terraform-md
+
 on:
   push:
     tags:
@@ -8,13 +9,7 @@ on:
       - main
   pull_request:
     paths:
-      - "**.md"
-      - ".github/workflows/markdownlint.yaml"
-      - "db1000n.rb"
-permissions:
-  contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
+      - "terraform/**"
 jobs:
   markdownlint:
     name: Lint repository
