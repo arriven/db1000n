@@ -22,7 +22,7 @@ func ResponseCode(rc int) string {
 }
 
 // Qtype converts string representation of query type into a proper DNS format.
-//nolint:cyclop,gocyclo,maintidx // The string map alternative is orders of magnitude slower
+//nolint:cyclop,gocyclo,maintidx,funlen // The string map alternative is orders of magnitude slower
 func Qtype(qt string) uint16 {
 	switch qt {
 	case "None":

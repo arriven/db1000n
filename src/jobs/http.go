@@ -24,6 +24,7 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -47,34 +48,18 @@ type httpJobConfig struct {
 func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
-	var jobConfig httpJobConfig
-	if err := utils.Decode(args, &jobConfig); err != nil {
-		logger.Debug("error parsing job config", zap.Error(err))
-
+	_, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
+	if err != nil {
 		return nil, err
 	}
-
-	var clientConfig http.ClientConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Client, ctx), &clientConfig); err != nil {
-		logger.Debug("error parsing client config", zap.Error(err))
-
-		return nil, err
-	}
-
-	if globalConfig.ProxyURLs != "" {
-		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
-	}
-
-	client := http.NewClient(ctx, clientConfig, logger)
 
 	var requestConfig http.RequestConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Request, ctx), &requestConfig); err != nil {
-		logger.Debug("error parsing request config", zap.Error(err))
-
+	if err := utils.Decode(requestTpl.Execute(logger, ctx), &requestConfig); err != nil {
 		return nil, err
 	}
+
+	client := http.NewClient(ctx, *clientConfig, logger)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
@@ -96,25 +81,8 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
-	resp.Header.VisitAll(func(key []byte, value []byte) {
-		headers[string(key)] = string(value)
-	})
-
-	resp.Header.VisitAllCookie(func(key []byte, value []byte) {
-		c := fasthttp.AcquireCookie()
-		defer fasthttp.ReleaseCookie(c)
-
-		if err := c.ParseBytes(value); err != nil {
-			return
-		}
-
-		if expire := c.Expire(); expire != fasthttp.CookieExpireUnlimited && expire.Before(time.Now()) {
-			logger.Debug("cookie from the request expired", zap.ByteString("cookie", key))
-
-			return
-		}
-		cookies[string(key)] = string(c.Value())
-	})
+	resp.Header.VisitAll(headerLoaderFunc(headers))
+	resp.Header.VisitAllCookie(cookieLoaderFunc(cookies, logger))
 
 	return map[string]interface{}{
 		"response": map[string]interface{}{
@@ -127,37 +95,41 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig Glob
 	}, nil
 }
 
+func headerLoaderFunc(headers map[string]string) func(key []byte, value []byte) {
+	return func(key []byte, value []byte) {
+		headers[string(key)] = string(value)
+	}
+}
+
+func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []byte, value []byte) {
+	return func(key []byte, value []byte) {
+		c := fasthttp.AcquireCookie()
+		defer fasthttp.ReleaseCookie(c)
+
+		if err := c.ParseBytes(value); err != nil {
+			return
+		}
+
+		if expire := c.Expire(); expire != fasthttp.CookieExpireUnlimited && expire.Before(time.Now()) {
+			logger.Debug("cookie from the request expired", zap.ByteString("cookie", key))
+
+			return
+		}
+
+		cookies[string(key)] = string(c.Value())
+	}
+}
+
 func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
-	var jobConfig httpJobConfig
-	if err := utils.Decode(args, &jobConfig); err != nil {
-		logger.Debug("error parsing job config", zap.Error(err))
-
-		return nil, err
-	}
-
-	var clientConfig http.ClientConfig
-	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Client, ctx), &clientConfig); err != nil {
-		logger.Debug("error parsing client config", zap.Error(err))
-
-		return nil, err
-	}
-
-	if globalConfig.ProxyURLs != "" {
-		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
-	}
-
-	client := http.NewClient(ctx, clientConfig, logger)
-
-	requestTpl, err := templates.ParseMapStruct(jobConfig.Request)
+	jobConfig, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
 	if err != nil {
-		logger.Debug("error parsing request config", zap.Error(err))
-
 		return nil, err
 	}
+
+	client := http.NewClient(ctx, *clientConfig, logger)
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
@@ -192,6 +164,31 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	}
 
 	return nil, nil
+}
+
+func getHTTPJobConfigs(ctx context.Context, args Args, globalProxyURLs string, logger *zap.Logger) (
+	cfg *httpJobConfig, clientCfg *http.ClientConfig, requestTpl *templates.MapStruct, err error,
+) {
+	var jobConfig httpJobConfig
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, nil, nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	var clientConfig http.ClientConfig
+	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, jobConfig.Client, ctx), &clientConfig); err != nil {
+		return nil, nil, nil, fmt.Errorf("error parsing client config: %w", err)
+	}
+
+	if globalProxyURLs != "" {
+		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalProxyURLs, ctx)
+	}
+
+	requestTpl, err = templates.ParseMapStruct(jobConfig.Request)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error parsing request config: %w", err)
+	}
+
+	return &jobConfig, &clientConfig, requestTpl, nil
 }
 
 func sendFastHTTPRequest(client http.Client, req *fasthttp.Request, resp *fasthttp.Response) error {

@@ -40,7 +40,6 @@ import (
 func packetgenJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	type packetgenJobConfig struct {
 		BasicJobConfig

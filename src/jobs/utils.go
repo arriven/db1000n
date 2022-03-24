@@ -79,7 +79,6 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args
 func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig
@@ -119,7 +118,6 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCo
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig

@@ -168,6 +168,8 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
 			go func(i int) {
+				defer utils.PanicHandler(logger)
+
 				_, err := job(ctx, logger, r.config.Global, cfg.Jobs[i].Args)
 				if err != nil {
 					logger.Error("error running job", zap.Error(err))
