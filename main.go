@@ -55,6 +55,7 @@ func main() {
 	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
+	updaterMode, destinationConfig := updater.NewOptionsWithFlags()
 
 	// Prometheus
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
@@ -62,11 +63,6 @@ func main() {
 	prometheusPushGateways := flag.String("prometheus_gateways",
 		utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
 		"Comma separated list of prometheus push gateways")
-
-	// Config updater
-	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
-	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
-		"Destination config file to write (only applies if updater-mode is enabled")
 
 	// Misc
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")

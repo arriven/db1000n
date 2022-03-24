@@ -2,12 +2,21 @@ package updater
 
 import (
 	"bytes"
+	"flag"
 	"log"
 	"os"
 	"time"
 
 	"github.com/Arriven/db1000n/src/runner/config"
+	"github.com/Arriven/db1000n/src/utils"
 )
+
+// NewOptionsWithFlags returns updater options initialized with command line flags.
+func NewOptionsWithFlags() (updaterMode *bool, destinationConfig *string) {
+	return flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater"),
+		flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
+			"Destination config file to write (only applies if updater-mode is enabled")
+}
 
 func Run(destinationConfig string, configPaths []string, backupConfig []byte) {
 	lastKnownConfig := &config.RawConfig{Body: backupConfig}
