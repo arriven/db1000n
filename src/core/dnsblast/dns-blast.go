@@ -118,19 +118,6 @@ type StressTestParameters struct {
 func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters, clientID string) error {
 	defer utils.PanicHandler(logger)
 
-	var (
-		awaitGroup    sync.WaitGroup
-		reusableQuery = &QueryParameters{
-			HostAndPort: nameserver,
-			QName:       "", // Will be generated on each cycle
-			QType:       dns.TypeA,
-		}
-
-		keepAliveCounter  = 0
-		keepAliveReminder = 256
-		nextLoopTicker    = time.NewTicker(parameters.Delay)
-	)
-
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
 
 	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
@@ -141,43 +128,47 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger
 	}
 
 	defer dhhGenerator.Cancel()
+
+	nextLoopTicker := time.NewTicker(parameters.Delay)
 	defer nextLoopTicker.Stop()
 
-blastLoop:
+	var (
+		keepAliveCounter = 0
+		reusableQuery    = &QueryParameters{
+			HostAndPort: nameserver,
+			QName:       "", // To be generated on each cycle
+			QType:       dns.TypeA,
+		}
+	)
+
 	for reusableQuery.QName = range dhhGenerator.Next() {
-		if keepAliveCounter == keepAliveReminder {
+		const keepAliveReminder = 256
+		if keepAliveCounter++; keepAliveCounter > keepAliveReminder {
 			logger.Debug("still blasting to server", zap.String("server", reusableQuery.HostAndPort))
+
 			keepAliveCounter = 0
-		} else {
-			keepAliveCounter++
 		}
 
-		select {
-		case <-ctx.Done():
-			logger.Debug("DNS stress is canceled", zap.String("server", reusableQuery.HostAndPort))
+		var wg sync.WaitGroup
 
-			break blastLoop
-		default:
-			// Keep going
-		}
+		wg.Add(parameters.ParallelQueries)
 
-		awaitGroup.Add(parameters.ParallelQueries)
 		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
 				defer utils.PanicHandler(logger)
 				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery, clientID)
-				awaitGroup.Done()
+				wg.Done()
 			}()
 		}
-		awaitGroup.Wait()
+
+		wg.Wait()
 
 		select {
 		case <-ctx.Done():
-			logger.Debug("DNS stress is canceled", zap.String("server", reusableQuery.HostAndPort))
+			logger.Debug("DNS stress canceled", zap.String("server", reusableQuery.HostAndPort))
 
-			break blastLoop
+			return nil
 		case <-nextLoopTicker.C:
-			continue blastLoop
 		}
 	}
 
