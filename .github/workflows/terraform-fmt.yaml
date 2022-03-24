@@ -1,0 +1,46 @@
+name: terraform-ci
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+jobs:
+  validate-fmt-check:
+    runs-on: ubuntu-latest
+    name: Validate and format terraform configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: terraform validate
+        uses: dflook/terraform-validate@v1
+        with:
+          path: terraform
+      - name: terraform fmt
+        uses: dflook/terraform-fmt-check@v1
+        with:
+          path: terraform
+  lint-sec-check:
+    runs-on: ubuntu-latest
+    name: Lint and secure terraform configuration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install tools
+        run: |
+          wget -q -O tfsec https://github.com/aquasecurity/tfsec/releases/download/v0.63.1/tfsec-linux-amd64
+          wget -q https://github.com/terraform-linters/tflint/releases/download/v0.34.1/tflint_linux_amd64.zip
+          unzip tflint_linux_amd64.zip
+          chmod +x tflint tfsec
+          mv {tflint,tfsec} /usr/local/bin/
+      - name: tflint
+        run: |
+          tflint --init
+          make lint
+        working-directory: terraform
+      - name: tfsec
+        run: |
+          make sec
+        working-directory: terraform
