@@ -172,7 +172,10 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 
 				_, err := job(ctx, logger, r.config.Global, cfg.Jobs[i].Args)
 				if err != nil {
-					logger.Error("error running job", zap.Error(err))
+					logger.Error("error running job",
+						zap.String("name", cfg.Jobs[i].Name),
+						zap.String("type", cfg.Jobs[i].Type),
+						zap.Error(err))
 				}
 			}(i)
 
