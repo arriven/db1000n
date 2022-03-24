@@ -48,7 +48,6 @@ type httpJobConfig struct {
 func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	_, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
 	if err != nil {
@@ -124,7 +123,6 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	jobConfig, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
 	if err != nil {

@@ -30,14 +30,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 
-	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig
@@ -69,7 +67,6 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer utils.PanicHandler(logger)
 
 	var jobConfig struct {
 		BasicJobConfig

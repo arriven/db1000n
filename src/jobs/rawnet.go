@@ -49,8 +49,6 @@ type rawnetConfig struct {
 }
 
 func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	defer utils.PanicHandler(logger)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -118,8 +116,6 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 }
 
 func udpJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) {
-	defer utils.PanicHandler(logger)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

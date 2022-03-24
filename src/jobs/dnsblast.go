@@ -44,8 +44,6 @@ type dnsBlastConfig struct {
 }
 
 func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	defer utils.PanicHandler(logger)
-
 	jobConfig, err := getDNSBlastConfig(args)
 	if err != nil {
 		return nil, err
