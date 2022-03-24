@@ -8,7 +8,7 @@
 
 ## Deploy
 
-To deploy run:
+To deploy:
 
 ```sh
 export DO_TOKEN=<place-api-token-here>
@@ -21,7 +21,7 @@ After deployment (usually takes 5-10 mins) go to [Apps List](https://cloud.digit
 
 ## Destroy
 
-To destroy infrastructure use commands:
+To destroy:
 
 ```sh
 export DO_TOKEN=<place-api-token-here>
