@@ -35,12 +35,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-const (
-	defaultProto                   = dnsblast.UDPProtoName
-	defaultParallelQueriesPerCycle = 5
-	defaultIntervalInMS            = 10
-)
-
 type dnsBlastConfig struct {
 	BasicJobConfig
 	RootDomain      string   `mapstructure:"root_domain"`
@@ -50,58 +44,15 @@ type dnsBlastConfig struct {
 }
 
 func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	defer utils.PanicHandler(logger)
 
-	var jobConfig dnsBlastConfig
-	if err = utils.Decode(args, &jobConfig); err != nil {
-		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %w", err)
-	}
-
-	//
-	// Default settings and early misconfiguration prevention
-	//
-
-	// Root domain verification
-	if len(jobConfig.RootDomain) == 0 {
-		return nil, errors.New("no root domain provided, consider adding it")
-	}
-
-	// Domain seeds verification
-	if len(jobConfig.SeedDomains) == 0 {
-		return nil, errors.New("no seed domains provided, at least one is required")
-	}
-
-	// Protocol settlement
-	isUDPProto := jobConfig.Protocol == dnsblast.UDPProtoName
-	isTCPProto := jobConfig.Protocol == dnsblast.TCPProtoName
-	isTCPTLSProto := jobConfig.Protocol == dnsblast.TCPTLSProtoName
-
-	switch {
-	case jobConfig.Protocol == "":
-		jobConfig.Protocol = defaultProto
-
-	case !(isUDPProto || !isTCPProto || !isTCPTLSProto):
-		return nil, fmt.Errorf("unrecognized DNS protocol [provided], expected one of [%v]",
-			[]string{dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName})
-	}
-
-	// Concurrency validation
-	if jobConfig.ParallelQueries == 0 {
-		jobConfig.ParallelQueries = defaultParallelQueriesPerCycle
-	}
-
-	// Delay validation
-	if jobConfig.IntervalMs == 0 {
-		jobConfig.IntervalMs = defaultIntervalInMS
+	jobConfig, err := getDNSBlastConfig(args)
+	if err != nil {
+		return nil, err
 	}
 
 	var wg sync.WaitGroup
 
-	//
-	// Blast the Job!
-	//
 	err = dnsblast.Start(ctx, logger, &wg, &dnsblast.Config{
 		RootDomain:      jobConfig.RootDomain,
 		Protocol:        jobConfig.Protocol,
@@ -114,4 +65,48 @@ func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalCon
 	wg.Wait()
 
 	return nil, err
+}
+
+func getDNSBlastConfig(args Args) (*dnsBlastConfig, error) {
+	const (
+		defaultParallelQueriesPerCycle = 5
+		defaultIntervalMS              = 10
+	)
+
+	var jobConfig dnsBlastConfig
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %w", err)
+	}
+
+	//
+	// Default settings and early misconfiguration prevention
+	//
+
+	switch {
+	case len(jobConfig.RootDomain) == 0:
+		return nil, errors.New("no root domain provided, consider adding it")
+	case len(jobConfig.SeedDomains) == 0:
+		return nil, errors.New("no seed domains provided, at least one is required")
+	}
+
+	switch jobConfig.Protocol {
+	case dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName:
+		// All good
+	case "":
+		// Default to UDP
+		jobConfig.Protocol = dnsblast.UDPProtoName
+	default:
+		return nil, fmt.Errorf("unrecognized DNS protocol %q, expected one of [%q, %q, %q]", jobConfig.Protocol,
+			dnsblast.UDPProtoName, dnsblast.TCPProtoName, dnsblast.TCPTLSProtoName)
+	}
+
+	if jobConfig.ParallelQueries == 0 {
+		jobConfig.ParallelQueries = defaultParallelQueriesPerCycle
+	}
+
+	if jobConfig.IntervalMs == 0 {
+		jobConfig.IntervalMs = defaultIntervalMS
+	}
+
+	return &jobConfig, nil
 }
