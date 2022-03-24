@@ -43,7 +43,7 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	jobConfig, err := getDNSBlastConfig(args)
 	if err != nil {
 		return nil, err

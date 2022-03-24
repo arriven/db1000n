@@ -22,44 +22,46 @@ var (
 
 // Config defines OTA parameters.
 type Config struct {
-	doAutoUpdate, doRestartOnUpdate, skipUpdateCheckOnStart *bool
-	autoUpdateCheckFrequency                                *time.Duration
+	doAutoUpdate, doRestartOnUpdate, skipUpdateCheckOnStart bool
+	autoUpdateCheckFrequency                                time.Duration
 }
 
 // NewConfigWithFlags returns a Config initialized with command line flags.
 func NewConfigWithFlags() *Config {
 	const defaultUpdateCheckFrequency = 24 * time.Hour
 
-	return &Config{
-		doAutoUpdate: flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false),
-			"Enable the application automatic updates on the startup"),
-		doRestartOnUpdate: flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true),
-			"Allows application to restart upon successful update (ignored if auto-update is disabled)"),
-		skipUpdateCheckOnStart: flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false),
-			"Allows to skip the update check at the startup (usually set automatically by the previous version)"),
-		autoUpdateCheckFrequency: flag.Duration("self-update-check-frequency",
-			utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", defaultUpdateCheckFrequency), "How often to run auto-update checks"),
-	}
+	var res Config
+
+	flag.BoolVar(&res.doAutoUpdate, "enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false),
+		"Enable the application automatic updates on the startup")
+	flag.BoolVar(&res.doRestartOnUpdate, "restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true),
+		"Allows application to restart upon successful update (ignored if auto-update is disabled)")
+	flag.BoolVar(&res.skipUpdateCheckOnStart, "skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false),
+		"Allows to skip the update check at the startup (usually set automatically by the previous version)")
+	flag.DurationVar(&res.autoUpdateCheckFrequency, "self-update-check-frequency",
+		utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", defaultUpdateCheckFrequency), "How often to run auto-update checks")
+
+	return &res
 }
 
 // WatchUpdates performs OTA updates based on the config.
 func WatchUpdates(cfg *Config) {
-	if !*cfg.doAutoUpdate {
+	if !cfg.doAutoUpdate {
 		return
 	}
 
-	if !*cfg.skipUpdateCheckOnStart {
-		runUpdate(*cfg.doRestartOnUpdate)
+	if !cfg.skipUpdateCheckOnStart {
+		runUpdate(cfg.doRestartOnUpdate)
 	} else {
 		log.Printf("Version update on startup is skipped, next update check scheduled in %v",
-			*cfg.autoUpdateCheckFrequency)
+			cfg.autoUpdateCheckFrequency)
 	}
 
-	periodicalUpdateChecker := time.NewTicker(*cfg.autoUpdateCheckFrequency)
+	periodicalUpdateChecker := time.NewTicker(cfg.autoUpdateCheckFrequency)
 	defer periodicalUpdateChecker.Stop()
 
 	for range periodicalUpdateChecker.C {
-		runUpdate(*cfg.doRestartOnUpdate)
+		runUpdate(cfg.doRestartOnUpdate)
 	}
 }
 

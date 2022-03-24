@@ -61,17 +61,8 @@ func main() {
 	refreshTimeout := flag.Duration("refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute),
 		"refresh timeout for updating the config")
 
-	// Proxying
-	systemProxy := flag.String("proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
-		"system proxy to set by default (can be a comma-separated list or a template)")
-
 	// Jobs
-	scaleFactor := flag.Int("scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
-		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
-	skipEncrytedJobs := flag.Bool("skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
-		"set to true if you want to only run plaintext jobs from the config for security considerations")
-	enablePrimitiveJobs := flag.Bool("enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true),
-		"set to true if you want to run primitive jobs that are less resource-efficient")
+	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
 
 	// Prometheus
 	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
@@ -89,12 +80,9 @@ func main() {
 		"Destination config file to write (only applies if updater-mode is enabled")
 
 	// Country check
-	countryList := flag.String("country-list", utils.GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
-	strictCountryCheck := flag.Bool("strict-country-check", utils.GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false),
-		"enable strict country check; will also exit if IP can't be determined")
+	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 
 	// Misc
-	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
 
@@ -111,17 +99,17 @@ func main() {
 		return
 	}
 
-	logger, err := newZapLogger(*debug)
+	logger, err := newZapLogger(jobsGlobalConfig.Debug)
 	if err != nil {
 		log.Fatalf("failed to initialize Zap logger: %v", err)
 	}
 
 	go ota.WatchUpdates(otaConfig)
-	setUpPprof(*pprof, *debug)
+	setUpPprof(*pprof, jobsGlobalConfig.Debug)
 	rand.Seed(time.Now().UnixNano())
 
 	clientID := uuid.NewString()
-	country := checkCountryOrFail(strings.Split(*countryList, ","), *strictCountryCheck)
+	country := utils.CheckCountryOrFail(countryCheckerConfig)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -133,14 +121,7 @@ func main() {
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
-		Global: jobs.GlobalConfig{
-			ProxyURLs:           *systemProxy,
-			ScaleFactor:         *scaleFactor,
-			SkipEncrypted:       *skipEncrytedJobs,
-			Debug:               *debug,
-			ClientID:            clientID,
-			EnablePrimitiveJobs: *enablePrimitiveJobs,
-		},
+		Global:         jobsGlobalConfig,
 	})
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
@@ -177,15 +158,6 @@ func setUpPprof(pprof string, debug bool) {
 	go func() {
 		log.Println(http.ListenAndServe(pprof, mux))
 	}()
-}
-
-func checkCountryOrFail(blacklist []string, strict bool) string {
-	isCountryAllowed, country := utils.CheckCountry(blacklist, strict)
-	if !isCountryAllowed {
-		log.Fatalf("%q is not an allowed country, exiting", country)
-	}
-
-	return country
 }
 
 func initMetricsOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, clientID, country string) {

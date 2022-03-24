@@ -45,11 +45,11 @@ import (
 
 // Config for the job runner
 type Config struct {
-	ConfigPaths    []string          // Comma-separated config location URLs
-	BackupConfig   []byte            // Raw backup config
-	RefreshTimeout time.Duration     // How often to refresh config
-	Format         string            // json or yaml
-	Global         jobs.GlobalConfig // meant to pass cmdline and other args to every job
+	ConfigPaths    []string           // Comma-separated config location URLs
+	BackupConfig   []byte             // Raw backup config
+	RefreshTimeout time.Duration      // How often to refresh config
+	Format         string             // json or yaml
+	Global         *jobs.GlobalConfig // Passes cmdline and other args to every job
 }
 
 // Runner executes jobs according to the (fetched from remote) configuration

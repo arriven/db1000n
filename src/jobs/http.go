@@ -45,7 +45,7 @@ type httpJobConfig struct {
 	Client  map[string]interface{} // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -120,7 +120,7 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 	}
 }
 
-func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

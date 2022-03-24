@@ -34,7 +34,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

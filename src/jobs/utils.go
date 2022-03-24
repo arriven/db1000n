@@ -34,7 +34,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func logJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
+func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
 	var jobConfig struct {
 		Text string
 	}
@@ -48,7 +48,7 @@ func logJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) 
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) {
+func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -60,7 +60,7 @@ func setVarJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Arg
 	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
 }
 
-func checkJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
+func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
 	var jobConfig struct {
 		Value string
 	}
@@ -76,7 +76,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ GlobalConfig, args Args
 	return nil, nil
 }
 
-func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -107,11 +107,17 @@ func loopJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig,
 	return nil, nil
 }
 
+const isEncryptedContextKey = "is_in_encrypted_context"
+
 func EncryptedContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true)
 }
 
-func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig GlobalConfig, args Args) (data interface{}, err error) {
+func isInEncryptedContext(ctx context.Context) bool {
+	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
+}
+
+func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
 	}
