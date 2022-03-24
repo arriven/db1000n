@@ -26,7 +26,6 @@ config.json
 # Terraform
 **/.terraform*
 **/terraform.tfstate*
-**/terraform.tfvars
 
 # JetBrains
 .idea
