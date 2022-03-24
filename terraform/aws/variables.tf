@@ -39,3 +39,9 @@ variable "desired_capacity" {
   description = "number of instances to run"
   default     = 30
 }
+
+variable "zones" {
+  type        = number
+  description = "number of availability zones"
+  default     = 2
+}
