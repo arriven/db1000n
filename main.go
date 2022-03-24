@@ -48,8 +48,6 @@ import (
 )
 
 func main() {
-	const defaultUpdateCheckFrequency = 24 * time.Hour
-
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
@@ -82,15 +80,10 @@ func main() {
 		utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
 		"Comma separated list of prometheus push gateways")
 
-	// Auto-update
-	doAutoUpdate := flag.Bool("enable-self-update", utils.GetEnvBoolDefault("ENABLE_SELF_UPDATE", false),
-		"Enable the application automatic updates on the startup")
-	doRestartOnUpdate := flag.Bool("restart-on-update", utils.GetEnvBoolDefault("RESTART_ON_UPDATE", true),
-		"Allows application to restart upon successful update (ignored if auto-update is disabled)")
-	skipUpdateCheckOnStart := flag.Bool("skip-update-check-on-start", utils.GetEnvBoolDefault("SKIP_UPDATE_CHECK_ON_START", false),
-		"Allows to skip the update check at the startup (usually set automatically by the previous version)")
-	autoUpdateCheckFrequency := flag.Duration("self-update-check-frequency",
-		utils.GetEnvDurationDefault("SELF_UPDATE_CHECK_FREQUENCY", defaultUpdateCheckFrequency), "How often to run auto-update checks")
+	// OTA
+	otaConfig := ota.NewConfigWithFlags()
+
+	// Config updater
 	updaterMode := flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater")
 	destinationConfig := flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
 		"Destination config file to write (only applies if updater-mode is enabled")
@@ -107,32 +100,23 @@ func main() {
 
 	flag.Parse()
 
-	if *help {
+	switch {
+	case *help:
 		flag.CommandLine.Usage()
+
+		return
+	case *updaterMode:
+		updater.Run(*destinationConfig, strings.Split(*configPaths, ","), []byte(*backupConfig))
 
 		return
 	}
 
 	logger, err := newZapLogger(*debug)
 	if err != nil {
-		log.Printf("failed to initialize Zap logger: %s", err)
-		os.Exit(1)
-
-		return
+		log.Fatalf("failed to initialize Zap logger: %v", err)
 	}
 
-	configPathsArray := strings.Split(*configPaths, ",")
-
-	if *updaterMode {
-		updater.Run(*destinationConfig, configPathsArray, []byte(*backupConfig))
-
-		return
-	}
-
-	if *doAutoUpdate {
-		go watchUpdates(*doRestartOnUpdate, *skipUpdateCheckOnStart, *autoUpdateCheckFrequency)
-	}
-
+	go ota.WatchUpdates(otaConfig)
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
@@ -145,7 +129,7 @@ func main() {
 	initMetricsOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
 
 	r, err := runner.New(&runner.Config{
-		ConfigPaths:    configPathsArray,
+		ConfigPaths:    strings.Split(*configPaths, ","),
 		BackupConfig:   []byte(*backupConfig),
 		RefreshTimeout: *refreshTimeout,
 		Format:         *configFormat,
@@ -213,55 +197,6 @@ func initMetricsOrFail(ctx context.Context, prometheusOn bool, prometheusPushGat
 		metrics.InitMetrics(clientID, country)
 
 		go metrics.ExportPrometheusMetrics(ctx, prometheusPushGateways)
-	}
-}
-
-func watchUpdates(doRestartOnUpdate, skipUpdateCheckOnStart bool, autoUpdateCheckFrequency time.Duration) {
-	if !skipUpdateCheckOnStart {
-		runUpdate(doRestartOnUpdate)
-	} else {
-		log.Printf("Version update on startup is skipped, next update check is scheduled in %v",
-			autoUpdateCheckFrequency)
-	}
-
-	periodicalUpdateChecker := time.NewTicker(autoUpdateCheckFrequency)
-	defer periodicalUpdateChecker.Stop()
-
-	for range periodicalUpdateChecker.C {
-		runUpdate(doRestartOnUpdate)
-	}
-}
-
-func runUpdate(doRestartOnUpdate bool) {
-	log.Println("Running a check for a newer version...")
-
-	isUpdateFound, newVersion, changeLog, err := ota.DoAutoUpdate()
-	if err != nil {
-		log.Printf("Auto-Update failed: %s", err)
-
-		return
-	}
-
-	if !isUpdateFound {
-		log.Println("We are running the latest version, OK!")
-
-		return
-	}
-
-	log.Printf("Newer version of the application is found [version=%s]", newVersion)
-	log.Printf("What's new:\n%s", changeLog)
-
-	if !doRestartOnUpdate {
-		log.Println("Auto restart is disabled, restart the application manually to apply changes!")
-
-		return
-	}
-
-	log.Println("Auto restart is enabled, restarting the application to run a new version")
-
-	if err = ota.Restart("-skip-update-check-on-start"); err != nil {
-		log.Printf("Failed to restart the application after the update to the new version: %v", err)
-		log.Println("Restart the application manually to apply changes!")
 	}
 }
 

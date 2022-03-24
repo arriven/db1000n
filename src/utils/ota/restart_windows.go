@@ -11,7 +11,7 @@ import (
 	"syscall"
 )
 
-func Restart(extraArgs ...string) error {
+func restart(extraArgs ...string) error {
 	execPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to locate the executable file: %w", err)
@@ -43,4 +43,3 @@ func Restart(extraArgs ...string) error {
 
 	return nil
 }
-

@@ -8,6 +8,6 @@ import (
 	"runtime"
 )
 
-func Restart(extraArgs ...string) error {
+func restart(extraArgs ...string) error {
 	return fmt.Errorf("restart on the %s system is not available", runtime.GOOS)
 }
