@@ -1,10 +1,14 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/arriven/db1000n-advanced
+  repository: ghcr.io/arriven/db1000n
   pullPolicy: Always
   # Available images: https://github.com/Arriven/db1000n/pkgs/container/db1000n
   tag: latest
+
+envVars:
+- name: "ENABLE_PRIMITIVE"
+  value: "false"
 
 resources:
   {}

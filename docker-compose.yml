@@ -117,7 +117,7 @@ services:
   # it will use config.json created by 'updater' container above
   # this is set by specifying same volume and -c config/config.json
   db1000n_01:
-    image: ghcr.io/arriven/db1000n-advanced
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       ovpn_01:
@@ -144,7 +144,7 @@ services:
   # it will use config.json created by 'updater' container above
   # this is set by specifying same volume and -c config/config.json
   db1000n_02:
-    image: ghcr.io/arriven/db1000n-advanced
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       ovpn_02:
@@ -170,7 +170,7 @@ services:
   # this Docker container will use VPN 03
   # it will download config itself and won't access shared volume so those options are undefined here
   db1000n_03:
-    image: ghcr.io/arriven/db1000n-advanced
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       ovpn_03:
