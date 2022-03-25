@@ -104,6 +104,8 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 			lastKnownConfig = rawConfig
 
+			resetMetrics(r.globalJobsCfg.ClientID)
+
 			if cancel != nil {
 				cancel()
 			}
@@ -239,4 +241,9 @@ func dumpMetrics(clientID string) error {
 	networkStatsWriter.Flush()
 
 	return nil
+}
+
+func resetMetrics(clientId string) {
+	metrics.Default.Write(metrics.Traffic, clientId, 0)
+	metrics.Default.Write(metrics.ProcessedTraffic, clientId, 0)
 }
