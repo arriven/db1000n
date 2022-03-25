@@ -39,10 +39,10 @@ import (
 
 	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/runner"
+	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
-	"github.com/Arriven/db1000n/src/utils/updater"
 )
 
 func main() {
@@ -54,7 +54,7 @@ func main() {
 	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
-	updaterMode, destinationConfig := updater.NewOptionsWithFlags()
+	updaterMode, destinationPath := config.NewOptionsWithFlags()
 	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
@@ -68,7 +68,7 @@ func main() {
 
 		return
 	case *updaterMode:
-		updater.Run(*destinationConfig, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig))
+		config.UpdateLocal(*destinationPath, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig))
 
 		return
 	}

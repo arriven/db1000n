@@ -1,4 +1,4 @@
-package updater
+package config
 
 import (
 	"bytes"
@@ -7,40 +7,34 @@ import (
 	"os"
 	"time"
 
-	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
 // NewOptionsWithFlags returns updater options initialized with command line flags.
-func NewOptionsWithFlags() (updaterMode *bool, destinationConfig *string) {
+func NewOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
 	return flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater"),
 		flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
 			"Destination config file to write (only applies if updater-mode is enabled")
 }
 
-func Run(destinationConfig string, configPaths []string, backupConfig []byte) {
-	lastKnownConfig := &config.RawConfig{Body: backupConfig}
+func UpdateLocal(destinationPath string, configPaths []string, backupConfig []byte) {
+	lastKnownConfig := &RawConfig{Body: backupConfig}
 
 	for {
-		rawConfig := config.FetchRawConfig(configPaths, lastKnownConfig)
-
-		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
-			err := writeConfig(rawConfig.Body, destinationConfig)
-			if err != nil {
+		if rawConfig := FetchRawConfig(configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
+			if err := writeConfig(rawConfig.Body, destinationPath); err != nil {
 				log.Printf("Error writing config: %v", err)
-
-				return
 			}
 
-			lastKnownConfig = rawConfig
+			return
 		}
 
 		time.Sleep(1 * time.Minute)
 	}
 }
 
-func writeConfig(body []byte, destinationConfig string) error {
-	file, err := os.Create(destinationConfig)
+func writeConfig(body []byte, destinationPath string) error {
+	file, err := os.Create(destinationPath)
 	if err != nil {
 		return err
 	}
@@ -52,7 +46,7 @@ func writeConfig(body []byte, destinationConfig string) error {
 		return err
 	}
 
-	log.Printf("Saved %s with size %d", destinationConfig, size)
+	log.Printf("Saved %s with size %d", destinationPath, size)
 
 	return nil
 }

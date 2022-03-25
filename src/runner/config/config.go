@@ -120,6 +120,7 @@ func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
 	return &RawConfig{Body: res, etag: etag, lastModified: lastModified}, nil
 }
 
+// FetchRawConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
 func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 	newConfig := fetch(paths, lastKnownConfig)
 
@@ -140,7 +141,7 @@ func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 	return newConfig
 }
 
-// Update the job config from a list of paths or the built-in backup. Returns nil, nil in case of no changes.
+// Unmarshal config encoded with the given format.
 func Unmarshal(body []byte, format string) *Config {
 	if body == nil {
 		return nil
