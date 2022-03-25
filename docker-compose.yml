@@ -170,7 +170,7 @@ services:
   # this Docker container will use VPN 03
   # it will download config itself and won't access shared volume so those options are undefined here
   db1000n_03:
-    image: ghcr.io/arriven/ 
+    image: ghcr.io/arriven/db1000n
     restart: unless-stopped
     depends_on:
       ovpn_03:
