@@ -60,12 +60,12 @@
       shell: |
         echo "docker exec vpn expressvpn disconnect" >> /run.sh
         echo 'docker exec vpn expressvpn connect "$(shuf -n 1 /countries.txt)"' >> /run.sh
-        echo "docker run --name=db1000n --pull=always --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest" >> /run.sh
+        echo "docker run --name=db1000n --pull=always --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n:latest" >> /run.sh
       when: setup_vpn == True
     
     - name: add docker run to cron script
       shell: |
-        echo "docker run --name=db1000n --pull=always -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest" >> /run.sh
+        echo "docker run --name=db1000n --pull=always -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n:latest" >> /run.sh
       when: setup_vpn != True
 
     - name: start VPN container
@@ -94,9 +94,9 @@
       shell: (crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh') | crontab -
 
     - name: initial Docker run with VPN
-      shell: docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest
+      shell: docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n:latest
       when: setup_vpn == True
 
     - name: initial Docker run without VPN
-      shell: docker run --name=db1000n -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n-advanced:latest
+      shell: docker run --name=db1000n -e PUID=1000 -e PGID=1000 --rm -d ghcr.io/arriven/db1000n:latest
       when: setup_vpn != True
