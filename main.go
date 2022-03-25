@@ -58,6 +58,7 @@ func main() {
 	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
+	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 
 	flag.Parse()
 
@@ -72,13 +73,13 @@ func main() {
 		return
 	}
 
-	logger, err := newZapLogger(jobsGlobalConfig.Debug)
+	logger, err := newZapLogger(*debug)
 	if err != nil {
 		log.Fatalf("failed to initialize Zap logger: %v", err)
 	}
 
 	go ota.WatchUpdates(otaConfig)
-	setUpPprof(*pprof, jobsGlobalConfig.Debug)
+	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
 	country := utils.CheckCountryOrFail(countryCheckerConfig)

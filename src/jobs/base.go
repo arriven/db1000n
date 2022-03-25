@@ -45,8 +45,6 @@ type GlobalConfig struct {
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         int
-
-	Debug bool
 }
 
 // NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
@@ -63,7 +61,6 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"set to true if you want to run primitive jobs that are less resource-efficient")
 	flag.IntVar(&res.ScaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
 		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
-	flag.BoolVar(&res.Debug, "debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 
 	return &res
 }
