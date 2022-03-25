@@ -35,7 +35,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/jobs"
@@ -82,13 +81,12 @@ func main() {
 	setUpPprof(*pprof, jobsGlobalConfig.Debug)
 	rand.Seed(time.Now().UnixNano())
 
-	clientID := uuid.NewString()
 	country := utils.CheckCountryOrFail(countryCheckerConfig)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
+	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
 	r, err := runner.New(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {
