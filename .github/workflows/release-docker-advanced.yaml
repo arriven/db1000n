@@ -6,8 +6,8 @@
 name: Publish Advanced Docker image
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["**"]
 
 jobs:
   push_to_registry:
