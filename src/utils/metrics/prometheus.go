@@ -115,7 +115,7 @@ func InitOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, 
 	if prometheusOn {
 		Init(clientID, country)
 
-		go ExportPrometheusMetrics(ctx, prometheusPushGateways)
+		go ExportPrometheusMetrics(ctx, clientID, prometheusPushGateways)
 	}
 }
 
@@ -192,11 +192,11 @@ func ValidatePrometheusPushGateways(gatewayURLsCSV string) bool {
 
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
-func ExportPrometheusMetrics(ctx context.Context, gateways string) {
+func ExportPrometheusMetrics(ctx context.Context, clientID, gateways string) {
 	registerMetrics()
 
 	if gateways != "" {
-		go pushMetrics(ctx, strings.Split(gateways, ","))
+		go pushMetrics(ctx, clientID, strings.Split(gateways, ","))
 	}
 
 	serveMetrics(ctx)
@@ -261,8 +261,8 @@ func getTLSConfig() (*tls.Config, error) {
 	}, nil
 }
 
-func pushMetrics(ctx context.Context, gateways []string) {
-	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "default_push")
+func pushMetrics(ctx context.Context, clientID string, gateways []string) {
+	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", clientID)
 	gateway := gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
 	ticker := time.NewTicker(tickerPeriod)
