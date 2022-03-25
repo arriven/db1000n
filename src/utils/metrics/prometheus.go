@@ -29,6 +29,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
+	"flag"
 	"log"
 	"math/rand"
 	"net/http"
@@ -97,8 +98,29 @@ var (
 	clientCounter    *prometheus.CounterVec
 )
 
-// InitMetrics initializes prometheus counters
-func InitMetrics(clientID, country string) {
+// NewOptionsWithFlags returns metrics options initialized with command line flags.
+func NewOptionsWithFlags() (prometheusOn *bool, prometheusPushGateways *string) {
+	return flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
+			"Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)"),
+		flag.String("prometheus_gateways",
+			utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
+			"Comma separated list of prometheus push gateways")
+}
+
+func InitOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, clientID, country string) {
+	if !ValidatePrometheusPushGateways(prometheusPushGateways) {
+		log.Fatal("Invalid value for --prometheus_gateways")
+	}
+
+	if prometheusOn {
+		Init(clientID, country)
+
+		go ExportPrometheusMetrics(ctx, prometheusPushGateways)
+	}
+}
+
+// Init prometheus counters.
+func Init(clientID, country string) {
 	constLabels := prometheus.Labels{ClientIDLabel: clientID}
 	if country != "" {
 		constLabels[CountryLabel] = country
@@ -152,23 +174,20 @@ func registerMetrics() {
 
 // ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
 // is valid URL
-func ValidatePrometheusPushGateways(value string) bool {
-	if len(value) == 0 {
+func ValidatePrometheusPushGateways(gatewayURLsCSV string) bool {
+	if len(gatewayURLsCSV) == 0 {
 		return true
 	}
 
-	listValues := strings.Split(value, ",")
-	result := true
-
-	for i, gatewayURL := range listValues {
+	for i, gatewayURL := range strings.Split(gatewayURLsCSV, ",") {
 		if _, err := url.Parse(gatewayURL); err != nil {
-			log.Printf("Can't parse %dth (0-based) push gateway\n", i)
+			log.Printf("Can't parse %d-th (0-based) push gateway: %v", i, err)
 
-			result = false
+			return false
 		}
 	}
 
-	return result
+	return true
 }
 
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics

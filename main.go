@@ -56,15 +56,7 @@ func main() {
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 	updaterMode, destinationConfig := updater.NewOptionsWithFlags()
-
-	// Prometheus
-	prometheusOn := flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
-		"Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)")
-	prometheusPushGateways := flag.String("prometheus_gateways",
-		utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
-		"Comma separated list of prometheus push gateways")
-
-	// Misc
+	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
 
@@ -96,7 +88,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	initMetricsOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
+	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, clientID, country)
 
 	r, err := runner.New(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {
@@ -134,18 +126,6 @@ func setUpPprof(pprof string, debug bool) {
 	go func() {
 		log.Println(http.ListenAndServe(pprof, mux))
 	}()
-}
-
-func initMetricsOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, clientID, country string) {
-	if !metrics.ValidatePrometheusPushGateways(prometheusPushGateways) {
-		log.Fatal("Invalid value for --prometheus_gateways")
-	}
-
-	if prometheusOn {
-		metrics.InitMetrics(clientID, country)
-
-		go metrics.ExportPrometheusMetrics(ctx, prometheusPushGateways)
-	}
 }
 
 func cancelOnSignal(cancel context.CancelFunc) {
