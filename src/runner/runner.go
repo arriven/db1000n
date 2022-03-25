@@ -130,7 +130,9 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		dumpMetrics(r.globalJobsCfg.ClientID, r.globalJobsCfg.Debug)
+		if err := dumpMetrics(r.globalJobsCfg.ClientID); err != nil {
+			logger.Debug("error reporting statistics", zap.Error(err))
+		}
 	}
 }
 
@@ -198,7 +200,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 	return cancel
 }
 
-func dumpMetrics(clientID string, debug bool) {
+func dumpMetrics(clientID string) error {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("caught panic: %v", err)
@@ -208,8 +210,8 @@ func dumpMetrics(clientID string, debug bool) {
 	bytesGenerated := metrics.Default.Read(metrics.Traffic)
 	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
 
-	if err := utils.ReportStatistics(int64(bytesGenerated), clientID); err != nil && debug {
-		log.Println("error reporting statistics:", err)
+	if err := utils.ReportStatistics(int64(bytesGenerated), clientID); err != nil {
+		return err
 	}
 
 	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
@@ -235,4 +237,6 @@ func dumpMetrics(clientID string, debug bool) {
 	}
 
 	networkStatsWriter.Flush()
+
+	return nil
 }

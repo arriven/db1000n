@@ -37,6 +37,14 @@ func RandomPayload(length int) string {
 	return string(payload)
 }
 
+// RandomPayloadByte returns a byte slice to spoof ip packets with random payload in specified length
+func RandomPayloadByte(length int) []byte {
+	payload := make([]byte, length)
+	rand.Read(payload) //nolint:gosec // Cryptographically secure random not required
+
+	return payload
+}
+
 // RandomIP returns a random ip to spoof packets
 func RandomIP() string {
 	const maxByte = 255

@@ -1,0 +1,17 @@
+{
+  "jobs": [
+    {
+      "type": "http",
+      "args": {
+        "request": {
+          "method": "POST",
+          "path": "http://localhost:8080/login",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": "username=testuser{{random_int}}&password={{random_payload_byte 10 | base64_encode}}"
+        }
+      }
+    }
+  ]
+}

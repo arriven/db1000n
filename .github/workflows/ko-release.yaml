@@ -3,15 +3,14 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Build with ko
+name: Release with ko
 
 on:
   push:
-    branches: ["main"]
     tags: ["**"]
 
 env:
-  DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/db1000n-beta
+  DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/db1000n
 
 jobs:
   push_to_registry:
@@ -25,7 +24,7 @@ jobs:
       - uses: imjasonh/setup-ko@v0.4
       - run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --tags ${{ github.ref_name }} --platform all .
         env:
-          VERSION: ${{ github.ref_name }}-beta
+          VERSION: ${{ github.ref_name }}
           ENCRYPTION_KEYS: ${{ secrets.ENCRYPTION_KEYS }}
           CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
           PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}

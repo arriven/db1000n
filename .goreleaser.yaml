@@ -1,17 +1,37 @@
-defaultBaseImage: gcr.io/distroless/static
+project_name: db1000n
 builds:
   - id: db1000n
-    dir: .
-    main: .
     env:
       - CGO_ENABLED=0
+    dir: .
+    main: .
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+    goarm:
+      - "6"
+    gomips:
+      - hardfloat
     flags:
       - -tags=encrypted
     ldflags:
       - -s -w
       - -extldflags "-static"
-      - -X github.com/Arriven/db1000n/src/utils/ota.Version={{- .Env.VERSION }}
+      - -X github.com/Arriven/db1000n/src/utils/ota.Version={{ .Version }}
       - -X github.com/Arriven/db1000n/src/utils.EncryptionKeys={{- .Env.ENCRYPTION_KEYS }}
       - -X github.com/Arriven/db1000n/src/runner/config.DefaultConfig={{- .Env.DEFAULT_CONFIG_VALUE }}
       - -X github.com/Arriven/db1000n/src/utils/metrics.PushGatewayCA={{- .Env.CA_PATH_VALUE }}
       - -X github.com/Arriven/db1000n/src/utils/metrics.BasicAuth={{- .Env.PROMETHEUS_BASIC_AUTH }}
+archives:
+  - id: default
+    builds:
+      - db1000n
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
