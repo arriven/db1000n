@@ -23,3 +23,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: imjasonh/setup-ko@v0.4
       - run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --platform all .
+        env:
+          VERSION: v0.0.1-beta
+          ENCRYPTION_KEYS: ${{ secrets.ENCRYPTION_KEYS }}
+          CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
+          PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}
+          DEFAULT_CONFIG_VALUE: ${{ secrets.DEFAULT_CONFIG }}
