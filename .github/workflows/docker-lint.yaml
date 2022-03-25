@@ -19,3 +19,5 @@ jobs:
       - uses: hadolint/hadolint-action@v1.6.0
         with:
           dockerfile: Dockerfile
+      - name: Test image building
+        run: make docker_build
