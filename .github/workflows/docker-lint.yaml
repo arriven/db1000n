@@ -1,11 +1,15 @@
 name: docker-lint
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
     paths:
       - 'Dockerfile'
+      - '.github/workflows/docker-lint.yaml'
 
 jobs:
   docker:
