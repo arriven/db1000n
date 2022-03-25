@@ -8,7 +8,8 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region  = var.region
+  profile = var.profile
 }
 
 data "aws_ami" "latest_amazon_linux" {
@@ -84,16 +85,19 @@ resource "aws_security_group" "instance_connect" {
   name_prefix = "instance_connect"
   description = "allow ssh"
 
-  ingress {
-    cidr_blocks      = ["0.0.0.0/0", ]
-    description      = ""
-    from_port        = 22
-    ipv6_cidr_blocks = []
-    prefix_list_ids  = []
-    protocol         = "tcp"
-    security_groups  = []
-    self             = false
-    to_port          = 22
+  dynamic "ingress" {
+    for_each = var.allow_ssh ? ["ssh"] : []
+    content {
+      cidr_blocks      = ["0.0.0.0/0", ]
+      description      = ""
+      from_port        = 22
+      ipv6_cidr_blocks = []
+      prefix_list_ids  = []
+      protocol         = "tcp"
+      security_groups  = []
+      self             = false
+      to_port          = 22
+    }
   }
   egress {
     from_port   = 0
@@ -121,6 +125,15 @@ resource "aws_route_table_association" "subnet-association" {
   route_table_id = aws_route_table.route-table-test-env.id
 }
 
+locals {
+  proxy_run_cmd    = <<EOF
+    PIPS=$(host -4 ${contains(keys(module.tor-proxy), "tor-proxy") ? module.tor-proxy["tor-proxy"].lb.dns_name : ""} | egrep -o '[0-9]+(\.[0-9]+){3}$' | awk '{printf("socks5://%s:9050\n", $0)}' | paste -d',' -s -)
+    docker run -ti -d --restart always ghcr.io/arriven/db1000n-advanced ./db1000n -proxy $PIPS
+EOF
+  no_proxy_run_cmd = "docker run -ti -d --restart always ghcr.io/arriven/db1000n-advanced"
+  docker_run_cmd   = var.enable_tor_proxy ? local.proxy_run_cmd : local.no_proxy_run_cmd
+}
+
 resource "aws_launch_template" "example" {
   name                                 = var.name
   image_id                             = data.aws_ami.latest_amazon_linux.id
@@ -129,7 +142,7 @@ resource "aws_launch_template" "example" {
   instance_market_options {
     market_type = "spot"
   }
-  user_data = base64encode(<<EOF
+  user_data = base64encode(join("\n", [<<EOF
 #!/bin/bash -xe
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     yum update -y
@@ -137,11 +150,10 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     service docker start
     usermod -a -G docker ec2-user
     chkconfig docker on
-    PIPS=$(host -4 ${aws_lb.proxy-lb.dns_name} | egrep -o '[0-9]+(\.[0-9]+){3}$' | awk '{printf("socks5://%s:9050\n", $0)}' | paste -d',' -s -)
-    docker run -ti -d --restart always ghcr.io/arriven/db1000n-advanced ./db1000n -proxy $PIPS
-
 EOF
-  )
+    , local.docker_run_cmd
+    , var.extra_startup_script
+  ]))
   iam_instance_profile {
     name = aws_iam_instance_profile.instance_profile.name
   }
@@ -164,7 +176,7 @@ EOF
       Name = "db1000n-server"
     }
   }
-  depends_on = [aws_lb.proxy-lb]
+  depends_on = [module.tor-proxy]
 }
 
 resource "aws_autoscaling_group" "example" {
@@ -179,6 +191,8 @@ resource "aws_autoscaling_group" "example" {
     id      = aws_launch_template.example.id
     version = aws_launch_template.example.latest_version
   }
+
+  lifecycle { create_before_destroy = true }
 }
 
 resource "aws_vpc" "main" {
@@ -187,15 +201,10 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
 }
 
-resource "aws_subnet" "main" {
-  for_each                = { for azid, zone in slice(data.aws_availability_zones.azs.names, 0, var.zones) : zone => azid }
-  availability_zone       = each.key
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, var.zones + each.value)
-  map_public_ip_on_launch = true
+locals {
+  public_subnet_cidr  = cidrsubnet(aws_vpc.main.cidr_block, 4, 0)
+  private_subnet_cidr = cidrsubnet(aws_vpc.main.cidr_block, 4, 1)
 }
-
-# >>> proxy
 
 data "aws_availability_zones" "azs" {
   state = "available"
@@ -205,180 +214,33 @@ resource "aws_subnet" "private" {
   for_each                = { for azid, zone in slice(data.aws_availability_zones.azs.names, 0, var.zones) : zone => azid }
   availability_zone       = each.key
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, 0 + each.value)
+  cidr_block              = cidrsubnet(local.private_subnet_cidr, 4, each.value)
   map_public_ip_on_launch = false
 }
 
-resource "aws_lb" "proxy-lb" {
-  name               = "${var.name}-proxy"
-  internal           = true
-  load_balancer_type = "network"
-  #  security_groups    = [aws_security_group.lb.id]
-  subnets = [for subnet in aws_subnet.private : subnet.id]
+resource "aws_subnet" "main" {
+  for_each                = { for azid, zone in slice(data.aws_availability_zones.azs.names, 0, var.zones) : zone => azid }
+  availability_zone       = each.key
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(local.public_subnet_cidr, 4, each.value)
+  map_public_ip_on_launch = true
 }
 
-resource "aws_lb_target_group" "proxy-lb-tg" {
-  name     = "${var.name}-proxy"
-  port     = 9050
-  protocol = "TCP" //"HTTP"
-  vpc_id   = aws_vpc.main.id
+# optional tor proxy
 
-  health_check {
-    path                = "/"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-    interval            = 30
-    protocol            = "HTTP"
-    port                = 8080
-  }
-}
-
-resource "aws_lb_listener" "proxy-lb-listener" {
-  load_balancer_arn = aws_lb.proxy-lb.arn
-  port              = "9050"
-  protocol          = "TCP" //"HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.proxy-lb-tg.arn
-  }
-}
-
-resource "aws_security_group" "proxy_instance" {
-  vpc_id      = aws_vpc.main.id
-  name_prefix = "proxy_instance"
-  description = "access to/from proxy instances"
-
-  ingress {
-    cidr_blocks = ["0.0.0.0/0", ]
-    description = "ssh"
-    protocol    = "tcp"
-    from_port   = 0
-    to_port     = 22
-  }
-
-  ingress {
-    cidr_blocks = [aws_vpc.main.cidr_block]
-    description = "socks5"
-    protocol    = "tcp"
-    from_port   = 0
-    to_port     = 9050
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_security_group" "lb" {
-  name        = "${var.name}-proxy-lb-security-group"
-  description = "controls access to the proxy load balancer"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    protocol        = -1
-    from_port       = 0
-    to_port         = 0
-    security_groups = [aws_security_group.proxy_instance.id]
-  }
-}
-
-resource "aws_security_group_rule" "lb-egress" {
-  security_group_id        = aws_security_group.lb.id
-  type                     = "egress"
-  protocol                 = -1
-  from_port                = 0
-  to_port                  = 0
-  source_security_group_id = aws_security_group.proxy-target-group.id
-}
-
-resource "aws_security_group" "proxy-target-group" {
-  name        = "${var.name}-proxy-target-group"
-  description = "controls access to the proxy containers"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    protocol        = -1
-    from_port       = 0
-    to_port         = 0
-    security_groups = [aws_security_group.lb.id]
-  }
-
-  egress {
-    protocol        = -1
-    from_port       = 0
-    to_port         = 0
-    security_groups = [aws_security_group.lb.id]
-  }
-}
-
-resource "aws_launch_template" "proxy-instance-template" {
-  name                                 = "${var.name}-proxy"
-  image_id                             = data.aws_ami.latest_amazon_linux.id
-  instance_initiated_shutdown_behavior = "terminate"
-  instance_type                        = var.instance_type
-  instance_market_options {
-    market_type = "spot"
-  }
-  user_data = base64encode(<<EOF
-#!/bin/bash
-    yum update -y
-    amazon-linux-extras install epel -y
-    yum-config-manager --enable epel
-    yum install tor nc -y
-    echo "SOCKSPort 0.0.0.0:9050" >> /etc/tor/torrc
-    service tor start
-    chkconfig tor on
-    while true; do echo -e 'HTTP/1.1 200 OK\r\n' | nc -lp 8080 > /dev/null; echo Healthcheck >> /var/log/messages; done &
-    systemctl start crond
-    systemctl enable crond
-    cat << EOSC > /tmp/hup
-#!/bin/bash
-echo "Sending hup to tor processes"
-for pid in \$(pgrep tor); do /bin/kill -1 $pid ; done
-EOSC
-    chmod +x /tmp/hup
-    (crontab -l 2>/dev/null || true; echo "* * * * * /tmp/hup >> /var/log/messages") | crontab -
-EOF
-  )
-  iam_instance_profile {
-    name = aws_iam_instance_profile.instance_profile.name
-  }
-  vpc_security_group_ids = [aws_security_group.proxy_instance.id]
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
-      Name = "db1000n-proxy"
-    }
-  }
-  tag_specifications {
-    resource_type = "volume"
-    tags = {
-      Name = "db1000n-proxy"
-    }
-  }
-  tag_specifications {
-    resource_type = "network-interface"
-    tags = {
-      Name = "db1000n-proxy"
-    }
-  }
-}
-
-resource "aws_autoscaling_group" "proxy" {
-  name                      = "${var.name}-proxy"
-  capacity_rebalance        = true
-  desired_capacity          = var.desired_capacity
-  max_size                  = var.max_size
-  min_size                  = var.min_size
-  vpc_zone_identifier       = [for subnet in aws_subnet.main : subnet.id]
-  health_check_grace_period = 180
-  target_group_arns         = [aws_lb_target_group.proxy-lb-tg.arn]
-  launch_template {
-    id      = aws_launch_template.proxy-instance-template.id
-    version = aws_launch_template.proxy-instance-template.latest_version
-  }
+module "tor-proxy" {
+  source               = "./tor-proxy"
+  for_each             = toset(var.enable_tor_proxy ? ["tor-proxy"] : [])
+  name                 = var.name
+  private_subnet_ids   = [for subnet in aws_subnet.private : subnet.id]
+  public_subnet_ids    = [for subnet in aws_subnet.main : subnet.id]
+  vpc                  = aws_vpc.main
+  allow_ssh            = var.allow_ssh
+  arch_ami             = var.arch_ami
+  instance_type        = var.instance_type
+  extra_startup_script = var.extra_startup_script
+  instance_profile     = aws_iam_instance_profile.instance_profile
+  desired_capacity     = var.desired_capacity
+  min_size             = var.min_size
+  max_size             = var.max_size
 }
