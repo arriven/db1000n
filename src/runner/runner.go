@@ -217,7 +217,7 @@ func dumpMetrics(clientID string) error {
 	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
 
 	if bytesGenerated > 0 {
-		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
 		fmt.Fprintln(networkStatsWriter, "!Attack is successful! Russian warship, go fuck yourself!")
 
 		const BytesInMegabytes = 1024 * 1024
