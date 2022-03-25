@@ -10,8 +10,8 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-// NewOptionsWithFlags returns updater options initialized with command line flags.
-func NewOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
+// NewUpdaterOptionsWithFlags returns updater options initialized with command line flags.
+func NewUpdaterOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
 	return flag.Bool("updater-mode", utils.GetEnvBoolDefault("UPDATER_MODE", false), "Only run config updater"),
 		flag.String("updater-destination-config", utils.GetEnvStringDefault("UPDATER_DESTINATION_CONFIG", "config/config.json"),
 			"Destination config file to write (only applies if updater-mode is enabled")

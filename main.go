@@ -54,7 +54,7 @@ func main() {
 	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
-	updaterMode, destinationPath := config.NewOptionsWithFlags()
+	updaterMode, destinationPath := config.NewUpdaterOptionsWithFlags()
 	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
