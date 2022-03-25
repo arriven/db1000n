@@ -1652,7 +1652,7 @@ linters:
     - exportloopref
     - forbidigo
     - forcetypeassert
-    # - funlen
+    - funlen
     - gci
     # - gochecknoglobals
     # - gochecknoinits
@@ -1741,24 +1741,24 @@ linters:
 #   # Default: false
 #   fast: true
 
-# issues:
-#   # List of regexps of issue texts to exclude.
-#   #
-#   # But independently of this option we use default exclude patterns,
-#   # it can be disabled by `exclude-use-default: false`.
-#   # To list all excluded by default patterns execute `golangci-lint run --help`
-#   #
-#   # Default: []
-#   exclude:
-#     - abcdef
+issues:
+  #   # List of regexps of issue texts to exclude.
+  #   #
+  #   # But independently of this option we use default exclude patterns,
+  #   # it can be disabled by `exclude-use-default: false`.
+  #   # To list all excluded by default patterns execute `golangci-lint run --help`
+  #   #
+  #   # Default: []
+  #   exclude:
+  #     - abcdef
 
-#   # Excluding configuration per-path, per-linter, per-text and per-source
-#   exclude-rules:
-#     # Exclude some linters from running on tests files.
-#     - path: _test\.go
-#       linters:
-#         - funlen
-
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - funlen
+#
 #     # Exclude known linters from partially hard-vendored code,
 #     # which is impossible to exclude via `nolint` comments.
 #     - path: internal/hmac/
