@@ -125,13 +125,13 @@ cat <<EOF >> ./run.sh
 docker stop db1000n
 docker exec vpn expressvpn disconnect
 docker exec vpn expressvpn connect "$(shuf -n 1 /countries.txt)"
-docker run --name=db1000n --pull=always --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
+docker run --name=db1000n --pull=always --net=container:vpn -e PUID=1000 -e PGID=1000 -e ENABLE_PRIMITIVE=false --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n:latest
 EOF
 chmod +x ./run.sh
 
 (crontab -l ; echo '*/10 * * * * /usr/bin/sudo /run.sh') | crontab -
 
-docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n-advanced:latest
+docker run --name=db1000n --net=container:vpn -e PUID=1000 -e PGID=1000 -e ENABLE_PRIMITIVE=false --log-driver=gcplogs --rm -d ghcr.io/arriven/db1000n:latest
 
 EOT
 

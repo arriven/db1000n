@@ -24,7 +24,10 @@ spec:
     spec:
       containers:
         - name: db1000n
-          image: ghcr.io/arriven/db1000n-advanced:latest
+          image: ghcr.io/arriven/db1000n:latest
+          env:
+          - name: ENABLE_PRIMITIVE
+            value: "false"
           imagePullPolicy: Always
           resources:
             requests:

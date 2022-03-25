@@ -136,7 +136,7 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     service docker start
     usermod -a -G docker ec2-user
     chkconfig docker on
-    docker run  -ti -d --restart always ghcr.io/arriven/db1000n-advanced
+    docker run  -e ENABLE_PRIMITIVE=false -ti -d --restart always ghcr.io/arriven/db1000n
 
 EOF
   )
