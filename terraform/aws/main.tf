@@ -128,9 +128,9 @@ resource "aws_route_table_association" "subnet-association" {
 locals {
   proxy_run_cmd    = <<EOF
     PIPS=$(host -4 ${contains(keys(module.tor-proxy), "tor-proxy") ? module.tor-proxy["tor-proxy"].lb.dns_name : ""} | egrep -o '[0-9]+(\.[0-9]+){3}$' | awk '{printf("socks5://%s:9050\n", $0)}' | paste -d',' -s -)
-    docker run -ti -d --restart always ghcr.io/arriven/db1000n-advanced ./db1000n -proxy $PIPS
+    docker run -e ENABLE_PRIMITIVE=false -ti -d --restart always ghcr.io/arriven/db1000n ./db1000n -proxy $PIPS
 EOF
-  no_proxy_run_cmd = "docker run -ti -d --restart always ghcr.io/arriven/db1000n-advanced"
+  no_proxy_run_cmd = "docker run -e ENABLE_PRIMITIVE=false -ti -d --restart always ghcr.io/arriven/db1000n"
   docker_run_cmd   = var.enable_tor_proxy ? local.proxy_run_cmd : local.no_proxy_run_cmd
 }
 
@@ -150,7 +150,7 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     service docker start
     usermod -a -G docker ec2-user
     chkconfig docker on
-    docker run  -e ENABLE_PRIMITIVE=false -ti -d --restart always ghcr.io/arriven/db1000n
+EOF
     , local.docker_run_cmd
     , var.extra_startup_script
   ]))
