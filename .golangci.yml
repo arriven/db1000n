@@ -1669,7 +1669,7 @@ linters:
     - goimports
     # - golint # deprecated
     - gomnd
-    # - gomoddirectives
+    - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec

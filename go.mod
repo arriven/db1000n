@@ -47,5 +47,3 @@ require (
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 )
-
-replace github.com/refraction-networking/utls => github.com/Arriven/utls v1.0.1-0.20220307194618-4d0e31286f59
