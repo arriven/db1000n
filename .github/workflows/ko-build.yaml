@@ -23,16 +23,9 @@ jobs:
           go-version: 1.17
       - uses: actions/checkout@v2
       - uses: imjasonh/setup-ko@v0.4
-      - id: vars
-        if: ${{ github.ref_type == 'tag' }}
-        run: echo ::set-output name=tag::${{ github.ref_name }}
-      - id: vars
-        if: ${{ github.ref_type == 'branch' }}
-        run: echo ::set-output name=tag::v0.0.1
-      - run: echo ${{ steps.vars.outputs.tag }}
       - run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --platform all .
         env:
-          VERSION: ${{ github.ref_name }}-beta
+          VERSION: ${{ github.ref_name }}
           ENCRYPTION_KEYS: ${{ secrets.ENCRYPTION_KEYS }}
           CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
           PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}
