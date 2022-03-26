@@ -8,7 +8,7 @@ on:
       - 'install.sh'
 
 jobs:
-  test:
+  installer-test:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -17,6 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run ShellCheck
-        uses: bewuethr/shellcheck-action@v2
+        run: docker run --rm koalaman/shellcheck:stable install.sh
       - name: Installer
         run: ./install.sh

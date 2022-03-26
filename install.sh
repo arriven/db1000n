@@ -57,7 +57,6 @@ if ! command -v "${SHA256_BINARY}" &> /dev/null
 then
   echo "Warning: sha256sum/shasum not found. Could not check archive integrity. Please be careful when launching the executable."
 else
-  # shellcheck disable=SC2086
   SHA256SUM=$(${SHA256_BINARY} ${SHA256_SUFFIX} ${ARCHIVE})
   if ! grep -q "${SHA256SUM}" "${CHECKSUMS_FILE}"; then
     echo "shasum for ${ARCHIVE} failed. Please check the shasum. File may possibly be corrupted."
@@ -66,4 +65,4 @@ else
 fi
 
 tar xvf "${ARCHIVE}"
-echo "Successfully installed db1000n."
+echo "Successfully installed db1000n"
