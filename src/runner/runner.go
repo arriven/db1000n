@@ -104,6 +104,8 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 			lastKnownConfig = rawConfig
 
+			metrics.Default.ResetAll()
+
 			if cancel != nil {
 				cancel()
 			}
