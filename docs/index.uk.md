@@ -33,9 +33,9 @@
    - [Linux 32bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_linux_386.zip)
    - [Linux 64bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_linux_amd64.tar.gz)
 
-2. Розпакуйте архів
-3. Запустіть файл з архіву
-4. Усе!
+1. Розпакуйте архів
+1. Запустіть файл з архіву
+1. Усе!
 
 !!! important "Дуже важливо!"
 
