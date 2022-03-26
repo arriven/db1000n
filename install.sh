@@ -32,16 +32,16 @@ esac
 
 INSTALL_VERSION="${INSTALL_OS}_${INSTALL_ARCH}"
 
-BROWSER_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*')
-CHECKSUM_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${REPO}/releases/latest | grep "checksums" | grep -Eo 'https://[^\"]*')
+BROWSER_DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*')
+CHECKSUM_DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep "checksums" | grep -Eo 'https://[^\"]*')
 
 ARCHIVE=${BROWSER_DOWNLOAD_URL##*/}
 CHECKSUMS_FILE=${CHECKSUM_DOWNLOAD_URL##*/}
 
 echo "Downloading an archive..."
-echo $BROWSER_DOWNLOAD_URL | xargs -n 1 curl -s -L -O
+echo "${BROWSER_DOWNLOAD_URL}" | xargs -n 1 curl -s -L -O
 echo "Downloading checksums..."
-echo $CHECKSUM_DOWNLOAD_URL | xargs -n 1 curl -s -L -O
+echo "${CHECKSUM_DOWNLOAD_URL}" | xargs -n 1 curl -s -L -O
 
 if [ "${INSTALL_OS}" = "darwin" ]
 then
@@ -57,8 +57,9 @@ if ! command -v "${SHA256_BINARY}" &> /dev/null
 then
   echo "Warning: sha256sum/shasum not found. Could not check archive integrity. Please be careful when launching the executable."
 else
+  # shellcheck disable=SC2086
   SHA256SUM=$(${SHA256_BINARY} ${SHA256_SUFFIX} ${ARCHIVE})
-  if ! grep -q ${SHA256SUM} "$CHECKSUMS_FILE"; then
+  if ! grep -q "${SHA256SUM}" "${CHECKSUMS_FILE}"; then
     echo "shasum for ${ARCHIVE} failed. Please check the shasum. File may possibly be corrupted."
     exit 1
   fi
