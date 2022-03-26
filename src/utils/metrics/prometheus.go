@@ -287,7 +287,7 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 		return
 	}
 
-	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Grouping(ClientIDLabel, clientID).Client(httpClient).BasicAuth(user, password)
+	pusher := setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
 
 	for {
 		select {
@@ -298,10 +298,14 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 
 				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
-				pusher = push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Grouping(ClientIDLabel, clientID).Client(httpClient).BasicAuth(user, password)
+				pusher = setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
 			}
 		}
 	}
+}
+
+func setupPusher(pusher *push.Pusher, clientID string, httpClient push.HTTPDoer, user, password string) *push.Pusher {
+	return pusher.Gatherer(prometheus.DefaultGatherer).Grouping(ClientIDLabel, clientID).Client(httpClient).BasicAuth(user, password)
 }
 
 // IncDNSBlast increments counter of sent dns queries
