@@ -76,6 +76,12 @@ func (ms *Storage) Read(name string) uint64 {
 	return sum
 }
 
+func (ms *Storage) ResetAll() {
+	for k := range ms.trackers {
+		ms.trackers[k] = &metricTracker{}
+	}
+}
+
 // NewWriter creates a writer for accumulated writes to the storage
 func (ms *Storage) NewWriter(name, jobID string) *Writer {
 	return &Writer{ms: ms, jobID: jobID, name: name, value: 0}
