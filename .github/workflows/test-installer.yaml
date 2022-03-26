@@ -30,6 +30,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run ShellCheck
-        run: docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable install.sh
+        run: |
+          choco install shellcheck
+          shellcheck install.sh
       - name: Installer
         run: ./install.sh
