@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-
   # creates privileged container
   autoheal:
     container_name: autoheal
@@ -32,9 +31,9 @@ services:
     secrets:
       - provider01_secret
     labels:
-        autoheal: "true"
+      autoheal: "true"
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
@@ -60,9 +59,9 @@ services:
     secrets:
       - provider01_secret
     labels:
-        autoheal: "true"
+      autoheal: "true"
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
@@ -88,9 +87,9 @@ services:
     secrets:
       - provider02_secret
     labels:
-        autoheal: "true"
+      autoheal: "true"
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
@@ -102,13 +101,13 @@ services:
     restart: unless-stopped
     labels:
       autoheal: "true"
-    entrypoint: "./db1000n --updater-mode"
     volumes:
       - ./config:/usr/src/app/config:z
     environment:
       UPDATER_DESTINATION_CONFIG: "config/config.json"
+      UPDATER_MODE: true
     healthcheck:
-      test: [ "CMD", "test", "-f", "config/config.json" ]
+      test: ["CMD", "test", "-f", "config/config.json"]
       timeout: 5s
       interval: 5s
       retries: 5
@@ -126,7 +125,7 @@ services:
         condition: service_healthy
     network_mode: "service:ovpn_01"
     labels:
-        autoheal: "true"
+      autoheal: "true"
     # set single country to check IP against and exit container if IP matches country OR IP cannot be determined
     environment:
       STRICT_COUNTRY_CHECK: "true"
@@ -135,7 +134,7 @@ services:
     volumes:
       - ./config:/usr/src/app/config:z
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
@@ -153,7 +152,7 @@ services:
         condition: service_healthy
     network_mode: "service:ovpn_02"
     labels:
-        autoheal: "true"
+      autoheal: "true"
     # set multiple countries to check IP against and exit container if IP matches country OR IP cannot be determined
     environment:
       STRICT_COUNTRY_CHECK: "true"
@@ -162,7 +161,7 @@ services:
     volumes:
       - ./config:/usr/src/app/config:z
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
@@ -177,13 +176,13 @@ services:
         condition: service_healthy
     network_mode: "service:ovpn_03"
     labels:
-        autoheal: "true"
+      autoheal: "true"
     # set single country to check IP against but do not exit container if IP matches country
     environment:
       STRICT_COUNTRY_CHECK: "false"
       COUNTRY_LIST: "Country"
     healthcheck:
-      test: [ "CMD", "nslookup", "google.com", "8.8.8.8" ]
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
       timeout: 10s
       interval: 30s
       retries: 3
