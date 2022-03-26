@@ -32,6 +32,6 @@ jobs:
       - name: Run ShellCheck
         run: |
           choco install shellcheck
-          shellcheck install.sh
+          shellcheck --exclude SC1017 install.sh
       - name: Installer
         run: ./install.sh
