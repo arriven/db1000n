@@ -287,7 +287,11 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 		return
 	}
 
-	pusher := push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
+	pusher := push.
+		New(gateway, jobName).
+		Gatherer(prometheus.DefaultGatherer).
+		Client(httpClient).
+		BasicAuth(user, password)
 
 	for {
 		select {
@@ -298,7 +302,11 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 
 				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
-				pusher = push.New(gateway, jobName).Gatherer(prometheus.DefaultGatherer).Client(httpClient).BasicAuth(user, password)
+				pusher = push.
+					New(gateway, jobName).
+					Gatherer(prometheus.DefaultGatherer).
+					Client(httpClient).
+					BasicAuth(user, password)
 			}
 		}
 	}
