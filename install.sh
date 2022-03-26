@@ -65,4 +65,4 @@ else
 fi
 
 tar xvf "${ARCHIVE}"
-echo "Successfully installed db1000n."
+echo "Successfully installed db1000n"
