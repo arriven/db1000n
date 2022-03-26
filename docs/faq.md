@@ -54,7 +54,6 @@
 
         Cloud providers could charge a huge amount of money not only for compute resources but for traffic as well.
         If you run an app in the cloud please control your billing
-        (if you use Docker, ensure that use advanced image: `ghcr.io/arriven/db1000n-advanced`)
 
 ---
 
@@ -92,3 +91,9 @@
 ???+ faq "What are primitive jobs?"
 
     Primitive jobs rely on generating as much raw traffic as possible. This might exhaust your system. They are also easier to detect and unadvisable to be used in the cloud environment.
+
+---
+
+???+ faq "The app shows low response rate, is it ok?"
+
+    Low response rate alone is not enough to be a problem as it could be an indication that current targets are down but you can try to perform additional checks in case you think the rate is abnormal (trying to access one of the targets via curl/browser, checking network stats via other tools like bmon/Task manager, enabling and inspecting debug logs, etc.)

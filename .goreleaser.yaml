@@ -12,11 +12,13 @@ builds:
     goarch:
       - amd64
       - arm64
+      - arm
       - "386"
-    goarm:
-      - "6"
-    gomips:
-      - hardfloat
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
     flags:
       - -tags=encrypted
     ldflags:

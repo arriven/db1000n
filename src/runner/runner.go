@@ -211,28 +211,21 @@ func dumpMetrics(clientID string) error {
 
 	bytesGenerated := metrics.Default.Read(metrics.Traffic)
 	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
-
-	if err := utils.ReportStatistics(int64(bytesGenerated), clientID); err != nil {
-		return err
-	}
-
 	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
 
 	if bytesGenerated > 0 {
-		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Руський воєнний корабль іди нахуй!")
+		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
 		fmt.Fprintln(networkStatsWriter, "!Attack is successful! Russian warship, go fuck yourself!")
 
-		const BytesInMegabytes = 1024 * 1024
-		megabytesGenerated := float64(bytesGenerated) / BytesInMegabytes
-		megabytesProcessed := float64(bytesProcessed) / BytesInMegabytes
-
-		const PercentConversionMultilpier = 100
-		responsePercent := float64(bytesProcessed) / float64(bytesGenerated) * PercentConversionMultilpier
+		const (
+			BytesInMegabyte             = 1024 * 1024
+			PercentConversionMultilpier = 100
+		)
 
 		fmt.Fprint(networkStatsWriter, "---------Traffic stats---------\n")
-		fmt.Fprintf(networkStatsWriter, "[\tGenerated\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesGenerated, bytesGenerated)
-		fmt.Fprintf(networkStatsWriter, "[\tReceived\t]\t%.2f\tMB\t|\t%v \tbytes\n", megabytesProcessed, bytesProcessed)
-		fmt.Fprintf(networkStatsWriter, "[\tResponse rate\t]\t%.1f\t%%\n", responsePercent)
+		fmt.Fprintf(networkStatsWriter, "[\tGenerated\t]\t%.2f\tMB\t|\t%v \tbytes\n", float64(bytesGenerated)/BytesInMegabyte, bytesGenerated)
+		fmt.Fprintf(networkStatsWriter, "[\tReceived\t]\t%.2f\tMB\t|\t%v \tbytes\n", float64(bytesProcessed)/BytesInMegabyte, bytesProcessed)
+		fmt.Fprintf(networkStatsWriter, "[\tResponse rate\t]\t%.1f\t%%\n", float64(bytesProcessed)/float64(bytesGenerated)*PercentConversionMultilpier)
 		fmt.Fprint(networkStatsWriter, "-------------------------------\n\n")
 	} else {
 		fmt.Fprintln(networkStatsWriter, "[Error] No traffic generated. If you see this message a lot - contact admins")
@@ -240,5 +233,5 @@ func dumpMetrics(clientID string) error {
 
 	networkStatsWriter.Flush()
 
-	return nil
+	return utils.ReportStatistics(int64(bytesGenerated), clientID)
 }

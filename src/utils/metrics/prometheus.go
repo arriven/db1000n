@@ -121,7 +121,7 @@ func InitOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, 
 
 // Init prometheus counters.
 func Init(clientID, country string) {
-	constLabels := prometheus.Labels{ClientIDLabel: clientID}
+	constLabels := prometheus.Labels{}
 	if country != "" {
 		constLabels[CountryLabel] = country
 	}
@@ -262,7 +262,7 @@ func getTLSConfig() (*tls.Config, error) {
 }
 
 func pushMetrics(ctx context.Context, clientID string, gateways []string) {
-	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", clientID)
+	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "db1000n_default_add")
 	gateway := gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
 	ticker := time.NewTicker(tickerPeriod)
@@ -287,29 +287,25 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 		return
 	}
 
-	pusher := push.
-		New(gateway, jobName).
-		Gatherer(prometheus.DefaultGatherer).
-		Client(httpClient).
-		BasicAuth(user, password)
+	pusher := setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := pusher.Push(); err != nil {
+			if err := pusher.Add(); err != nil {
 				log.Println("Can't push metrics to gateway, trying to change gateway")
 
 				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
-				pusher = push.
-					New(gateway, jobName).
-					Gatherer(prometheus.DefaultGatherer).
-					Client(httpClient).
-					BasicAuth(user, password)
+				pusher = setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
 			}
 		}
 	}
+}
+
+func setupPusher(pusher *push.Pusher, clientID string, httpClient push.HTTPDoer, user, password string) *push.Pusher {
+	return pusher.Gatherer(prometheus.DefaultGatherer).Grouping(ClientIDLabel, clientID).Client(httpClient).BasicAuth(user, password)
 }
 
 // IncDNSBlast increments counter of sent dns queries

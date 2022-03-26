@@ -30,32 +30,36 @@ case "$OSARCH" in
   *)        echo "unknown: $OSARCH"; exit 1 ;;
 esac
 
-INSTALL_VERSION="${INSTALL_OS}-${INSTALL_ARCH}"
+INSTALL_VERSION="${INSTALL_OS}_${INSTALL_ARCH}"
+
+BROWSER_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*')
+CHECKSUM_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${REPO}/releases/latest | grep "checksums" | grep -Eo 'https://[^\"]*')
+
+ARCHIVE=${BROWSER_DOWNLOAD_URL##*/}
+CHECKSUMS_FILE=${CHECKSUM_DOWNLOAD_URL##*/}
 
 echo "Downloading an archive..."
-curl -s https://api.github.com/repos/${REPO}/releases/latest | grep "${INSTALL_VERSION}" | grep -Eo 'https://[^\"]*' | xargs -n 1 curl -s -L -O
-
-INSTALL_TAG=$(curl --silent "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-
-ARCHIVE="db1000n-${INSTALL_TAG}-${INSTALL_VERSION}.tar.gz"
+echo $BROWSER_DOWNLOAD_URL | xargs -n 1 curl -s -L -O
+echo "Downloading checksums..."
+echo $CHECKSUM_DOWNLOAD_URL | xargs -n 1 curl -s -L -O
 
 if [ "${INSTALL_OS}" = "darwin" ]
 then
-  MD5_BINARY="md5"
-  MD5_SUFFIX="-q"
+  SHA256_BINARY="shasum"
+  SHA256_SUFFIX="-a 256"
 else
-  MD5_BINARY="md5sum"
-  MD5_SUFFIX="-t"
+  SHA256_BINARY="sha256sum"
+  SHA256_SUFFIX=""
 fi
 
-echo "Checking md5 hash..."
-if ! command -v "${MD5_BINARY}" &> /dev/null
+echo "Checking sha256 hash..."
+if ! command -v "${SHA256_BINARY}" &> /dev/null
 then
-  echo "Warning: md5sum/md5 not found. Could not check archive integrity. Please be careful when launching the executable."
+  echo "Warning: sha256sum/shasum not found. Could not check archive integrity. Please be careful when launching the executable."
 else
-  "${MD5_BINARY}" "${MD5_SUFFIX}" "${ARCHIVE}" | awk '{ print $1 }' > md5sum.txt
-  if ! cmp --silent "${ARCHIVE}.md5" "md5sum.txt"; then
-    echo "md5sum for ${ARCHIVE} failed. Please check the md5sum. File may possibly be corrupted."
+  SHA256SUM=$(${SHA256_BINARY} ${SHA256_SUFFIX} ${ARCHIVE})
+  if ! grep -q ${SHA256SUM} "$CHECKSUMS_FILE"; then
+    echo "shasum for ${ARCHIVE} failed. Please check the shasum. File may possibly be corrupted."
     exit 1
   fi
 fi
