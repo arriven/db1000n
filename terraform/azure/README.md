@@ -11,10 +11,11 @@
 
 The composition creates container instances in 6 different regions for a broader attack. If you want to make a different setup, just alter modules in the `main.tf`.
 
-Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm:
+Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm (`db1000n` can be configured with either command line parameters or environment variables, former having precedence over the latter):
 
 - `bomblet_count=10` - can be used for custom number of containers per region
-- `attack_commands=["/usr/src/app/main","-c=https://link_to_your_config_file"]`
+- `attack_commands=["/usr/src/app/db1000n","-c=https://link_to_your_config_file"]`
+- `attack_environment_variables={"ENABLE_PRIMITIVE":"false"}`
 
 `terraform init` - to restore all dependencies.
 
