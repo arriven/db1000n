@@ -10,6 +10,11 @@ variable "prefix" {
 }
 
 variable "attack_commands" {
-  default     = ["/usr/src/app/db1000n", "-c=https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json"]
+  default     = null
   description = "The command to execute an attack with support of specifying additional flags."
+}
+
+variable "attack_environment_variables" {
+  default     = { "ENABLE_PRIMITIVE" : "false" }
+  description = "Environment variables for the container."
 }
