@@ -17,6 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: bewuethr/shellcheck-action@v2
       - name: Installer
         run: ./install.sh
