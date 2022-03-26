@@ -17,6 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run ShellCheck
-        run: docker run --rm koalaman/shellcheck:stable install.sh
+        run: docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:stable instsall.sh
       - name: Installer
         run: ./install.sh
