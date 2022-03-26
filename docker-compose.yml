@@ -102,15 +102,10 @@ services:
     labels:
       autoheal: "true"
     volumes:
-      - ./config:/usr/src/app/config:z
+      - ./config:/ko-app/config:z
     environment:
-      UPDATER_DESTINATION_CONFIG: "config/config.json"
+      UPDATER_DESTINATION_CONFIG: "/ko-app/config/config.json"
       UPDATER_MODE: true
-    healthcheck:
-      test: ["CMD", "test", "-f", "config/config.json"]
-      timeout: 5s
-      interval: 5s
-      retries: 5
 
   # this Docker container will use VPN 01
   # it will use config.json created by 'updater' container above
@@ -122,7 +117,7 @@ services:
       ovpn_01:
         condition: service_healthy
       updater:
-        condition: service_healthy
+        condition: service_started
     network_mode: "service:ovpn_01"
     labels:
       autoheal: "true"
@@ -130,14 +125,9 @@ services:
     environment:
       STRICT_COUNTRY_CHECK: "true"
       COUNTRY_LIST: "Country"
-      CONFIG: "config/config.json"
+      CONFIG: "/ko-app/config/config.json"
     volumes:
-      - ./config:/usr/src/app/config:z
-    healthcheck:
-      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
-      timeout: 10s
-      interval: 30s
-      retries: 3
+      - ./config:/ko-app/config:z
 
   # this Docker container will use VPN 02
   # it will use config.json created by 'updater' container above
@@ -149,7 +139,7 @@ services:
       ovpn_02:
         condition: service_healthy
       updater:
-        condition: service_healthy
+        condition: service_started
     network_mode: "service:ovpn_02"
     labels:
       autoheal: "true"
@@ -157,14 +147,9 @@ services:
     environment:
       STRICT_COUNTRY_CHECK: "true"
       COUNTRY_LIST: "Country, Another Country"
-      CONFIG: "config/config.json"
+      CONFIG: "/ko-app/config/config.json"
     volumes:
-      - ./config:/usr/src/app/config:z
-    healthcheck:
-      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
-      timeout: 10s
-      interval: 30s
-      retries: 3
+      - ./config:/ko-app/config:z
 
   # this Docker container will use VPN 03
   # it will download config itself and won't access shared volume so those options are undefined here
@@ -181,11 +166,6 @@ services:
     environment:
       STRICT_COUNTRY_CHECK: "false"
       COUNTRY_LIST: "Country"
-    healthcheck:
-      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
-      timeout: 10s
-      interval: 30s
-      retries: 3
 
 secrets:
   provider01_secret:
