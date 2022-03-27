@@ -70,7 +70,7 @@ func randomChar(from string) byte {
 	if len(from) == 0 {
 		return 0
 	}
-	return from[rand.Intn(len(from))]
+	return from[rand.Intn(len(from))] //nolint:gosec // Cryptographically secure random not required
 }
 
 func randomString(n int, from string) string {
@@ -78,6 +78,7 @@ func randomString(n int, from string) string {
 	for i := range b {
 		b[i] = randomChar(from)
 	}
+
 	return string(b)
 }
 
