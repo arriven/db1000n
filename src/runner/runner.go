@@ -58,7 +58,7 @@ func NewConfigOptionsWithFlags() *ConfigOptions {
 	flag.StringVar(&res.PathsCSV, "c",
 		utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"),
 		"path to config files, separated by a comma, each path can be a web endpoint")
-	flag.StringVar(&res.BackupConfig, "b", config.DefaultConfig, "raw backup config in case the primary one is unavailable")
+	flag.StringVar(&res.BackupConfig, "b", "", "raw backup config in case the primary one is unavailable")
 	flag.StringVar(&res.Format, "format", utils.GetEnvStringDefault("CONFIG_FORMAT", "yaml"), "config format")
 	flag.DurationVar(&res.RefreshTimeout, "refresh-interval", utils.GetEnvDurationDefault("REFRESH_INTERVAL", time.Minute),
 		"refresh timeout for updating the config")
@@ -96,7 +96,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 	for {
 		rawConfig := config.FetchRawConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
-			nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: []byte(r.cfgOptions.BackupConfig)}))
+			nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig))}))
 		cfg := config.Unmarshal(rawConfig.Body, r.cfgOptions.Format)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
@@ -136,6 +136,14 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			logger.Debug("error reporting statistics", zap.Error(err))
 		}
 	}
+}
+
+func nonEmptyStringOrDefault(s, defaultString string) string {
+	if s != "" {
+		return s
+	}
+
+	return defaultString
 }
 
 func nonNilConfigOrDefault(c, defaultConfig *config.RawConfig) *config.RawConfig {
