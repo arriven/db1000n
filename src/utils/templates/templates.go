@@ -70,6 +70,7 @@ func randomChar(from string) byte {
 	if len(from) == 0 {
 		return 0
 	}
+
 	return from[rand.Intn(len(from))] //nolint:gosec // Cryptographically secure random not required
 }
 
