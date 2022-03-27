@@ -75,6 +75,12 @@ If you already have installed Docker, just run:
 docker run --rm -it --pull always ghcr.io/arriven/db1000n
 ```
 
+Or, if your container is not able to connect to your local VPN:
+
+```bash
+docker run --rm -it --pull always --network host ghcr.io/arriven/db1000n
+```
+
 ### Advanced users
 
 See [For advanced](/db1000n/advanced-docs/advanced-and-devs/)

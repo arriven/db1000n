@@ -75,6 +75,12 @@
 docker run --rm -it --pull always ghcr.io/arriven/db1000n
 ```
 
+Або, якщо ваш контейнер не може підключитися до локальної VPN:
+
+```bash
+docker run --rm -it --pull always --network host ghcr.io/arriven/db1000n
+```
+
 ### Для досвідчених користувачів
 
 Дивіться [Для досвідчених](/db1000n/advanced-docs/advanced-and-devs/)
