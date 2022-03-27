@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z
-      - ./openvpn/:/data/vpn:z
+      - ../../openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     environment:
@@ -45,7 +45,7 @@ services:
     labels:
       autoheal: "true"
     volumes:
-      - ./config:/ko-app/config:z
+      - ../../config:/ko-app/config:z
     environment:
       UPDATER_DESTINATION_CONFIG: "/ko-app/config/config.json"
       UPDATER_MODE: true
@@ -70,8 +70,8 @@ services:
       COUNTRY_LIST: "Country"
       CONFIG: "/ko-app/config/config.json"
     volumes:
-      - ./config:/ko-app/config:z
+      - ../../config:/ko-app/config:z
 
 secrets:
   ovpn_secret:
-    file: ./openvpn/auth.txt
+    file: ../../openvpn/auth.txt
