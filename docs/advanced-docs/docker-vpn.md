@@ -11,21 +11,14 @@ One of the easy ways to set it up is through the docker-compose.
 {% include "../../docker-compose.yml" %}
 ```
 
-`openvpn/provider01.txt`:
+`openvpn/auth.txt`:
 
 ```text
-<your username for OpenVPN provider 01>
-<your password for OpenVPN provider 01>
+<your username for OpenVPN>
+<your password for OpenVPN>
 ```
 
-`openvpn/provider02.txt`:
-
-```text
-<your username for OpenVPN provider 02>
-<your password for OpenVPN provider 02>
-```
-
-Also place your `provider01.endpoint01.conf`, `provider01.endpoint02.conf` and `provider02.endpoint01.conf` files into `openvpn/` directory.
+Also place your `*.ovpn` file into `openvpn/` directory. You can set multiple configuration files and one of them will be used.
 
 ## Start
 
