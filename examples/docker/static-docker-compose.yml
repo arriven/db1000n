@@ -48,7 +48,7 @@ services:
       - ../../config:/ko-app/config:z
     environment:
       UPDATER_DESTINATION_CONFIG: "/ko-app/config/config.json"
-      UPDATER_MODE: true
+      UPDATER_MODE: "true"
 
   # this container will use VPN
   # it will use config.json created by 'updater' container above
