@@ -40,3 +40,7 @@ db1000n
 md5sum.txt
 
 .history
+
+# OpenVPN data
+/openvpn/*.ovpn
+/openvpn/auth.txt

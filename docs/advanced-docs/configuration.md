@@ -66,7 +66,7 @@ The config is expected to be in json format and has following configuration valu
 - `request.path` - `[string]` url path to use (passed directly to go `http.NewRequest`)
 - `request.body` - `[object]` http payload to use (passed directly to go `http.NewRequest`)
 - `request.headers` - `[object]` key-value map of http headers
-- `request.cookies` - `[object]` key-value map of http cookies (you can still set cookies directly via the header with `cookie_string` template function or statically, see `config/examples/advanced/ddos-guard.yaml` for an example)
+- `request.cookies` - `[object]` key-value map of http cookies (you can still set cookies directly via the header with `cookie_string` template function or statically, see `examples/config/advanced/ddos-guard.yaml` for an example)
 - `client` - `[object]` http client config for the job
 - `client.tls_config` - `[object]` tls config for transport (InsecureSkipVerify is true by default)
 - `client.proxy_urls` - `[array]` comma-separated list of string urls for proxies to use (chosen randomly for each request)
@@ -90,7 +90,7 @@ Warning: `packetgen` requires root privileges to run
 - `connection` - `[object]` raw ip connection parameters
 - `connection.name` - `[string]` name of the network to use. can be `ip4:tcp`, `ip6:tcp`, `ip4:udp`, `ip6:udp`, or anything else supported by the go runtime
 - `connection.address` - `[string]` address of the interface used to send packets (on the attacking machine)
-- `packet` - `[object]` packet configuration parameters. see `config/examples/advanced/packetgen-*` for usage examples as there are just too many params to put them here. I'll only describe the general structure of the packet
+- `packet` - `[object]` packet configuration parameters. see `examples/config/advanced/packetgen-*` for usage examples as there are just too many params to put them here. I'll only describe the general structure of the packet
 - `packet.link` - `[layer]` tcp/ip level 1 (OSI level 2) configuration. currently only supports ethernet serialization but go runtime doesn't have a way to send custom ethernet frames so it's not advised to use it
 - `packet.network` - `[layer]` tcp/ip level 2 (OSI level 3) configuration. supports `ipv4` and `ipv6` protocols. see `src/core/packetgen/network.go` for all the available options
 - `packet.transport` - `[layer]` tcp/ip level 3 (OSI level 4) configuration. supports `tcp` and `udp` protocols. see `src/core/packetgen/transport.go` for all the available options

@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  # creates privileged container
+  autoheal:
+    container_name: autoheal
+    image: willfarrell/autoheal:1.2.0
+    restart: always
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:Z
+
+  # creates OpenVPN Docker container to provider one of randomly picked .ovpn file
+  ovpn:
+    image: ghcr.io/wfg/openvpn-client:2.1.0
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - label:disable
+    restart: unless-stopped
+    volumes:
+      - /dev/net:/dev/net:z
+      - ../../openvpn/:/data/vpn:z
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      KILL_SWITCH: "on"
+      HTTP_PROXY: "off"
+      VPN_AUTH_SECRET: ovpn_secret
+      VPN_CONFIG_PATTERN: "*.ovpn" # this will match country01.ovpn, country02.ovpn etc
+    secrets:
+      - ovpn_secret
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD", "nslookup", "google.com", "8.8.8.8"]
+      timeout: 10s
+      interval: 30s
+      retries: 3
+
+  # run db1000n in updater mode, which will fetch configuration bypassing VPN and store it in shared volume
+  updater:
+    image: ghcr.io/arriven/db1000n
+    restart: unless-stopped
+    labels:
+      autoheal: "true"
+    volumes:
+      - ../../config:/ko-app/config:z
+    environment:
+      UPDATER_DESTINATION_CONFIG: "/ko-app/config/config.json"
+      UPDATER_MODE: true
+
+  # this container will use VPN
+  # it will use config.json created by 'updater' container above
+  # this is set by specifying same volume and -c config/config.json
+  programm:
+    image: ghcr.io/arriven/db1000n
+    restart: unless-stopped
+    depends_on:
+      ovpn:
+        condition: service_healthy
+      updater:
+        condition: service_started
+    network_mode: "service:ovpn"
+    labels:
+      autoheal: "true"
+    environment:
+      STRICT_COUNTRY_CHECK: "true"
+      # set single or multiple countries to check IP against and exit container if IP matches country OR IP cannot be determined
+      COUNTRY_LIST: "Country"
+      CONFIG: "/ko-app/config/config.json"
+    volumes:
+      - ../../config:/ko-app/config:z
+
+secrets:
+  ovpn_secret:
+    file: ../../openvpn/auth.txt

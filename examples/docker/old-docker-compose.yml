@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z
-      - ./openvpn/:/data/vpn:z
+      - ../../openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     environment:
@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z
-      - ./openvpn/:/data/vpn:z
+      - ../../openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     environment:
@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
     volumes:
       - /dev/net:/dev/net:z
-      - ./openvpn/:/data/vpn:z
+      - ../../openvpn/:/data/vpn:z
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     environment:
@@ -102,7 +102,7 @@ services:
     labels:
       autoheal: "true"
     volumes:
-      - ./config:/ko-app/config:z
+      - ../../config:/ko-app/config:z
     environment:
       UPDATER_DESTINATION_CONFIG: "/ko-app/config/config.json"
       UPDATER_MODE: true
@@ -127,7 +127,7 @@ services:
       COUNTRY_LIST: "Country"
       CONFIG: "/ko-app/config/config.json"
     volumes:
-      - ./config:/ko-app/config:z
+      - ../../config:/ko-app/config:z
 
   # this Docker container will use VPN 02
   # it will use config.json created by 'updater' container above
@@ -149,7 +149,7 @@ services:
       COUNTRY_LIST: "Country, Another Country"
       CONFIG: "/ko-app/config/config.json"
     volumes:
-      - ./config:/ko-app/config:z
+      - ../../config:/ko-app/config:z
 
   # this Docker container will use VPN 03
   # it will download config itself and won't access shared volume so those options are undefined here
@@ -169,6 +169,6 @@ services:
 
 secrets:
   provider01_secret:
-    file: ./openvpn/provider01.txt
+    file: ../../openvpn/provider01.txt
   provider02_secret:
-    file: ./openvpn/provider02.txt
+    file: ../../openvpn/provider02.txt
