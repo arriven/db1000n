@@ -26,10 +26,10 @@ services:
     environment:
       KILL_SWITCH: "on"
       HTTP_PROXY: "off"
-      VPN_AUTH_SECRET: opvn_secret
+      VPN_AUTH_SECRET: ovpn_secret
       VPN_CONFIG_PATTERN: "*.ovpn" # this will match country01.ovpn, country02.ovpn etc
     secrets:
-      - opvn_secret
+      - ovpn_secret
     labels:
       autoheal: "true"
     healthcheck:
@@ -73,5 +73,5 @@ services:
       - ./config:/ko-app/config:z
 
 secrets:
-  opvn_secret:
+  ovpn_secret:
     file: ./openvpn/auth.txt
