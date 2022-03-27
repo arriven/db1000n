@@ -66,8 +66,35 @@ func randomUUID() string {
 	return uuid.New().String()
 }
 
-func mod(lhs, rhs uint32) uint32 {
+func randomChar(from string) byte {
+	if len(from) == 0 {
+		return 0
+	}
+	return from[rand.Intn(len(from))]
+}
+
+func randomString(n int, from string) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = randomChar(from)
+	}
+	return string(b)
+}
+
+func randomAlpha(n int) string {
+	return randomString(n, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+}
+
+func randomAplhaNum(n int) string {
+	return randomString(n, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+}
+
+func mod(lhs, rhs int) int {
 	return lhs % rhs
+}
+
+func add(lhs, rhs int) int {
+	return lhs + rhs
 }
 
 // ContextKey used to work with context and not trigger linter
@@ -82,6 +109,10 @@ func Parse(input string) (*template.Template, error) {
 	// TODO: consider adding ability to populate custom data
 	return template.New("tpl").Funcs(template.FuncMap{
 		"random_uuid":         randomUUID,
+		"random_char":         randomChar,
+		"random_string":       randomString,
+		"random_alpha":        randomAlpha,
+		"random_alphanum":     randomAplhaNum,
 		"random_int_n":        rand.Intn,
 		"random_int":          rand.Int,
 		"random_payload":      RandomPayload,
@@ -110,6 +141,7 @@ func Parse(input string) (*template.Template, error) {
 		"split":               strings.Split,
 		"get_url":             getURLContent,
 		"mod":                 mod,
+		"add":                 add,
 		"ctx_key":             ctxKey,
 		"cookie_string":       cookieString,
 	}).Parse(strings.ReplaceAll(input, "\\", ""))

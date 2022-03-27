@@ -9,7 +9,7 @@
           "headers": {
             "Content-Type": "application/x-www-form-urlencoded"
           },
-          "body": "username=testuser{{random_int}}&password={{random_payload_byte 10 | base64_encode}}"
+          "body": "username={{random_alphanum 10}}&password={{random_payload_byte (random_int_n 5 | add 5) | base64_encode}}"
         }
       }
     }
