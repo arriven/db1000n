@@ -2,20 +2,51 @@
 
 ## Command Line reference
 
-```text
-Usage of /tmp/go-build781992389/b001/exe/main:
+```textUsage of /tmp/go-build2531319930/b001/exe/main:
   -b string
-        path to a backup config file in case primary one is unavailable (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
+      raw backup config in case the primary one is unavailable
   -c string
-        path to a config file, can be web endpoint (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.json")
-  -h    print help message and exit
-  -l int
-        logging level. 0 - Debug, 1 - Info, 2 - Warning, 3 - Error (default 1)
-  -m string
-        path where to dump usage metrics, can be URL or file, empty to disable
-  -r duration
-        refresh timeout for updating the config (default 1m0s)
+      path to config files, separated by a comma, each path can be a web endpoint (default "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json")
+  -country-list string
+      comma-separated list of countries (default "Ukraine")
+  -debug
+      enable debug level logging
+  -enable-primitive
+      set to true if you want to run primitive jobs that are less resource-efficient (default true)
+  -enable-self-update
+      Enable the application automatic updates on the startup
+  -format string
+      config format (default "yaml")
+  -h  print help message and exit
+  -pprof string
+      enable pprof
+  -prometheus_gateways string
+      Comma separated list of prometheus push gateways (default "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091")
+  -prometheus_on
+      Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>) (default true)
+  -proxy string
+      system proxy to set by default (can be a comma-separated list or a template)
+  -refresh-interval duration
+      refresh timeout for updating the config (default 1m0s)
+  -restart-on-update
+      Allows application to restart upon successful update (ignored if auto-update is disabled) (default true)
+  -scale int
+      used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once (default 1)
+  -self-update-check-frequency duration
+      How often to run auto-update checks (default 24h0m0s)
+  -skip-encrypted
+      set to true if you want to only run plaintext jobs from the config for security considerations
+  -skip-update-check-on-start
+      Allows to skip the update check at the startup (usually set automatically by the previous version)
+  -strict-country-check
+      enable strict country check; will also exit if IP can't be determined
+  -updater-destination-config string
+      Destination config file to write (only applies if updater-mode is enabled (default "config/config.json")
+  -updater-mode
+      Only run config updater
 ```
+
+Almost all of these parameters can also be set via environment variables
 
 ## Config file reference
 
