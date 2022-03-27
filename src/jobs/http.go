@@ -24,7 +24,6 @@ package jobs
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -130,6 +129,8 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		return nil, err
 	}
 
+	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+
 	client := http.NewClient(ctx, *clientConfig, logger)
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
@@ -156,11 +157,8 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		trafficMonitor.Add(uint64(dataSize))
 
 		if err := sendFastHTTPRequest(client, req, nil); err != nil {
-			if errors.Is(err, fasthttp.ErrHostClientRedirectToDifferentScheme) {
-				return nil, err
-			}
-
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
+			backoffController.Handle(ctx, err)
 		} else {
 			processedTrafficMonitor.Add(uint64(dataSize))
 		}
