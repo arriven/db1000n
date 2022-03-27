@@ -26,7 +26,6 @@ package jobs
 import (
 	"context"
 	"flag"
-	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -116,24 +115,23 @@ func Get(t string) Job {
 
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
-	IntervalMs int `mapstructure:"interval_ms,omitempty"`
-	Count      int `mapstructure:"count,omitempty"`
+	utils.BackoffSleeper
+
+	Count int `mapstructure:"count,omitempty"`
 
 	iter int
 }
 
 // Next comment for linter
 func (c *BasicJobConfig) Next(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
+	switch {
+	case !c.Sleep(ctx):
 		return false
-	case <-time.After(time.Duration(c.IntervalMs) * time.Millisecond):
-		if c.Count <= 0 {
-			return true
-		}
-
-		c.iter++
-
-		return c.iter <= c.Count
+	case c.Count <= 0:
+		return true
 	}
+
+	c.iter++
+
+	return c.iter <= c.Count
 }

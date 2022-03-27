@@ -82,10 +82,10 @@ func main() {
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
-	country := utils.CheckCountryOrFail(countryCheckerConfig)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	country := utils.CheckCountryOrFail(ctx, countryCheckerConfig)
 
 	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
@@ -122,9 +122,7 @@ func setUpPprof(pprof string, debug bool) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
 
-	go func() {
-		log.Println(http.ListenAndServe(pprof, mux))
-	}()
+	go log.Println(http.ListenAndServe(pprof, mux))
 }
 
 func cancelOnSignal(cancel context.CancelFunc) {

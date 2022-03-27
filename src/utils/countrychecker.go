@@ -27,8 +27,8 @@ func NewCountryCheckerConfigWithFlags() *CountryCheckerConfig {
 }
 
 // CheckCountryOrFail checks the country of client origin by IP and exits the program if it is in the blacklist.
-func CheckCountryOrFail(cfg *CountryCheckerConfig) string {
-	isCountryAllowed, country := CheckCountry(strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck)
+func CheckCountryOrFail(ctx context.Context, cfg *CountryCheckerConfig) string {
+	isCountryAllowed, country := CheckCountry(ctx, strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck)
 	if !isCountryAllowed {
 		log.Fatalf("%q is not an allowed country, exiting", country)
 	}
@@ -37,20 +37,27 @@ func CheckCountryOrFail(cfg *CountryCheckerConfig) string {
 }
 
 // CheckCountry checks which country the app is running from and whether it is in the blacklist.
-func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
-	const maxFetchRetries = 3
+func CheckCountry(ctx context.Context, countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
+	const (
+		maxFetchRetries = 3
+		msInSecond      = 1000
+	)
 
 	var country, ip string
+
+	sleeper := BackoffSleeper{IntervalMs: msInSecond}
 
 	for retries := 1; ; retries++ {
 		log.Printf("Checking IP address, attempt #%d", retries)
 
 		var err error
-		if country, ip, err = fetchLocationInfo(); err != nil {
+		if country, ip, err = fetchLocationInfo(ctx); err != nil {
 			if retries < maxFetchRetries {
-				time.Sleep(time.Second)
+				sleeper.EnableBackoff()
 
-				continue
+				if sleeper.Sleep(ctx) {
+					continue
+				}
 			}
 
 			if strictCountryCheck {
@@ -79,13 +86,13 @@ func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, str
 	return true, country
 }
 
-func fetchLocationInfo() (country, ip string, err error) {
+func fetchLocationInfo(ctx context.Context) (country, ip string, err error) {
 	const (
 		ipCheckerURI   = "https://api.myip.com/"
 		requestTimeout = 3 * time.Second
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
