@@ -2,7 +2,8 @@
 
 ## Command Line reference
 
-```textUsage of /tmp/go-build2531319930/b001/exe/main:
+```text
+Usage of db1000n:
   -b string
       raw backup config in case the primary one is unavailable
   -c string
