@@ -40,29 +40,30 @@ func CheckCountryOrFail(cfg *CountryCheckerConfig) string {
 func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, string) {
 	const maxFetchRetries = 3
 
-	var country, ip string
+	var (
+		country, ip string
+		err         error
+	)
 
-	for retries := 1; ; retries++ {
-		log.Printf("Checking IP address, attempt #%d", retries)
+	counter := Counter{Count: maxFetchRetries}
+	backoffController := NewBackoffController(nil)
 
-		var err error
+	for counter.Next() {
+		log.Printf("Checking IP address, attempt #%d", counter.iter)
+
 		if country, ip, err = fetchLocationInfo(); err != nil {
-			if retries < maxFetchRetries {
-				time.Sleep(time.Second)
+			backoffController.Handle(context.Background(), err)
+		}
+	}
 
-				continue
-			}
+	if err != nil {
+		if strictCountryCheck {
+			log.Printf("Failed to check the country info in %d attempts while in strict mode", maxFetchRetries)
 
-			if strictCountryCheck {
-				log.Printf("Failed to check the country info in %d attempts while in strict mode", maxFetchRetries)
-
-				return false, ""
-			}
-
-			return true, ""
+			return false, ""
 		}
 
-		break
+		return true, ""
 	}
 
 	log.Printf("Current country: %s (%s)", country, ip)

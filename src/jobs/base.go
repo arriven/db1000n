@@ -117,23 +117,11 @@ func Get(t string) Job {
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
 	IntervalMs int `mapstructure:"interval_ms,omitempty"`
-	Count      int `mapstructure:"count,omitempty"`
-
-	iter int
+	utils.Counter
+	*utils.BackoffConfig
 }
 
 // Next comment for linter
 func (c *BasicJobConfig) Next(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
-		return false
-	case <-time.After(time.Duration(c.IntervalMs) * time.Millisecond):
-		if c.Count <= 0 {
-			return true
-		}
-
-		c.iter++
-
-		return c.iter <= c.Count
-	}
+	return utils.Sleep(ctx, time.Duration(c.IntervalMs)*time.Millisecond) && c.Counter.Next()
 }

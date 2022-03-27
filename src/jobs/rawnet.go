@@ -57,6 +57,8 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 		return nil, err
 	}
 
+	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+
 	if globalConfig.ProxyURLs != "" {
 		jobConfig.proxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
@@ -72,13 +74,14 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 	}
 
 	for jobConfig.Next(ctx) {
-		sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
+		err = sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
+		backoffController.Handle(ctx, err)
 	}
 
 	return nil, nil
 }
 
-func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) {
+func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, trafficMonitor, processedTrafficMonitor *metrics.Writer) error {
 	// track sending of SYN packet
 	trafficMonitor.Add(packetgen.TCPHeaderSize + packetgen.IPHeaderSize)
 
@@ -87,7 +90,7 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 		logger.Debug("error connecting via tcp", zap.String("addr", jobConfig.addr), zap.Error(err))
 		metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusFail)
 
-		return
+		return err
 	}
 
 	defer conn.Close()
@@ -107,12 +110,14 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 		if err != nil {
 			metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusFail)
 
-			return
+			return err
 		}
 
 		processedTrafficMonitor.Add(uint64(n))
 		metrics.IncRawnetTCP(jobConfig.addr, metrics.StatusSuccess)
 	}
+
+	return nil
 }
 
 func udpJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
