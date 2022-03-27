@@ -24,9 +24,9 @@ func UpdateLocal(destinationPath string, configPaths []string, backupConfig []by
 		if rawConfig := FetchRawConfig(configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
 			if err := writeConfig(rawConfig.Body, destinationPath); err != nil {
 				log.Printf("Error writing config: %v", err)
-			}
 
-			return
+				return
+			}
 		}
 
 		time.Sleep(1 * time.Minute)
