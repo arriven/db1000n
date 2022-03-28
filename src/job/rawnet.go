@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
@@ -48,7 +49,7 @@ type rawnetConfig struct {
 	timeout   time.Duration
 }
 
-func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -124,7 +125,7 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 	return nil
 }
 
-func udpJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
+func udpJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -174,7 +175,7 @@ func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.
 	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
 }
 
-func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args Args) (tpl *rawnetConfig, err error) {
+func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args config.Args) (tpl *rawnetConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
 

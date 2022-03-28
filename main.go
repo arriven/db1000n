@@ -38,8 +38,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job"
-	"github.com/Arriven/db1000n/src/runner"
-	"github.com/Arriven/db1000n/src/runner/config"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
@@ -50,7 +49,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
-	runnerConfigOptions := runner.NewConfigOptionsWithFlags()
+	runnerConfigOptions := job.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
@@ -89,7 +88,7 @@ func main() {
 
 	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
-	r, err := runner.New(runnerConfigOptions, jobsGlobalConfig)
+	r, err := job.NewRunner(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}
