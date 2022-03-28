@@ -146,7 +146,7 @@ func Parse(input string) (*template.Template, error) {
 		"add":                 add,
 		"ctx_key":             ctxKey,
 		"cookie_string":       cookieString,
-	}).Parse(strings.ReplaceAll(input, "\\", ""))
+	}).Parse(input)
 }
 
 // Execute template, returns empty string in case of errors
