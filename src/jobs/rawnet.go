@@ -75,7 +75,11 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 
 	for jobConfig.Next(ctx) {
 		err = sendTCP(ctx, logger, jobConfig, trafficMonitor, processedTrafficMonitor)
-		backoffController.Handle(ctx, err)
+		if err != nil {
+			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
+		} else {
+			backoffController.Reset()
+		}
 	}
 
 	return nil, nil

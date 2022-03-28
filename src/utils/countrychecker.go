@@ -52,7 +52,7 @@ func CheckCountry(countriesToAvoid []string, strictCountryCheck bool) (bool, str
 		log.Printf("Checking IP address, attempt #%d", counter.iter)
 
 		if country, ip, err = fetchLocationInfo(); err != nil {
-			backoffController.Handle(context.Background(), err)
+			Sleep(context.Background(), backoffController.Increment().GetTimeout())
 		}
 	}
 

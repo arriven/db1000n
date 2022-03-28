@@ -42,7 +42,7 @@ func NewBackoffController(c *BackoffConfig) BackoffController {
 	return BackoffController{BackoffConfig: DefaultBackoffConfig()}
 }
 
-func (c BackoffController) getTimeout() time.Duration {
+func (c BackoffController) GetTimeout() time.Duration {
 	result := c.Timeout
 	for i := 0; i < c.count; i++ {
 		result *= time.Duration(c.Multiplier)
@@ -51,25 +51,17 @@ func (c BackoffController) getTimeout() time.Duration {
 	return result
 }
 
-func (c *BackoffController) increment() {
+func (c *BackoffController) Increment() *BackoffController {
 	if c.count < c.Limit {
 		c.count++
 	}
+
+	// return pointer to itself for usability
+	return c
 }
 
-func (c *BackoffController) reset() {
+func (c *BackoffController) Reset() {
 	c.count = 0
-}
-
-func (c *BackoffController) Handle(ctx context.Context, err error) {
-	if err == nil {
-		c.reset()
-
-		return
-	}
-
-	c.increment()
-	Sleep(ctx, c.getTimeout())
 }
 
 type Counter struct {

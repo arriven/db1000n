@@ -158,9 +158,10 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 
 		if err := sendFastHTTPRequest(client, req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
-			backoffController.Handle(ctx, err)
+			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
 		} else {
 			processedTrafficMonitor.Add(uint64(dataSize))
+			backoffController.Reset()
 		}
 	}
 
