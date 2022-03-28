@@ -29,15 +29,12 @@ import (
 	"strings"
 )
 
-// RandomPayload returns a byte slice to spoof ip packets with random payload in specified length
+// RandomPayload returns a string to spoof ip packets with random payload in specified length.
 func RandomPayload(length int) string {
-	payload := make([]byte, length)
-	rand.Read(payload) //nolint:gosec // Cryptographically secure random not required
-
-	return string(payload)
+	return string(RandomPayloadByte(length))
 }
 
-// RandomPayloadByte returns a byte slice to spoof ip packets with random payload in specified length
+// RandomPayloadByte returns a byte slice to spoof ip packets with random payload in specified length.
 func RandomPayloadByte(length int) []byte {
 	payload := make([]byte, length)
 	rand.Read(payload) //nolint:gosec // Cryptographically secure random not required
@@ -45,7 +42,7 @@ func RandomPayloadByte(length int) []byte {
 	return payload
 }
 
-// RandomIP returns a random ip to spoof packets
+// RandomIP returns a random ip to spoof packets.
 func RandomIP() string {
 	const maxByte = 255
 
@@ -54,7 +51,7 @@ func RandomIP() string {
 		rand.Intn(maxByte)+1, rand.Intn(maxByte)+1)
 }
 
-// RandomPort returns a random port to spoof packets
+// RandomPort returns a random port to spoof packets.
 func RandomPort() int {
 	const (
 		minPort = 1024
@@ -64,7 +61,7 @@ func RandomPort() int {
 	return rand.Intn(maxPort-minPort) + minPort //nolint:gosec // Cryptographically secure random not required
 }
 
-// RandomMacAddr returns a random mac address to spoof packets
+// RandomMacAddr returns a random MAC address to spoof packets.
 func RandomMacAddr() net.HardwareAddr {
 	const macSizeBytes = 6
 

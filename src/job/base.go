@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package jobs [contains all the attack types db1000n can simulate]
-package jobs
+// Package job [contains all the attack types db1000n can simulate]
+package job
 
 import (
 	"context"

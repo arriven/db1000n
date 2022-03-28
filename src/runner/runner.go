@@ -36,7 +36,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/Arriven/db1000n/src/jobs"
+	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/runner/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
@@ -69,11 +69,11 @@ func NewConfigOptionsWithFlags() *ConfigOptions {
 // Runner executes jobs according to the (fetched from remote) configuration
 type Runner struct {
 	cfgOptions    *ConfigOptions
-	globalJobsCfg *jobs.GlobalConfig
+	globalJobsCfg *job.GlobalConfig
 }
 
 // New runner according to the config
-func New(cfgOptions *ConfigOptions, globalJobsCfg *jobs.GlobalConfig) (*Runner, error) {
+func New(cfgOptions *ConfigOptions, globalJobsCfg *job.GlobalConfig) (*Runner, error) {
 	return &Runner{
 		cfgOptions:    cfgOptions,
 		globalJobsCfg: globalJobsCfg,
@@ -113,7 +113,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			if rawConfig.Encrypted {
 				log.Println("Config is encrypted, disabling logs")
 
-				cancel = r.runJobs(jobs.EncryptedContext(ctx), zap.NewNop(), cfg)
+				cancel = r.runJobs(job.EncryptedContext(ctx), zap.NewNop(), cfg)
 			} else {
 				cancel = r.runJobs(ctx, logger, cfg)
 			}
@@ -166,7 +166,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 			continue
 		}
 
-		job := jobs.Get(cfg.Jobs[i].Type)
+		job := job.Get(cfg.Jobs[i].Type)
 		if job == nil {
 			logger.Error("unknown job", zap.String("type", cfg.Jobs[i].Type))
 
@@ -241,5 +241,5 @@ func dumpMetrics(clientID string) error {
 
 	networkStatsWriter.Flush()
 
-	return utils.ReportStatistics(int64(bytesGenerated), clientID)
+	return metrics.ReportStatistics(int64(bytesGenerated), clientID)
 }

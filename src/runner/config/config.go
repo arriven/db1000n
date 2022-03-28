@@ -34,13 +34,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Arriven/db1000n/src/jobs"
+	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
 // Config for all jobs to run
 type Config struct {
-	Jobs []jobs.Config
+	Jobs []job.Config
 }
 
 type RawConfig struct {

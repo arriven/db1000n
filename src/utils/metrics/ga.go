@@ -1,4 +1,4 @@
-package utils
+package metrics
 
 import (
 	v1 "github.com/mjpitz/go-ga/client/v1"

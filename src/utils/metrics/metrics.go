@@ -37,21 +37,20 @@ const (
 
 // Storage is a general struct to store custom metrics
 type Storage struct {
-	trackers map[string]*metricTracker
+	trackers map[string]*metricTracker // map by metric type
 }
 
 type metricTracker struct {
-	metrics sync.Map
+	metrics sync.Map // map by job ID
 }
 
 // Default to allow global access for ease of use
 // similar to http.DefaultClient and such
-var Default Storage
-
-func init() {
-	Default = Storage{trackers: make(map[string]*metricTracker)}
-	Default.trackers[Traffic] = &metricTracker{}
-	Default.trackers[ProcessedTraffic] = &metricTracker{}
+var Default = Storage{
+	trackers: map[string]*metricTracker{
+		Traffic:          {},
+		ProcessedTraffic: {},
+	},
 }
 
 func (ms *Storage) Write(name, jobID string, value uint64) {
