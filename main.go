@@ -120,7 +120,8 @@ func setUpPprof(pprof string, debug bool) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
 
-	go log.Println(http.ListenAndServe(pprof, mux))
+	// this has to be wrapped into a lambda bc otherwise it blocks when evaluating argument for log.Println
+	go func() { log.Println(http.ListenAndServe(pprof, mux)) }()
 }
 
 func cancelOnSignal(cancel context.CancelFunc) {
