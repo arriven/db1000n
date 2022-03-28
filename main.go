@@ -37,9 +37,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/Arriven/db1000n/src/jobs"
-	"github.com/Arriven/db1000n/src/runner"
-	"github.com/Arriven/db1000n/src/runner/config"
+	"github.com/Arriven/db1000n/src/job"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
@@ -50,8 +49,8 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile | log.LUTC)
 	log.Printf("DB1000n [Version: %s][PID=%d]\n", ota.Version, os.Getpid())
 
-	runnerConfigOptions := runner.NewConfigOptionsWithFlags()
-	jobsGlobalConfig := jobs.NewGlobalConfigWithFlags()
+	runnerConfigOptions := job.NewConfigOptionsWithFlags()
+	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 	updaterMode, destinationPath := config.NewUpdaterOptionsWithFlags()
@@ -89,7 +88,7 @@ func main() {
 
 	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
-	r, err := runner.New(runnerConfigOptions, jobsGlobalConfig)
+	r, err := job.NewRunner(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {
 		log.Panicf("Error initializing runner: %v", err)
 	}
@@ -107,11 +106,10 @@ func newZapLogger(debug bool) (*zap.Logger, error) {
 }
 
 func setUpPprof(pprof string, debug bool) {
-	if debug && pprof == "" {
+	switch {
+	case debug && pprof == "":
 		pprof = ":8080"
-	}
-
-	if pprof == "" {
+	case pprof == "":
 		return
 	}
 
@@ -122,9 +120,7 @@ func setUpPprof(pprof string, debug bool) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
 
-	go func() {
-		log.Println(http.ListenAndServe(pprof, mux))
-	}()
+	go log.Println(http.ListenAndServe(pprof, mux))
 }
 
 func cancelOnSignal(cancel context.CancelFunc) {

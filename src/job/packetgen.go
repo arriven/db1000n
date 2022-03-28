@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package jobs
+package job
 
 import (
 	"context"
@@ -33,12 +33,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

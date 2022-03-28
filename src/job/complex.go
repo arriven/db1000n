@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package jobs
+package job
 
 import (
 	"context"
@@ -30,17 +30,18 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var jobConfig struct {
 		BasicJobConfig
 
-		Jobs []Config
+		Jobs []config.Config
 	}
 
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
@@ -64,14 +65,14 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	return nil, nil
 }
 
-func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var jobConfig struct {
 		BasicJobConfig
 
-		Jobs []Config
+		Jobs []config.Config
 	}
 
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {

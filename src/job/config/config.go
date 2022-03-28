@@ -34,16 +34,27 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Arriven/db1000n/src/jobs"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
-// Config for all jobs to run
+// Args is a generic arguments map.
+type Args = map[string]interface{}
+
+// Config for a single job.
 type Config struct {
-	Jobs []jobs.Config
+	Name   string `mapstructure:"name"`
+	Type   string `mapstructure:"type"`
+	Count  int    `mapstructure:"count"`
+	Filter string `mapstructure:"filter"`
+	Args   Args   `mapstructure:"args"`
 }
 
-type RawConfig struct {
+// MultiConfig for all jobs.
+type MultiConfig struct {
+	Jobs []Config
+}
+
+type RawMultiConfig struct {
 	Body         []byte
 	Encrypted    bool
 	lastModified string
@@ -51,7 +62,7 @@ type RawConfig struct {
 }
 
 // fetch tries to read a config from the list of mirrors until it succeeds
-func fetch(paths []string, lastKnownConfig *RawConfig) *RawConfig {
+func fetch(paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
 	for i := range paths {
 		config, err := fetchSingle(paths[i], lastKnownConfig)
 		if err != nil {
@@ -69,7 +80,7 @@ func fetch(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 }
 
 // fetchSingle reads a config from a single source
-func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
+func fetchSingle(path string, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
 	configURL, err := url.ParseRequestURI(path)
 	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
 	if err != nil || filepath.IsAbs(path) {
@@ -78,7 +89,7 @@ func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
 			return nil, err
 		}
 
-		return &RawConfig{Body: res, lastModified: "", etag: ""}, nil
+		return &RawMultiConfig{Body: res, lastModified: "", etag: ""}, nil
 	}
 
 	const requestTimeout = 20 * time.Second
@@ -117,11 +128,11 @@ func fetchSingle(path string, lastKnownConfig *RawConfig) (*RawConfig, error) {
 		return nil, err
 	}
 
-	return &RawConfig{Body: res, etag: etag, lastModified: lastModified}, nil
+	return &RawMultiConfig{Body: res, etag: etag, lastModified: lastModified}, nil
 }
 
-// FetchRawConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
-func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
+// FetchRawMultiConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
+func FetchRawMultiConfig(paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
 	newConfig := fetch(paths, lastKnownConfig)
 
 	if utils.IsEncrypted(newConfig.Body) {
@@ -142,12 +153,12 @@ func FetchRawConfig(paths []string, lastKnownConfig *RawConfig) *RawConfig {
 }
 
 // Unmarshal config encoded with the given format.
-func Unmarshal(body []byte, format string) *Config {
+func Unmarshal(body []byte, format string) *MultiConfig {
 	if body == nil {
 		return nil
 	}
 
-	var config Config
+	var config MultiConfig
 
 	if err := utils.Unmarshal(body, &config, format); err != nil {
 		return nil

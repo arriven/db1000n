@@ -18,10 +18,10 @@ func NewUpdaterOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
 }
 
 func UpdateLocal(destinationPath string, configPaths []string, backupConfig []byte) {
-	lastKnownConfig := &RawConfig{Body: backupConfig}
+	lastKnownConfig := &RawMultiConfig{Body: backupConfig}
 
 	for {
-		if rawConfig := FetchRawConfig(configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
+		if rawConfig := FetchRawMultiConfig(configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
 			if err := writeConfig(rawConfig.Body, destinationPath); err != nil {
 				log.Printf("Error writing config: %v", err)
 

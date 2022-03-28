@@ -20,8 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package runner [responsible for updating the config and managing jobs accordingly]
-package runner
+package job
 
 import (
 	"bytes"
@@ -36,8 +35,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/Arriven/db1000n/src/jobs"
-	"github.com/Arriven/db1000n/src/runner/config"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
@@ -69,11 +67,11 @@ func NewConfigOptionsWithFlags() *ConfigOptions {
 // Runner executes jobs according to the (fetched from remote) configuration
 type Runner struct {
 	cfgOptions    *ConfigOptions
-	globalJobsCfg *jobs.GlobalConfig
+	globalJobsCfg *GlobalConfig
 }
 
-// New runner according to the config
-func New(cfgOptions *ConfigOptions, globalJobsCfg *jobs.GlobalConfig) (*Runner, error) {
+// NewRunner according to the config
+func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig) (*Runner, error) {
 	return &Runner{
 		cfgOptions:    cfgOptions,
 		globalJobsCfg: globalJobsCfg,
@@ -92,11 +90,13 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 	var cancel context.CancelFunc
 
-	lastKnownConfig := &config.RawConfig{}
+	lastKnownConfig := &config.RawMultiConfig{}
 
 	for {
-		rawConfig := config.FetchRawConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
-			nonNilConfigOrDefault(lastKnownConfig, &config.RawConfig{Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig))}))
+		rawConfig := config.FetchRawMultiConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
+			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
+				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),
+			}))
 		cfg := config.Unmarshal(rawConfig.Body, r.cfgOptions.Format)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
@@ -113,7 +113,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			if rawConfig.Encrypted {
 				log.Println("Config is encrypted, disabling logs")
 
-				cancel = r.runJobs(jobs.EncryptedContext(ctx), zap.NewNop(), cfg)
+				cancel = r.runJobs(EncryptedContext(ctx), zap.NewNop(), cfg)
 			} else {
 				cancel = r.runJobs(ctx, logger, cfg)
 			}
@@ -146,7 +146,7 @@ func nonEmptyStringOrDefault(s, defaultString string) string {
 	return defaultString
 }
 
-func nonNilConfigOrDefault(c, defaultConfig *config.RawConfig) *config.RawConfig {
+func nonNilConfigOrDefault(c, defaultConfig *config.RawMultiConfig) *config.RawMultiConfig {
 	if c.Body != nil {
 		return c
 	}
@@ -154,7 +154,7 @@ func nonNilConfigOrDefault(c, defaultConfig *config.RawConfig) *config.RawConfig
 	return defaultConfig
 }
 
-func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Config) (cancel context.CancelFunc) {
+func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.MultiConfig) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
@@ -166,7 +166,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Co
 			continue
 		}
 
-		job := jobs.Get(cfg.Jobs[i].Type)
+		job := Get(cfg.Jobs[i].Type)
 		if job == nil {
 			logger.Error("unknown job", zap.String("type", cfg.Jobs[i].Type))
 
@@ -241,5 +241,5 @@ func dumpMetrics(clientID string) error {
 
 	networkStatsWriter.Flush()
 
-	return utils.ReportStatistics(int64(bytesGenerated), clientID)
+	return metrics.ReportStatistics(int64(bytesGenerated), clientID)
 }

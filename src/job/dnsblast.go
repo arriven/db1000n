@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package jobs
+package job
 
 import (
 	"context"
@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/dnsblast"
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
@@ -43,7 +44,7 @@ type dnsBlastConfig struct {
 	ParallelQueries int      `mapstructure:"parallel_queries"`
 }
 
-func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	jobConfig, err := getDNSBlastConfig(args)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	return nil, err
 }
 
-func getDNSBlastConfig(args Args) (*dnsBlastConfig, error) {
+func getDNSBlastConfig(args config.Args) (*dnsBlastConfig, error) {
 	const (
 		defaultParallelQueriesPerCycle = 5
 		defaultIntervalMS              = 10

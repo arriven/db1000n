@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package jobs
+package job
 
 import (
 	"context"
@@ -30,11 +30,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
+func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
+	data interface{}, err error, //nolint:unparam // data is here to match Job
+) {
 	var jobConfig struct {
 		Text string
 	}
@@ -48,7 +51,7 @@ func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args)
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) {
+func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -60,7 +63,9 @@ func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Ar
 	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
 }
 
-func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Args) (data interface{}, err error) { //nolint:unparam // data is here to match Job
+func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
+	data interface{}, err error, //nolint:unparam // data is here to match Job
+) {
 	var jobConfig struct {
 		Value string
 	}
@@ -76,14 +81,14 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args Arg
 	return nil, nil
 }
 
-func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var jobConfig struct {
 		BasicJobConfig
 
-		Job Config
+		Job config.Config
 	}
 
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
@@ -117,7 +122,7 @@ func isInEncryptedContext(ctx context.Context) bool {
 	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
 }
 
-func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args Args) (data interface{}, err error) {
+func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
 	}
@@ -146,7 +151,7 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, err
 	}
 
-	var jobCfg Config
+	var jobCfg config.Config
 
 	if err = utils.Unmarshal(decrypted, &jobCfg, jobConfig.Format); err != nil {
 		return nil, err

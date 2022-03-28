@@ -26,7 +26,7 @@ builds:
       - -extldflags "-static"
       - -X github.com/Arriven/db1000n/src/utils/ota.Version={{ .Version }}
       - -X github.com/Arriven/db1000n/src/utils.EncryptionKeys={{- .Env.ENCRYPTION_KEYS }}
-      - -X github.com/Arriven/db1000n/src/runner/config.DefaultConfig={{- .Env.DEFAULT_CONFIG_VALUE }}
+      - -X github.com/Arriven/db1000n/src/job/config.DefaultConfig={{- .Env.DEFAULT_CONFIG_VALUE }}
       - -X github.com/Arriven/db1000n/src/utils/metrics.PushGatewayCA={{- .Env.CA_PATH_VALUE }}
       - -X github.com/Arriven/db1000n/src/utils/metrics.BasicAuth={{- .Env.PROMETHEUS_BASIC_AUTH }}
 archives:
