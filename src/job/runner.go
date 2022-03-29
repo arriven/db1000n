@@ -132,7 +132,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		if err := dumpMetrics(r.globalJobsCfg.ClientID); err != nil {
+		if err := dumpMetrics(logger, r.globalJobsCfg.ClientID); err != nil {
 			logger.Debug("error reporting statistics", zap.Error(err))
 		}
 	}
@@ -168,7 +168,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 
 		job := Get(cfg.Jobs[i].Type)
 		if job == nil {
-			logger.Error("unknown job", zap.String("type", cfg.Jobs[i].Type))
+			logger.Warn("unknown job", zap.String("type", cfg.Jobs[i].Type))
 
 			continue
 		}
@@ -194,7 +194,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 
 				_, err := job(ctx, logger, r.globalJobsCfg, cfg.Jobs[i].Args)
 				if err != nil {
-					logger.Error("error running job",
+					logger.Error("error running job one of the jobs",
 						zap.String("name", cfg.Jobs[i].Name),
 						zap.String("type", cfg.Jobs[i].Type),
 						zap.Error(err))
@@ -210,12 +210,8 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 	return cancel
 }
 
-func dumpMetrics(clientID string) error {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("caught panic: %v", err)
-		}
-	}()
+func dumpMetrics(logger *zap.Logger, clientID string) error {
+	defer utils.PanicHandler(logger)
 
 	bytesGenerated := metrics.Default.Read(metrics.Traffic)
 	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)

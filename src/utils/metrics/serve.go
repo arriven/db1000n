@@ -40,7 +40,5 @@ func serveMetrics(ctx context.Context) {
 		}
 	}(ctx, server)
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal()
-	}
+	log.Println(server.ListenAndServe())
 }
