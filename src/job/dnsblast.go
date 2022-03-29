@@ -33,7 +33,6 @@ import (
 
 	"github.com/Arriven/db1000n/src/core/dnsblast"
 	"github.com/Arriven/db1000n/src/job/config"
-	"github.com/Arriven/db1000n/src/utils"
 )
 
 type dnsBlastConfig struct {
@@ -45,7 +44,7 @@ type dnsBlastConfig struct {
 }
 
 func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
-	jobConfig, err := getDNSBlastConfig(args)
+	jobConfig, err := getDNSBlastConfig(args, globalConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +65,14 @@ func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	return nil, err
 }
 
-func getDNSBlastConfig(args config.Args) (*dnsBlastConfig, error) {
+func getDNSBlastConfig(args config.Args, globalConfig *GlobalConfig) (*dnsBlastConfig, error) {
 	const (
 		defaultParallelQueriesPerCycle = 5
 		defaultIntervalMS              = 10
 	)
 
 	var jobConfig dnsBlastConfig
-	if err := utils.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("failed to parse DNS Blast job configurations: %w", err)
 	}
 

@@ -91,7 +91,7 @@ func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig
 		Job config.Config
 	}
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
@@ -137,7 +137,7 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		Data   string
 	}
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
