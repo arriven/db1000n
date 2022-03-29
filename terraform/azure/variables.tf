@@ -5,7 +5,7 @@ variable "bomblet_count" {
 }
 
 variable "prefix" {
-  default     = "attack"
+  default     = "main"
   description = "The default prefix for resources."
 }
 
