@@ -130,7 +130,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.BackoffConfig, globalConfig.Backoff))
 
 	client := http.NewClient(ctx, *clientConfig, logger)
 

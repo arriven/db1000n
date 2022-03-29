@@ -58,7 +58,7 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.BackoffConfig, globalConfig.Backoff))
 
 	if globalConfig.ProxyURLs != "" {
 		jobConfig.proxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)

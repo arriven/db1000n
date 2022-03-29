@@ -43,6 +43,7 @@ type GlobalConfig struct {
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         int
+	Backoff             utils.BackoffConfig
 }
 
 // NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
@@ -59,6 +60,13 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"set to true if you want to run primitive jobs that are less resource-efficient")
 	flag.IntVar(&res.ScaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
 		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
+
+	flag.IntVar(&res.Backoff.Limit, "backoff-limit", utils.GetEnvIntDefault("BACKOFF_LIMIT", utils.DefaultBackoffConfig().Limit),
+		"how much exponential backoff can be scaled")
+	flag.IntVar(&res.Backoff.Multiplier, "backoff-multiplier", utils.GetEnvIntDefault("BACKOFF_MULTIPLIER", utils.DefaultBackoffConfig().Multiplier),
+		"how much exponential backoff is scaled with each new error")
+	flag.DurationVar(&res.Backoff.Timeout, "backoff-timeout", utils.GetEnvDurationDefault("BACKOFF_TIMEOUT", utils.DefaultBackoffConfig().Timeout),
+		"initial exponential backoff timeout")
 
 	return &res
 }
