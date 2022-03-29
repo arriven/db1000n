@@ -114,11 +114,11 @@ func Get(t string) Job {
 	}
 }
 
-type JobConfig interface {
+type Config interface {
 	FromGlobal(GlobalConfig)
 }
 
-func ParseConfig(c JobConfig, args config.Args, global GlobalConfig) error {
+func ParseConfig(c Config, args config.Args, global GlobalConfig) error {
 	if err := utils.Decode(args, c); err != nil {
 		return err
 	}
