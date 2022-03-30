@@ -1,7 +1,8 @@
 name: PushToGithubPages
 
 on:
-  workflow_dispatch:
+  push:
+    tags: ["**"]
 
 jobs:
   deploy:
