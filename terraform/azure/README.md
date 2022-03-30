@@ -29,37 +29,37 @@ If you deploy more than one container per region, play with the `-01` suffix to 
 - Logs from North Europe region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-northeurope-01 --container-name main
+az container logs --resource-group main-rg --name main-northeurope-01 --container-name main
 ```
 
 - Logs from West Europe region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-westeurope-01 --container-name main
+az container logs --resource-group main-rg --name main-westeurope-01 --container-name main
 ```
 
 - Logs from Canada Central region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-canadacentral-01 --container-name main
+az container logs --resource-group main-rg --name main-canadacentral-01 --container-name main
 ```
 
 - Logs from UAE North region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-uaenorth-01 --container-name main
+az container logs --resource-group main-rg --name main-uaenorth-01 --container-name main
 ```
 
 - Logs from Central US region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-centralus-01 --container-name main
+az container logs --resource-group main-rg --name main-centralus-01 --container-name main
 ```
 
 - Logs from East Asia region:
 
 ```sh
-az container logs --resource-group attack-rg --name attack-eastasia-01 --container-name main
+az container logs --resource-group main-rg --name main-eastasia-01 --container-name main
 ```
 
 ## Cleanup
