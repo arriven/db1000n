@@ -1,7 +1,7 @@
 # Define local variables
 locals {
   cluster_version = "1.21"
-  cluster_name = "eks-${var.project}"
+  cluster_name    = "eks-${var.project}"
 }
 
 # Create VPC network

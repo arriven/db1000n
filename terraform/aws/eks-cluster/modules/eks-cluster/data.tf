@@ -24,10 +24,9 @@ data "aws_iam_policy_document" "assume_role_policy_web_identity" {
     }
 
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${replace(aws_iam_openid_connect_provider.oidc_provider.url, "https://", "")}:sub"
-      # variable = "${aws_iam_openid_connect_provider.oidc_provider.url}:sub"
-      values = ["system:serviceaccount:kube-system:aws-node", "system:serviceaccount:kube-system:cluster-autoscaler"]
+      values   = ["system:serviceaccount:kube-system:aws-node", "system:serviceaccount:kube-system:cluster-autoscaler"]
     }
   }
 }
@@ -35,7 +34,7 @@ data "aws_iam_policy_document" "assume_role_policy_web_identity" {
 data "aws_iam_policy_document" "eks_cluster_autoscaler_policy" {
   statement {
     resources = ["*"]
-    actions = [
+    actions   = [
       "autoscaling:DescribeAutoScalingGroups",
       "autoscaling:DescribeAutoScalingInstances",
       "autoscaling:DescribeLaunchConfigurations",

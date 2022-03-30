@@ -1,7 +1,7 @@
 # Create k8s configmap to attach nodes to cluster
 resource "kubernetes_config_map" "aws_auth" {
   metadata {
-    name = "aws-auth"
+    name      = "aws-auth"
     namespace = "kube-system"
   }
   data = {
@@ -139,7 +139,7 @@ resource "kubernetes_role" "cluster_autoscaler" {
 
 resource "kubernetes_cluster_role_binding" "cluster_autoscaler" {
   metadata {
-    name      = "cluster-autoscaler"
+    name = "cluster-autoscaler"
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
       k8s-app = "cluster-autoscaler"

@@ -1,6 +1,6 @@
 # Create EKS cluster role
 resource "aws_iam_role" "eks_cluster" {
-  name = "AWSEKSClusterRole"
+  name               = "AWSEKSClusterRole"
   # name = "AmazonEKSClusterRole"
   assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume_role_policy.json
 
@@ -26,7 +26,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSServicePolicy" {
 
 # Create EKS cluster autoscaler role
 resource "aws_iam_role" "eks_cluster_autoscaler" {
-  name = "AmazonEKSClusterAutoscalerRole"
+  name               = "AmazonEKSClusterAutoscalerRole"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy_web_identity.json
 
   inline_policy {
@@ -53,8 +53,8 @@ resource "aws_eks_cluster" "eks_cluster" {
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   vpc_config {
-    security_group_ids      = [aws_security_group.control_plane.id]
-    subnet_ids              = var.subnets
+    security_group_ids = [aws_security_group.control_plane.id]
+    subnet_ids         = var.subnets
   }
   
   depends_on = [
@@ -67,7 +67,7 @@ resource "aws_eks_cluster" "eks_cluster" {
 resource "aws_iam_openid_connect_provider" "oidc_provider" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.cert.certificates[0].sha1_fingerprint]
-  url = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
+  url             = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
 }
 
 # Create EKS cluster security group

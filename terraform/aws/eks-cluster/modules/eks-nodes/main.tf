@@ -1,6 +1,6 @@
 # Create EKS node IAM role
 resource "aws_iam_role" "eks_worker_node" {
-  name = "AWSEKSWorkerNodeRole"
+  name               = "AWSEKSWorkerNodeRole"
   # name = "AmazonEKSWorkerNodeRole"
   assume_role_policy = data.aws_iam_policy_document.eks_worker_node_assume_role_policy.json
 
@@ -60,16 +60,15 @@ resource "aws_launch_template" "eks_nodes" {
   image_id      = var.ami_id != "" ? var.ami_id : data.aws_ami.amazon_eks_nodes.id
   instance_type = var.instance_type
   key_name      = var.key_name
-  user_data = base64encode(data.template_file.user_data.rendered)
+  user_data     = base64encode(data.template_file.user_data.rendered)
 
   iam_instance_profile {
     arn = aws_iam_instance_profile.eks_worker_node.arn
   }
 
   network_interfaces {
-    # associate_public_ip_address = true
-    delete_on_termination       = true
-    security_groups             = [aws_security_group.eks_nodes.id]
+    delete_on_termination = true
+    security_groups       = [aws_security_group.eks_nodes.id]
   }
 
   block_device_mappings {
@@ -182,28 +181,6 @@ resource "aws_autoscaling_group" "eks_nodes" {
   ]
 }
 
-# resource "aws_autoscaling_schedule" "asg_scale_down" {
-#   count = var.enable_asg_scale_down ? 1 : 0
-
-#   scheduled_action_name  = "bastion_asg_scale_down"
-#   autoscaling_group_name = aws_autoscaling_group.bastion.name
-#   min_size               = var.asg_scale_down_min_size
-#   max_size               = var.asg_scale_down_max_size
-#   desired_capacity       = var.asg_scale_down_desired_capacity
-#   recurrence             = var.asg_scale_down_recurrence
-# }
-
-# resource "aws_autoscaling_schedule" "asg_scale_up" {
-#   count = var.enable_asg_scale_up ? 1 : 0
-
-#   scheduled_action_name  = "bastion_asg_scale_up"
-#   autoscaling_group_name = aws_autoscaling_group.bastion.name
-#   min_size               = var.asg_scale_up_min_size
-#   max_size               = var.asg_scale_up_max_size
-#   desired_capacity       = var.asg_scale_up_desired_capacity
-#   recurrence             = var.asg_scale_up_recurrence
-# }
-
 # Create EKS node security group
 resource "aws_security_group" "eks_nodes" {
   name        = "${var.cluster_name}-node"
@@ -224,8 +201,8 @@ resource "aws_security_group" "eks_nodes" {
   }
 
   tags = {
-    Name    = "${var.cluster_name}-node"
-    Cluster = var.cluster_name
+    Name                                        = "${var.cluster_name}-node"
+    Cluster                                     = var.cluster_name
     "kubernetes.io/cluster/${var.cluster_name}" = "owned"
   }
 }

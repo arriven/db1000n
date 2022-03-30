@@ -28,7 +28,7 @@ data "aws_ami" "amazon_eks_nodes" {
   }
   
   filter {
-    name = "owner-alias"
+    name   = "owner-alias"
     values = [
       "amazon",
     ]

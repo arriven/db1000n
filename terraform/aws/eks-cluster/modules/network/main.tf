@@ -34,6 +34,7 @@ resource "aws_eip" "natgw" {
 # Create NAT gateway (for each AZ)
 resource "aws_nat_gateway" "natgw" {
   count = var.amount_az
+
   allocation_id = aws_eip.natgw[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
  
@@ -80,7 +81,7 @@ resource "aws_subnet" "private" {
 
 # Create Internet gateway route table
 resource "aws_route_table" "internetgw" {
-  vpc_id   = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   
   route {
     cidr_block = "0.0.0.0/0"
