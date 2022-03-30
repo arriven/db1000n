@@ -1,6 +1,6 @@
 # Create EKS cluster role
 resource "aws_iam_role" "eks_cluster" {
-  name               = "AWSEKSClusterRole"
+  name = "AWSEKSClusterRole"
   # name = "AmazonEKSClusterRole"
   assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume_role_policy.json
 
@@ -56,7 +56,7 @@ resource "aws_eks_cluster" "eks_cluster" {
     security_group_ids = [aws_security_group.control_plane.id]
     subnet_ids         = var.subnets
   }
-  
+
   depends_on = [
     aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy,
     aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy
@@ -72,24 +72,24 @@ resource "aws_iam_openid_connect_provider" "oidc_provider" {
 
 # Create EKS cluster security group
 resource "aws_security_group" "control_plane" {
-    name        = "${var.cluster_name}-control-plane"
-    description = "Cluster communication with worker nodes"
-    vpc_id      = var.vpc_id
+  name        = "${var.cluster_name}-control-plane"
+  description = "Cluster communication with worker nodes"
+  vpc_id      = var.vpc_id
 
-    egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    revoke_rules_on_delete = true
+  revoke_rules_on_delete = true
 
-    lifecycle {
-      create_before_destroy = true
-    }
+  lifecycle {
+    create_before_destroy = true
+  }
 
-    tags = {
+  tags = {
     Name    = "${var.cluster_name}-control-plane"
     Cluster = var.cluster_name
   }

@@ -26,9 +26,9 @@ data "aws_ami" "amazon_eks_nodes" {
     name   = "name"
     values = ["amazon-eks-node-${var.cluster_version}-*"]
   }
-  
+
   filter {
-    name   = "owner-alias"
+    name = "owner-alias"
     values = [
       "amazon",
     ]

@@ -1,12 +1,12 @@
 # data sources
 output "account_id" {
   description = "AWS Account ID"
-  value = data.aws_caller_identity.current.account_id
+  value       = data.aws_caller_identity.current.account_id
 }
 
 output "caller_arn" {
   description = "User ARN"
-  value = data.aws_caller_identity.current.arn
+  value       = data.aws_caller_identity.current.arn
 }
 
 output "caller_user" {
@@ -16,20 +16,20 @@ output "caller_user" {
 # variables
 output "region" {
   description = "AWS region"
-  value = var.region
+  value       = var.region
 }
 
 output "profile" {
   description = "AWS profile"
-  value = var.profile
+  value       = var.profile
 }
 
 output "projects" {
   description = "AWS project"
-  value = var.project
+  value       = var.project
 }
 
 output "environment" {
   description = "AWS environment"
-  value = terraform.workspace
+  value       = terraform.workspace
 }

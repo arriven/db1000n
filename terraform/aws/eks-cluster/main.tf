@@ -7,8 +7,8 @@ locals {
 # Create VPC network
 module "network" {
   source = "./modules/network"
-  
-  name        = "vpc-${var.project}"
+
+  name = "vpc-${var.project}"
   tags = {
     "kubernetes.io/cluster/eks-${var.project}" = "shared"
   }
@@ -17,7 +17,7 @@ module "network" {
 # Create EKS cluster
 module "eks_cluster" {
   source = "./modules/eks-cluster"
-  
+
   cluster_name           = local.cluster_name
   cluster_version        = local.cluster_version
   vpc_id                 = module.network.vpc_id
@@ -48,7 +48,7 @@ module "eks_nodes" {
 # Setup kubernetes
 module "kubernetes" {
   source = "./modules/kubernetes"
-  
+
   profile                  = var.profile
   vpc_id                   = module.network.vpc_id
   cluster_name             = local.cluster_name

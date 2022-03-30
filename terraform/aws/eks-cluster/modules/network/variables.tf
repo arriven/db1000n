@@ -13,5 +13,5 @@ variable "vpc_cidr_block" {
 
 variable "amount_az" {
   description = "Desired Availability Zones (must be greater than 0). Number of available zones depends on region."
-  default = "2"
+  default     = "2"
 }

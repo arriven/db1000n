@@ -24,17 +24,17 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
     }
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
-      k8s-app = "cluster-autoscaler"
+      k8s-app   = "cluster-autoscaler"
     }
   }
 }
 
 resource "kubernetes_cluster_role" "cluster_autoscaler" {
   metadata {
-    name      = "cluster-autoscaler"
+    name = "cluster-autoscaler"
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
-      k8s-app = "cluster-autoscaler"
+      k8s-app   = "cluster-autoscaler"
     }
   }
 
@@ -66,7 +66,7 @@ resource "kubernetes_cluster_role" "cluster_autoscaler" {
   }
   rule {
     api_groups = [""]
-    resources  = [
+    resources = [
       "namespaces",
       "pods",
       "services",
@@ -120,14 +120,14 @@ resource "kubernetes_role" "cluster_autoscaler" {
     namespace = "kube-system"
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
-      k8s-app = "cluster-autoscaler"
+      k8s-app   = "cluster-autoscaler"
     }
   }
 
   rule {
     api_groups = [""]
     resources  = ["configmaps"]
-    verbs      = ["create","list","watch"]
+    verbs      = ["create", "list", "watch"]
   }
   rule {
     api_groups     = [""]
@@ -142,7 +142,7 @@ resource "kubernetes_cluster_role_binding" "cluster_autoscaler" {
     name = "cluster-autoscaler"
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
-      k8s-app = "cluster-autoscaler"
+      k8s-app   = "cluster-autoscaler"
     }
   }
 
@@ -164,7 +164,7 @@ resource "kubernetes_role_binding" "cluster_autoscaler" {
     namespace = "kube-system"
     labels = {
       k8s-addon = "cluster-autoscaler.addons.k8s.io",
-      k8s-app = "cluster-autoscaler"
+      k8s-app   = "cluster-autoscaler"
     }
   }
 
@@ -204,20 +204,20 @@ resource "kubernetes_deployment" "cluster_autoscaler" {
           app = "cluster-autoscaler"
         }
         annotations = {
-          "prometheus.io/scrape" = "true"
-          "prometheus.io/port" = "8085"
+          "prometheus.io/scrape"                           = "true"
+          "prometheus.io/port"                             = "8085"
           "cluster-autoscaler.kubernetes.io/safe-to-evict" = "false"
         }
       }
 
       spec {
-        priority_class_name = "system-cluster-critical"
+        priority_class_name  = "system-cluster-critical"
         service_account_name = "cluster-autoscaler"
 
         security_context {
           run_as_non_root = "true"
-          run_as_user = "65534"
-          fs_group = "65534"
+          run_as_user     = "65534"
+          fs_group        = "65534"
         }
 
         container {
@@ -250,7 +250,7 @@ resource "kubernetes_deployment" "cluster_autoscaler" {
             name       = "ssl-certs"
             mount_path = "/etc/ssl/certs/ca-bundle.crt"
             # mount_path = "/etc/ssl/certs/ca-certificates.crt" #/etc/ssl/certs/ca-bundle.crt for Amazon Linux Worker Nodes
-            read_only  = "true"
+            read_only = "true"
           }
         }
 
@@ -266,7 +266,7 @@ resource "kubernetes_deployment" "cluster_autoscaler" {
 
   wait_for_rollout = false
 
-  depends_on = [kubernetes_service_account.cluster_autoscaler] 
+  depends_on = [kubernetes_service_account.cluster_autoscaler]
 }
 
 

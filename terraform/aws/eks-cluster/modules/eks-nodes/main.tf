@@ -1,6 +1,6 @@
 # Create EKS node IAM role
 resource "aws_iam_role" "eks_worker_node" {
-  name               = "AWSEKSWorkerNodeRole"
+  name = "AWSEKSWorkerNodeRole"
   # name = "AmazonEKSWorkerNodeRole"
   assume_role_policy = data.aws_iam_policy_document.eks_worker_node_assume_role_policy.json
 
@@ -15,7 +15,7 @@ resource "aws_iam_role" "eks_worker_node" {
 
 # Create EKS node role IAM policies
 resource "aws_iam_role_policy" "assume_role_policy" {
-  name   = "AWSEKSWorkerNodeAssumeRolePolicy"
+  name = "AWSEKSWorkerNodeAssumeRolePolicy"
   # name   = "AmazonEKSWorkerNodeAssumeRolePolicy"
   role   = aws_iam_role.eks_worker_node.name
   policy = data.aws_iam_policy_document.assume_role_policy.json

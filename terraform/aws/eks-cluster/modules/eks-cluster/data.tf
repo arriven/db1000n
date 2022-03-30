@@ -34,7 +34,7 @@ data "aws_iam_policy_document" "assume_role_policy_web_identity" {
 data "aws_iam_policy_document" "eks_cluster_autoscaler_policy" {
   statement {
     resources = ["*"]
-    actions   = [
+    actions = [
       "autoscaling:DescribeAutoScalingGroups",
       "autoscaling:DescribeAutoScalingInstances",
       "autoscaling:DescribeLaunchConfigurations",
