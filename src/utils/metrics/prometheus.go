@@ -39,6 +39,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -107,7 +108,7 @@ func NewOptionsWithFlags() (prometheusOn *bool, prometheusPushGateways *string) 
 			"Comma separated list of prometheus push gateways")
 }
 
-func InitOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, clientID, country string) {
+func InitOrFail(ctx context.Context, logger *zap.Logger, prometheusOn bool, prometheusPushGateways, clientID, country string) {
 	if !ValidatePrometheusPushGateways(prometheusPushGateways) {
 		log.Fatal("Invalid value for --prometheus_gateways")
 	}
@@ -115,7 +116,7 @@ func InitOrFail(ctx context.Context, prometheusOn bool, prometheusPushGateways, 
 	if prometheusOn {
 		Init(clientID, country)
 
-		go ExportPrometheusMetrics(ctx, clientID, prometheusPushGateways)
+		go ExportPrometheusMetrics(ctx, logger, clientID, prometheusPushGateways)
 	}
 }
 
@@ -192,11 +193,11 @@ func ValidatePrometheusPushGateways(gatewayURLsCSV string) bool {
 
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
-func ExportPrometheusMetrics(ctx context.Context, clientID, gateways string) {
+func ExportPrometheusMetrics(ctx context.Context, logger *zap.Logger, clientID, gateways string) {
 	registerMetrics()
 
 	if gateways != "" {
-		go pushMetrics(ctx, clientID, strings.Split(gateways, ","))
+		go pushMetrics(ctx, logger, clientID, strings.Split(gateways, ","))
 	}
 
 	serveMetrics(ctx)
@@ -261,7 +262,7 @@ func getTLSConfig() (*tls.Config, error) {
 	}, nil
 }
 
-func pushMetrics(ctx context.Context, clientID string, gateways []string) {
+func pushMetrics(ctx context.Context, logger *zap.Logger, clientID string, gateways []string) {
 	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "db1000n_default_add")
 	gateway := gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
@@ -269,7 +270,7 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 
 	tlsConfig, err := getTLSConfig()
 	if err != nil {
-		log.Println("Can't get tls config")
+		logger.Debug("Can't get tls config", zap.Error(err))
 
 		return
 	}
@@ -282,7 +283,7 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 
 	user, password, err := getBasicAuth()
 	if err != nil {
-		log.Println("Can't fetch basic auth credentials")
+		logger.Debug("Can't fetch basic auth credentials", zap.Error(err))
 
 		return
 	}
@@ -295,7 +296,7 @@ func pushMetrics(ctx context.Context, clientID string, gateways []string) {
 			return
 		case <-ticker.C:
 			if err := pusher.Add(); err != nil {
-				log.Println("Can't push metrics to gateway, trying to change gateway")
+				logger.Debug("Can't push metrics to gateway, changing gateway", zap.Error(err))
 
 				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
 				pusher = setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)

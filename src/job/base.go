@@ -43,6 +43,8 @@ type GlobalConfig struct {
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         int
+	MinInterval         time.Duration
+	Backoff             utils.BackoffConfig
 }
 
 // NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
@@ -59,6 +61,15 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"set to true if you want to run primitive jobs that are less resource-efficient")
 	flag.IntVar(&res.ScaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
 		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
+	flag.DurationVar(&res.MinInterval, "min-interval", utils.GetEnvDurationDefault("MIN_INTERVAL", 0),
+		"minimum interval between job iterations")
+
+	flag.IntVar(&res.Backoff.Limit, "backoff-limit", utils.GetEnvIntDefault("BACKOFF_LIMIT", utils.DefaultBackoffConfig().Limit),
+		"how much exponential backoff can be scaled")
+	flag.IntVar(&res.Backoff.Multiplier, "backoff-multiplier", utils.GetEnvIntDefault("BACKOFF_MULTIPLIER", utils.DefaultBackoffConfig().Multiplier),
+		"how much exponential backoff is scaled with each new error")
+	flag.DurationVar(&res.Backoff.Timeout, "backoff-timeout", utils.GetEnvDurationDefault("BACKOFF_TIMEOUT", utils.DefaultBackoffConfig().Timeout),
+		"initial exponential backoff timeout")
 
 	return &res
 }
@@ -103,14 +114,43 @@ func Get(t string) Job {
 	}
 }
 
+type Config interface {
+	FromGlobal(GlobalConfig)
+}
+
+func ParseConfig(c Config, args config.Args, global GlobalConfig) error {
+	if err := utils.Decode(args, c); err != nil {
+		return err
+	}
+
+	c.FromGlobal(global)
+
+	return nil
+}
+
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
-	IntervalMs int `mapstructure:"interval_ms,omitempty"`
+	IntervalMs int            `mapstructure:"interval_ms,omitempty"`
+	Interval   *time.Duration `mapstructure:"interval"`
 	utils.Counter
 	*utils.BackoffConfig
 }
 
+func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
+	if c.GetInterval() < global.MinInterval {
+		c.Interval = &global.MinInterval
+	}
+
+	if c.BackoffConfig == nil {
+		c.BackoffConfig = &global.Backoff
+	}
+}
+
+func (c BasicJobConfig) GetInterval() time.Duration {
+	return utils.NonNilDurationOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
+}
+
 // Next comment for linter
 func (c *BasicJobConfig) Next(ctx context.Context) bool {
-	return utils.Sleep(ctx, time.Duration(c.IntervalMs)*time.Millisecond) && c.Counter.Next()
+	return utils.Sleep(ctx, c.GetInterval()) && c.Counter.Next()
 }

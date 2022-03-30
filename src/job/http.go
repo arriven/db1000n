@@ -50,7 +50,7 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *Glo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	_, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
+	_, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, *globalConfig, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -125,12 +125,12 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobConfig, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, globalConfig.ProxyURLs, logger)
+	jobConfig, clientConfig, requestTpl, err := getHTTPJobConfigs(ctx, args, *globalConfig, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.BackoffConfig, globalConfig.Backoff))
 
 	client := http.NewClient(ctx, *clientConfig, logger)
 
@@ -169,11 +169,11 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	return nil, nil
 }
 
-func getHTTPJobConfigs(ctx context.Context, args config.Args, globalProxyURLs string, logger *zap.Logger) (
+func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfig, logger *zap.Logger) (
 	cfg *httpJobConfig, clientCfg *http.ClientConfig, requestTpl *templates.MapStruct, err error,
 ) {
 	var jobConfig httpJobConfig
-	if err := utils.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, global); err != nil {
 		return nil, nil, nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
@@ -182,8 +182,8 @@ func getHTTPJobConfigs(ctx context.Context, args config.Args, globalProxyURLs st
 		return nil, nil, nil, fmt.Errorf("error parsing client config: %w", err)
 	}
 
-	if globalProxyURLs != "" {
-		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, globalProxyURLs, ctx)
+	if global.ProxyURLs != "" {
+		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, global.ProxyURLs, ctx)
 	}
 
 	requestTpl, err = templates.ParseMapStruct(jobConfig.Request)

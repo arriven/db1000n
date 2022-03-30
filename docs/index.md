@@ -27,11 +27,11 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 
 1. Download an application for your platform:
 
-   - [Windows](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_windows_386.zip)
-   - [Mac M1](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_darwin_arm64.tar.gz)
-   - [Mac Intel](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_darwin_amd64.tar.gz)
-   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_linux_386.zip)
-   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_latest_version_tag | replace("v","")}}\_linux_amd64.tar.gz)
+   - [Windows](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_tag | replace("v","")}}\_windows_386.zip)
+   - [Mac M1](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_tag | replace("v","")}}\_darwin_arm64.tar.gz)
+   - [Mac Intel](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_tag | replace("v","")}}\_darwin_amd64.tar.gz)
+   - [Linux 32bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_tag | replace("v","")}}\_linux_386.zip)
+   - [Linux 64bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_{{ git_tag | replace("v","")}}\_linux_amd64.tar.gz)
 
 1. Unpack the archive
 1. Launch the file inside the archive

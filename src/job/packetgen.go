@@ -39,7 +39,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -49,7 +49,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args
 		Connection packetgen.ConnectionConfig
 	}
 
-	if err := utils.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 

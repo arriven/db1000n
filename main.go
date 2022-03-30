@@ -42,6 +42,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 func main() {
@@ -81,12 +82,12 @@ func main() {
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
-	country := utils.CheckCountryOrFail(countryCheckerConfig)
+	country := utils.CheckCountryOrFail(countryCheckerConfig, templates.ParseAndExecute(zap.NewNop(), jobsGlobalConfig.ProxyURLs, nil))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metrics.InitOrFail(ctx, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
+	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
 	r, err := job.NewRunner(runnerConfigOptions, jobsGlobalConfig)
 	if err != nil {

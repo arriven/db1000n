@@ -29,17 +29,21 @@ func DefaultBackoffConfig() BackoffConfig {
 	return BackoffConfig{Multiplier: defaultMultiplier, Limit: defaultLimit, Timeout: time.Microsecond}
 }
 
+func NonNilBackoffConfigOrDefault(c *BackoffConfig, defaultConfig BackoffConfig) *BackoffConfig {
+	if c != nil {
+		return c
+	}
+
+	return &defaultConfig
+}
+
 type BackoffController struct {
 	BackoffConfig
 	count int
 }
 
 func NewBackoffController(c *BackoffConfig) BackoffController {
-	if c != nil {
-		return BackoffController{BackoffConfig: *c}
-	}
-
-	return BackoffController{BackoffConfig: DefaultBackoffConfig()}
+	return BackoffController{BackoffConfig: *NonNilBackoffConfigOrDefault(c, DefaultBackoffConfig())}
 }
 
 func (c BackoffController) GetTimeout() time.Duration {

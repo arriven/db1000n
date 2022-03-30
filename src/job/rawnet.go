@@ -53,12 +53,12 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
+	jobConfig, err := parseRawNetJobArgs(ctx, logger, globalConfig, args)
 	if err != nil {
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(jobConfig.BackoffConfig)
+	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.BackoffConfig, globalConfig.Backoff))
 
 	if globalConfig.ProxyURLs != "" {
 		jobConfig.proxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
@@ -125,11 +125,11 @@ func sendTCP(ctx context.Context, logger *zap.Logger, jobConfig *rawnetConfig, t
 	return nil
 }
 
-func udpJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
+func udpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobConfig, err := parseRawNetJobArgs(ctx, logger, args)
+	jobConfig, err := parseRawNetJobArgs(ctx, logger, globalConfig, args)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func sendUDP(ctx context.Context, logger *zap.Logger, a *net.UDPAddr, conn *net.
 	metrics.IncRawnetUDP(a.String(), metrics.StatusSuccess)
 }
 
-func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args config.Args) (tpl *rawnetConfig, err error) {
+func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (tpl *rawnetConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
 
@@ -185,7 +185,7 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, args config.Arg
 		Timeout   *time.Duration
 	}
 
-	if err := utils.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error decoding rawnet job config: %w", err)
 	}
 

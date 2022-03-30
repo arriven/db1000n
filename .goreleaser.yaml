@@ -9,16 +9,18 @@ builds:
       - linux
       - windows
       - darwin
+      - freebsd
+      - netbsd
+      - openbsd
+      - dragonfly
+      - aix
+      - illumos
+      - solaris
     goarch:
       - amd64
       - arm64
       - arm
       - "386"
-    ignore:
-      - goos: windows
-        goarch: arm
-      - goos: windows
-        goarch: arm64
     flags:
       - -tags=encrypted
     ldflags:

@@ -18,7 +18,7 @@ import (
 // PanicHandler just stub it in the beginning of every major module invocation to prevent single module failure from crashing the whole app
 func PanicHandler(logger *zap.Logger) {
 	if err := recover(); err != nil {
-		logger.Error("caught panic", zap.Any("err", err))
+		logger.Error("caught panic, recovering", zap.Any("err", err))
 	}
 }
 
@@ -103,8 +103,6 @@ func NonNilIntOrDefault(i *int, dflt int) int {
 func Decode(input interface{}, output interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, Result: output})
 	if err != nil {
-		log.Printf("Error parsing job config: %v", err)
-
 		return err
 	}
 

@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job/config"
@@ -44,7 +43,7 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		Jobs []config.Config
 	}
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
@@ -75,7 +74,7 @@ func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		Jobs []config.Config
 	}
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
@@ -98,7 +97,7 @@ func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 
 			go func(i int) {
 				if _, err := job(ctx, logger, globalConfig, jobConfig.Jobs[i].Args); err != nil {
-					logger.Error("error running job", zap.Error(err))
+					logger.Error("error running one of the jobs", zap.Error(err))
 				}
 
 				wg.Done()
