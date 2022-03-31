@@ -95,7 +95,7 @@ func (conn rawConn) Write(packet Packet) (n int, err error) {
 type netConnConfig struct {
 	Protocol  string
 	Address   string
-	ProxyURLs string
+	ProxyURLs string `mapstructure:"proxy_urls"`
 	Timeout   time.Duration
 }
 
