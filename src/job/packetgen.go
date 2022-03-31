@@ -52,7 +52,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.BackoffConfig, globalConfig.Backoff))
+	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.Backoff, globalConfig.Backoff))
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)

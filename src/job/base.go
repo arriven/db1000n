@@ -133,7 +133,7 @@ type BasicJobConfig struct {
 	IntervalMs int            `mapstructure:"interval_ms,omitempty"`
 	Interval   *time.Duration `mapstructure:"interval"`
 	utils.Counter
-	*utils.BackoffConfig
+	Backoff *utils.BackoffConfig
 }
 
 func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
@@ -141,8 +141,8 @@ func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
 		c.Interval = &global.MinInterval
 	}
 
-	if c.BackoffConfig == nil {
-		c.BackoffConfig = &global.Backoff
+	if c.Backoff == nil {
+		c.Backoff = &global.Backoff
 	}
 }
 
