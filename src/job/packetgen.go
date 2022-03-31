@@ -117,7 +117,7 @@ func parsePacketgenArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 		return nil, fmt.Errorf("error parsing packet: %w", err)
 	}
 
-	if globalConfig.ProxyURLs != "" {
+	if globalConfig.ProxyURLs != "" && jobConfig.Connection.Args["protocol"] == "tcp" {
 		jobConfig.Connection.Args["proxy_urls"] = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
