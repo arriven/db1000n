@@ -181,7 +181,7 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 
 		Address   string
 		Body      string
-		ProxyURLs string `mapstructure:"proxy_urls"`
+		ProxyURLs string
 		Timeout   *time.Duration
 	}
 

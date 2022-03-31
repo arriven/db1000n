@@ -130,8 +130,8 @@ func ParseConfig(c Config, args config.Args, global GlobalConfig) error {
 
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
-	IntervalMs int            `mapstructure:"interval_ms,omitempty"`
-	Interval   *time.Duration `mapstructure:"interval"`
+	IntervalMs int
+	Interval   *time.Duration
 	utils.Counter
 	Backoff *utils.BackoffConfig
 }

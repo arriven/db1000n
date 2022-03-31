@@ -73,20 +73,20 @@ type Client interface {
 }
 
 type StaticHostConfig struct {
-	Addr  string `mapstructure:"addr"`
-	IsTLS bool   `mapstructure:"is_tls"`
+	Addr  string
+	IsTLS bool
 }
 
 // ClientConfig is a http client configuration structure
 type ClientConfig struct {
-	StaticHost      *StaticHostConfig `mapstructure:"static_host"`
-	TLSClientConfig *tls.Config       `mapstructure:"tls_config,omitempty"`
-	Timeout         *time.Duration    `mapstructure:"timeout"`
-	ReadTimeout     *time.Duration    `mapstructure:"read_timeout"`
-	WriteTimeout    *time.Duration    `mapstructure:"write_timeout"`
-	IdleTimeout     *time.Duration    `mapstructure:"idle_timeout"`
-	MaxIdleConns    *int              `mapstructure:"max_idle_connections"`
-	ProxyURLs       string            `mapstructure:"proxy_urls"`
+	StaticHost      *StaticHostConfig
+	TLSClientConfig *tls.Config
+	Timeout         *time.Duration
+	ReadTimeout     *time.Duration
+	WriteTimeout    *time.Duration
+	IdleTimeout     *time.Duration
+	MaxIdleConns    *int
+	ProxyURLs       string
 }
 
 // NewClient creates a fasthttp client based on the config.

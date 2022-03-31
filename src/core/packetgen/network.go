@@ -57,9 +57,9 @@ func BuildNetworkLayer(c LayerConfig) (gopacket.NetworkLayer, error) {
 
 // IPPacketConfig describes ip layer configuration
 type IPPacketConfig struct {
-	SrcIP        string `mapstructure:"src_ip"`
-	DstIP        string `mapstructure:"dst_ip"`
-	NextProtocol *int   `mapstructure:"next"`
+	SrcIP        string
+	DstIP        string
+	NextProtocol *int
 }
 
 // buildIPV4Packet generates a layers.IPv4 and returns it with source IP address and destination IP address

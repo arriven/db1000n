@@ -42,11 +42,11 @@ type Args = map[string]interface{}
 
 // Config for a single job.
 type Config struct {
-	Name   string `mapstructure:"name"`
-	Type   string `mapstructure:"type"`
-	Count  int    `mapstructure:"count"`
-	Filter string `mapstructure:"filter"`
-	Args   Args   `mapstructure:"args"`
+	Name   string
+	Type   string
+	Count  int
+	Filter string
+	Args   Args
 }
 
 // MultiConfig for all jobs.

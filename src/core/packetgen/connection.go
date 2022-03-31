@@ -97,8 +97,8 @@ type netConnConfig struct {
 	Protocol        string
 	Address         string
 	Timeout         time.Duration
-	ProxyURLs       string      `mapstructure:"proxy_urls"`
-	TLSClientConfig *tls.Config `mapstructure:"tls_config"`
+	ProxyURLs       string
+	TLSClientConfig *tls.Config
 }
 
 type netConn struct {

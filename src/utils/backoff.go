@@ -69,7 +69,7 @@ func (c *BackoffController) Reset() {
 }
 
 type Counter struct {
-	Count int `mapstructure:"count,omitempty"`
+	Count int
 
 	iter int
 }

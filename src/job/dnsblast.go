@@ -37,10 +37,10 @@ import (
 
 type dnsBlastConfig struct {
 	BasicJobConfig
-	RootDomain      string   `mapstructure:"root_domain"`
-	Protocol        string   `mapstructure:"protocol"` // "udp", "tcp", "tcp-tls"
-	SeedDomains     []string `mapstructure:"seed_domains"`
-	ParallelQueries int      `mapstructure:"parallel_queries"`
+	RootDomain      string
+	Protocol        string // "udp", "tcp", "tcp-tls"
+	SeedDomains     []string
+	ParallelQueries int
 }
 
 func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {

@@ -65,7 +65,7 @@ func BuildPayload(c LayerConfig) (gopacket.Layer, error) {
 }
 
 type ICMPV4PacketConfig struct {
-	TypeCode uint16 `mapstructure:"code"`
+	TypeCode uint16
 	ID       uint16
 	Seq      uint16
 }
@@ -81,7 +81,7 @@ func buildICMPV4Packet(c ICMPV4PacketConfig) *layers.ICMPv4 {
 type DNSPacketConfig struct {
 	ID      uint16
 	Qr      bool
-	OpCode  uint8 `mapstructure:"code"`
+	OpCode  uint8
 	QDCount uint16
 }
 
