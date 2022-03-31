@@ -23,6 +23,7 @@
 package packetgen
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"time"
@@ -93,10 +94,11 @@ func (conn rawConn) Write(packet Packet) (n int, err error) {
 }
 
 type netConnConfig struct {
-	Protocol  string
-	Address   string
-	ProxyURLs string `mapstructure:"proxy_urls"`
-	Timeout   time.Duration
+	Protocol        string
+	Address         string
+	Timeout         time.Duration
+	ProxyURLs       string      `mapstructure:"proxy_urls"`
+	TLSClientConfig *tls.Config `mapstructure:"tls_config"`
 }
 
 type netConn struct {
@@ -105,6 +107,17 @@ type netConn struct {
 
 func openNetConn(c netConnConfig) (*netConn, error) {
 	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout)(c.Protocol, c.Address)
+
+	if c.TLSClientConfig != nil {
+		tlsConn := tls.Client(conn, c.TLSClientConfig)
+		if err := tlsConn.Handshake(); err != nil {
+			tlsConn.Close()
+
+			return nil, err
+		}
+
+		return &netConn{Conn: tlsConn}, err
+	}
 
 	return &netConn{Conn: conn}, err
 }
