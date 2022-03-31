@@ -25,10 +25,8 @@ package job
 import (
 	"context"
 	"fmt"
-	"net"
 	"time"
 
-	"github.com/google/gopacket"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
@@ -53,7 +51,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	rawConn, err := packetgen.OpenRawConnection(jobConfig.Connection)
+	conn, err := packetgen.OpenConnection(jobConfig.Connection)
 	if err != nil {
 		return nil, fmt.Errorf("error building raw connection: %w", err)
 	}
@@ -63,16 +61,10 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, fmt.Errorf("error parsing packet: %w", err)
 	}
 
-	payloadBuf := gopacket.NewSerializeBuffer()
-
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		if err := payloadBuf.Clear(); err != nil {
-			return nil, fmt.Errorf("error clearing payload buffer: %w", err)
-		}
-
 		packetConfigRaw := packetTpl.Execute(logger, ctx)
 		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
@@ -86,11 +78,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 			return nil, fmt.Errorf("error building packet: %w", err)
 		}
 
-		if err = packet.Serialize(payloadBuf); err != nil {
-			return nil, fmt.Errorf("error serializing packet: %w", err)
-		}
-
-		n, err := rawConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+		n, err := conn.Write(packet)
 		if err != nil {
 			return nil, fmt.Errorf("error sending packet: %w", err)
 		}

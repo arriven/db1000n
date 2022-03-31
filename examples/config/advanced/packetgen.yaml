@@ -2,8 +2,10 @@ jobs:
   - type: packetgen
     args:
       connection:
-        name: "ip4:tcp"
-        address: "0.0.0.0"
+        type: raw
+        args:
+          name: "ip4:tcp"
+          address: "0.0.0.0"
       packet:
         network:
           type: ipv4

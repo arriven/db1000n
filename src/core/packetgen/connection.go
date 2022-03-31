@@ -23,24 +23,66 @@
 package packetgen
 
 import (
+	"fmt"
 	"net"
 
+	"github.com/google/gopacket"
 	"golang.org/x/net/ipv6"
+
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // ConnectionConfig describes which network to use when sending packets
 type ConnectionConfig struct {
+	Type string
+	Args map[string]interface{}
+}
+
+func OpenConnection(c ConnectionConfig) (Connection, error) {
+	switch c.Type {
+	case "raw":
+		var cfg rawConnectionConfig
+		if err := utils.Decode(c.Args, &cfg); err != nil {
+			return nil, fmt.Errorf("error decoding connection config: %w", err)
+		}
+
+		return openRawConnection(cfg)
+	default:
+		return nil, fmt.Errorf("unknown connection type: %v", c.Type)
+	}
+}
+
+type Connection interface {
+	Write(Packet) (int, error)
+}
+
+// raw ipv4/ipv6 connection
+type rawConnectionConfig struct {
 	Name    string
 	Address string
 }
 
-// OpenRawConnection opens a raw ip network connection based on the provided config
+type rawConn struct {
+	*ipv6.PacketConn
+}
+
+// openRawConnection opens a raw ip network connection based on the provided config
 // use ipv6 as it also supports ipv4
-func OpenRawConnection(c ConnectionConfig) (*ipv6.PacketConn, error) {
+func openRawConnection(c rawConnectionConfig) (*rawConn, error) {
 	packetConn, err := net.ListenPacket(c.Name, c.Address)
 	if err != nil {
 		return nil, err
 	}
 
-	return ipv6.NewPacketConn(packetConn), nil
+	return &rawConn{PacketConn: ipv6.NewPacketConn(packetConn)}, nil
+}
+
+func (conn rawConn) Write(packet Packet) (n int, err error) {
+	payloadBuf := gopacket.NewSerializeBuffer()
+
+	if err = packet.Serialize(payloadBuf); err != nil {
+		return 0, fmt.Errorf("error serializing packet: %w", err)
+	}
+
+	return conn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
 }
