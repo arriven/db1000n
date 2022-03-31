@@ -3,7 +3,6 @@
 ## Description
 
 This implementation allows you to create entire AWS infrastructure from scratch
-
 and provides Kubernetes cluster (EKS) to deploy **db1000n** project. 
 
 ## Prerequisites
