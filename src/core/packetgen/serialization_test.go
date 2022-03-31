@@ -61,9 +61,9 @@ func TestSerialize(t *testing.T) {
 			"payload": map[string]interface{}{
 				"type": "icmpv4",
 				"data": map[string]interface{}{
-					"code": 130,
-					"seq":  1231231,
-					"id":   1231231231,
+					"type_code": 130,
+					"seq":       1231231,
+					"id":        1231231231,
 				},
 			},
 			"expected_result": 130,

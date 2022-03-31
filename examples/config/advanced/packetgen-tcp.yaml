@@ -1,0 +1,15 @@
+jobs:
+  - type: packetgen
+    args:
+      connection:
+        type: net
+        args:
+          protocol: "tcp"
+          address: "google.com:443"
+          tls_config:
+            insecure_skip_verify: true # this is not snake case because I decode it straight into tls config
+      packet:
+        application:
+          type: raw
+          data:
+            payload: "test"

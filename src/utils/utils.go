@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -100,8 +101,23 @@ func NonNilIntOrDefault(i *int, dflt int) int {
 }
 
 // Decode is an alias to a mapstructure.NewDecoder({Squash: true}).Decode()
+// with WeaklyTypedInput set to true and MatchFunc that only compares aplhanumeric sequence in field names
 func Decode(input interface{}, output interface{}) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, Result: output})
+	filter := func(r rune) rune {
+		if ('a' <= r && r <= 'z') ||
+			('A' <= r && r <= 'Z') ||
+			('0' <= r && r <= '9') {
+			return r
+		}
+
+		return -1
+	}
+
+	matchName := func(lhs, rhs string) bool {
+		return strings.EqualFold(strings.Map(filter, lhs), strings.Map(filter, rhs))
+	}
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, MatchName: matchName, Result: output})
 	if err != nil {
 		return err
 	}

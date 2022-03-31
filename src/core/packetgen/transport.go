@@ -56,8 +56,8 @@ func BuildTransportLayer(c LayerConfig, network gopacket.NetworkLayer) (gopacket
 
 // UDPPacketConfig describes udp layer configuration
 type UDPPacketConfig struct {
-	SrcPort int `mapstructure:"src_port,string"`
-	DstPort int `mapstructure:"dst_port,string"`
+	SrcPort int
+	DstPort int
 }
 
 func buildUDPPacket(c UDPPacketConfig, network gopacket.NetworkLayer) *layers.UDP {
@@ -87,8 +87,8 @@ type TCPFlagsConfig struct {
 
 // TCPPacketConfig describes tcp layer configuration
 type TCPPacketConfig struct {
-	SrcPort int `mapstructure:"src_port,string"`
-	DstPort int `mapstructure:"dst_port,string"`
+	SrcPort int
+	DstPort int
 	Seq     uint32
 	Ack     uint32
 	Window  uint16

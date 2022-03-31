@@ -71,36 +71,6 @@
       "args": {
         "path": "https://localhost:9090/inc2/common/js/doo/modules/searchSite/u.php"
       }
-    },
-    {
-      "type": "packetgen",
-      "filter": "{{ (.Value (ctx_key \"global\")).EnablePrimitiveJobs }}",
-      "args": {
-        "host": "{{ resolve_host \"localhost\" }}",
-        "port": "{{ random_port }}",
-        "packet": {
-          "payload": "test:blah",
-          "ethernet": {
-            "src_mac": "{{ random_mac_addr }}",
-            "dst_mac": "{{ random_mac_addr }}"
-          },
-          "ip": {
-            "src_ip": "{{ local_ip }}",
-            "dst_ip": "{{ resolve_host \"localhost\" }}"
-          },
-          "tcp": {
-            "src_port": "{{ random_port }}",
-            "dst_port": "{{ random_port }}",
-            "flags": {
-              "syn": true
-            }
-          },
-          "udp": {
-            "src_port": "{{ random_port }}",
-            "dst_port": "{{ random_port }}"
-          }
-        }
-      }
     }
   ]
 }

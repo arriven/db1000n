@@ -15,9 +15,9 @@ func Sleep(ctx context.Context, t time.Duration) bool {
 }
 
 type BackoffConfig struct {
-	Multiplier int           `mapstructure:"backoff_multiplier"`
-	Limit      int           `mapstructure:"backoff_limit"`
-	Timeout    time.Duration `mapstructure:"backoff_timeout"`
+	Multiplier int
+	Limit      int
+	Timeout    time.Duration
 }
 
 func DefaultBackoffConfig() BackoffConfig {
@@ -69,7 +69,7 @@ func (c *BackoffController) Reset() {
 }
 
 type Counter struct {
-	Count int `mapstructure:"count,omitempty"`
+	Count int
 
 	iter int
 }

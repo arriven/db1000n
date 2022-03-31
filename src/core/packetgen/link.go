@@ -50,8 +50,8 @@ func BuildLinkLayer(c LayerConfig) (gopacket.LinkLayer, error) {
 
 // EthernetPacketConfig describes ethernet layer configuration
 type EthernetPacketConfig struct {
-	SrcMAC string `mapstructure:"src_mac"`
-	DstMAC string `mapstructure:"dst_mac"`
+	SrcMAC string
+	DstMAC string
 }
 
 // buildEthernetPacket generates an layers.Ethernet and returns it with source MAC address and destination MAC address

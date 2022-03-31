@@ -23,24 +23,111 @@
 package packetgen
 
 import (
+	"crypto/tls"
+	"fmt"
 	"net"
+	"time"
 
+	"github.com/google/gopacket"
 	"golang.org/x/net/ipv6"
+
+	"github.com/Arriven/db1000n/src/utils"
 )
 
 // ConnectionConfig describes which network to use when sending packets
 type ConnectionConfig struct {
+	Type string
+	Args map[string]interface{}
+}
+
+func OpenConnection(c ConnectionConfig) (Connection, error) {
+	switch c.Type {
+	case "raw":
+		var cfg rawConnConfig
+		if err := utils.Decode(c.Args, &cfg); err != nil {
+			return nil, fmt.Errorf("error decoding connection config: %w", err)
+		}
+
+		return openRawConn(cfg)
+	case "net":
+		var cfg netConnConfig
+		if err := utils.Decode(c.Args, &cfg); err != nil {
+			return nil, fmt.Errorf("error decoding connection config: %w", err)
+		}
+
+		return openNetConn(cfg)
+	default:
+		return nil, fmt.Errorf("unknown connection type: %v", c.Type)
+	}
+}
+
+type Connection interface {
+	Write(Packet) (int, error)
+}
+
+// raw ipv4/ipv6 connection
+type rawConnConfig struct {
 	Name    string
 	Address string
 }
 
-// OpenRawConnection opens a raw ip network connection based on the provided config
+type rawConn struct {
+	*ipv6.PacketConn
+}
+
+// openRawConn opens a raw ip network connection based on the provided config
 // use ipv6 as it also supports ipv4
-func OpenRawConnection(c ConnectionConfig) (*ipv6.PacketConn, error) {
+func openRawConn(c rawConnConfig) (*rawConn, error) {
 	packetConn, err := net.ListenPacket(c.Name, c.Address)
-	if err != nil {
-		return nil, err
+
+	return &rawConn{PacketConn: ipv6.NewPacketConn(packetConn)}, err
+}
+
+func (conn rawConn) Write(packet Packet) (n int, err error) {
+	payloadBuf := gopacket.NewSerializeBuffer()
+
+	if err = packet.Serialize(payloadBuf); err != nil {
+		return 0, fmt.Errorf("error serializing packet: %w", err)
 	}
 
-	return ipv6.NewPacketConn(packetConn), nil
+	return conn.PacketConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+}
+
+type netConnConfig struct {
+	Protocol        string
+	Address         string
+	Timeout         time.Duration
+	ProxyURLs       string
+	TLSClientConfig *tls.Config
+}
+
+type netConn struct {
+	net.Conn
+}
+
+func openNetConn(c netConnConfig) (*netConn, error) {
+	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout)(c.Protocol, c.Address)
+
+	if c.TLSClientConfig != nil {
+		tlsConn := tls.Client(conn, c.TLSClientConfig)
+		if err := tlsConn.Handshake(); err != nil {
+			tlsConn.Close()
+
+			return nil, err
+		}
+
+		return &netConn{Conn: tlsConn}, err
+	}
+
+	return &netConn{Conn: conn}, err
+}
+
+func (conn netConn) Write(packet Packet) (n int, err error) {
+	payloadBuf := gopacket.NewSerializeBuffer()
+
+	if err = packet.Serialize(payloadBuf); err != nil {
+		return 0, fmt.Errorf("error serializing packet: %w", err)
+	}
+
+	return conn.Conn.Write(payloadBuf.Bytes())
 }
