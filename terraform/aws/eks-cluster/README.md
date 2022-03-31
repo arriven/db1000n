@@ -1,4 +1,3 @@
-
 # AWS EKS cluster infrastructure
 
 ## Description
@@ -33,23 +32,23 @@ Default output format [None]: json
 ### Deploy infrastructure
 
 ```bash
-$ cd db1000n/terraform/aws/eks-cluster/
-$ terraform init
-$ terraform plan
-$ terraform apply
+cd db1000n/terraform/aws/eks-cluster/
+terraform init
+terraform plan
+terraform apply
 ```
 
 ### Update kubeconfig
 
 ```bash
-$ aws --profile $your_aws_profile eks update-kubeconfig --name $your_eks_cluster_name
+aws --profile $your_aws_profile eks update-kubeconfig --name $your_eks_cluster_name
 ```
 
-### Connect to EKS cluster 
+### Connect to EKS cluster
 
 ```bash
 $ kubectl get nodes
-NAME                                       	  STATUS   ROLES    AGE    VERSION
+NAME                                          STATUS   ROLES    AGE    VERSION
 ip-xxx-xxx-x-xx.us-east-1.compute.internal    Ready    <none>   107m   v1.21.5-eks-9017834
 ip-xxx-xxx-x-xx.us-east-1.compute.internal    Ready    <none>   107m   v1.21.5-eks-9017834
 ip-xxx-xxx-x-xx.us-east-1.compute.internal    Ready    <none>   107m   v1.21.5-eks-9017834
@@ -80,11 +79,11 @@ db1000n-54d8744b54-9stzv   1/1     Running   0          2m10s
 ### Delete application
 
 ```bash
-$ helm uninstall db1000n -n db1000n
+helm uninstall db1000n -n db1000n
 ```
 
 ### Delete infrastructure
 
 ```bash
-$ terraform destroy
+terraform destroy
 ```
