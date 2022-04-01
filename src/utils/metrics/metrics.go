@@ -63,7 +63,7 @@ func (ms *Storage) Read(name string) uint64 {
 	var sum uint64
 
 	if tracker, ok := ms.trackers[name]; ok {
-		tracker.metrics.Range(func(k, v interface{}) bool {
+		tracker.metrics.Range(func(k, v any) bool {
 			if value, ok := v.(uint64); ok {
 				sum += value
 			}

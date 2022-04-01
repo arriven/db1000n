@@ -43,7 +43,7 @@ type packetgenJobConfig struct {
 	Connection packetgen.ConnectionConfig
 }
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -52,7 +52,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.Backoff, globalConfig.Backoff))
+	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 
 	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
 	go trafficMonitor.Update(ctx, time.Second)
@@ -104,7 +104,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 func parsePacketgenArgs(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (tpl *packetgenJobConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
-		Packet     map[string]interface{}
+		Packet     map[string]any
 		Connection packetgen.ConnectionConfig
 	}
 

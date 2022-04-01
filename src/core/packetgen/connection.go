@@ -37,7 +37,7 @@ import (
 // ConnectionConfig describes which network to use when sending packets
 type ConnectionConfig struct {
 	Type string
-	Args map[string]interface{}
+	Args map[string]any
 }
 
 func OpenConnection(c ConnectionConfig) (Connection, error) {
@@ -79,6 +79,9 @@ type rawConn struct {
 // use ipv6 as it also supports ipv4
 func openRawConn(c rawConnConfig) (*rawConn, error) {
 	packetConn, err := net.ListenPacket(c.Name, c.Address)
+	if err != nil {
+		return nil, err
+	}
 
 	return &rawConn{PacketConn: ipv6.NewPacketConn(packetConn)}, err
 }

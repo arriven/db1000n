@@ -75,7 +75,7 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 }
 
 // Job comment for linter
-type Job = func(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error)
+type Job = func(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error)
 
 // Get job by type name
 //nolint:cyclop // The string map alternative is orders of magnitude slower
@@ -147,7 +147,7 @@ func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
 }
 
 func (c BasicJobConfig) GetInterval() time.Duration {
-	return utils.NonNilDurationOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
+	return utils.NonNilOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
 }
 
 // Next comment for linter

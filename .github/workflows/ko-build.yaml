@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17
+          go-version: 1.18
       - uses: actions/checkout@v2
       - uses: imjasonh/setup-ko@v0.4
       - run: KO_DOCKER_REPO=${DOCKER_REPO,,} ko publish --bare --tags ${{ github.ref_name }},latest --platform all .

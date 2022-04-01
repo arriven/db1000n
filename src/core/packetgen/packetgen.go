@@ -45,7 +45,7 @@ type Packet struct {
 
 type LayerConfig struct {
 	Type string
-	Data map[string]interface{}
+	Data map[string]any
 }
 
 type PacketConfig struct {

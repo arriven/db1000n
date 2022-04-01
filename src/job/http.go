@@ -42,11 +42,11 @@ import (
 type httpJobConfig struct {
 	BasicJobConfig
 
-	Request map[string]interface{}
-	Client  map[string]interface{} // See HTTPClientConfig
+	Request map[string]any
+	Client  map[string]any // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -85,8 +85,8 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *Glo
 	resp.Header.VisitAll(headerLoaderFunc(headers))
 	resp.Header.VisitAllCookie(cookieLoaderFunc(cookies, logger))
 
-	return map[string]interface{}{
-		"response": map[string]interface{}{
+	return map[string]any{
+		"response": map[string]any{
 			"body":        string(resp.Body()),
 			"status_code": resp.StatusCode(),
 			"headers":     headers,
@@ -121,7 +121,7 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 	}
 }
 
-func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -130,7 +130,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.Backoff, globalConfig.Backoff))
+	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 
 	client := http.NewClient(ctx, *clientConfig, logger)
 
