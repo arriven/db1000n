@@ -1,4 +1,4 @@
-# AWS EKS cluster infrastructure
+# AWS EKS deployment
 
 ## Description
 
@@ -35,6 +35,17 @@ cd db1000n/terraform/aws/eks-cluster/
 terraform init
 terraform plan
 terraform apply
+```
+
+**NOTE:** You can create multilpe `*.tfvars` configuration files with various variables, regions and AWS accounts
+using `terraform workspace` command:
+
+```bash
+cd db1000n/terraform/aws/eks-cluster/
+terraform init
+terraform workspace new $your_workspace
+terraform plan -var-file $your_file.tfvars
+terraform apply -var-file $your_file.tfvars
 ```
 
 ### Update kubeconfig
