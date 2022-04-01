@@ -29,9 +29,5 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Run ShellCheck
-        run: |
-          choco install shellcheck
-          shellcheck --exclude SC1017 install.sh
       - name: Installer
         run: ./install.sh
