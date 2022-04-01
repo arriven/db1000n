@@ -8,7 +8,7 @@ resource "heroku_app" "app" {
   region = var.region
 
   config_vars = {
-    GOVERSION = "1.17"
+    GOVERSION = "1.18"
   }
 
   buildpacks = [
