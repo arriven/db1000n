@@ -181,7 +181,7 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 			cfg.Jobs[i].Count *= r.globalJobsCfg.ScaleFactor
 		}
 
-		cfgMap := make(map[string]interface{})
+		cfgMap := make(map[string]any)
 		if err := utils.Decode(cfg.Jobs[i], &cfgMap); err != nil {
 			logger.Fatal("failed to encode cfg map")
 		}

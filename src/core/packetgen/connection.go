@@ -37,7 +37,7 @@ import (
 // ConnectionConfig describes which network to use when sending packets
 type ConnectionConfig struct {
 	Type string
-	Args map[string]interface{}
+	Args map[string]any
 }
 
 func OpenConnection(c ConnectionConfig) (Connection, error) {

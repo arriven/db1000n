@@ -1,4 +1,4 @@
-# AWS deployment
+# AWS EC2 deployment
 
 ## Requirements
 
