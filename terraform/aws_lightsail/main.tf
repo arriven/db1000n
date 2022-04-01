@@ -1,7 +1,7 @@
 resource "awslightsail_container_service" "service" {
-  name        = "${var.app}-service"
-  power       = var.power
-  scale       = var.scale
+  name  = "${var.app}-service"
+  power = var.power
+  scale = var.scale
 }
 
 resource "awslightsail_container_deployment" "deployment" {

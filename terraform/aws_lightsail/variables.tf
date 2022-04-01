@@ -1,10 +1,10 @@
 variable "app" {
-  type      = string
+  type    = string
   default = "db1000n"
 }
 
 variable "image" {
-  type      = string
+  type    = string
   default = "ghcr.io/arriven/db1000n:latest"
 }
 
