@@ -51,7 +51,7 @@ func CheckCountry(countriesToAvoid []string, strictCountryCheck bool, proxyURLs 
 	)
 
 	counter := Counter{Count: maxFetchRetries}
-	backoffController := NewBackoffController(nil)
+	backoffController := BackoffController{BackoffConfig: DefaultBackoffConfig()}
 
 	for counter.Next() {
 		log.Printf("Checking IP address, attempt #%d", counter.iter)

@@ -84,17 +84,9 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 	return v
 }
 
-func NonNilDurationOrDefault(d *time.Duration, dflt time.Duration) time.Duration {
-	if d != nil {
-		return *d
-	}
-
-	return dflt
-}
-
-func NonNilIntOrDefault(i *int, dflt int) int {
-	if i != nil {
-		return *i
+func NonNilOrDefault[T any](v *T, dflt T) T {
+	if v != nil {
+		return *v
 	}
 
 	return dflt

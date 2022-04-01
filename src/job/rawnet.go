@@ -58,7 +58,7 @@ func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig,
 		return nil, err
 	}
 
-	backoffController := utils.NewBackoffController(utils.NonNilBackoffConfigOrDefault(jobConfig.Backoff, globalConfig.Backoff))
+	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 
 	if globalConfig.ProxyURLs != "" {
 		jobConfig.proxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
@@ -202,6 +202,6 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 		addr:           targetAddress,
 		bodyTpl:        bodyTpl,
 		proxyURLs:      proxyURLs,
-		timeout:        utils.NonNilDurationOrDefault(jobConfig.Timeout, time.Minute),
+		timeout:        utils.NonNilOrDefault(jobConfig.Timeout, time.Minute),
 	}, nil
 }

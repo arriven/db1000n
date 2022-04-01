@@ -147,7 +147,7 @@ func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
 }
 
 func (c BasicJobConfig) GetInterval() time.Duration {
-	return utils.NonNilDurationOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
+	return utils.NonNilOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
 }
 
 // Next comment for linter
