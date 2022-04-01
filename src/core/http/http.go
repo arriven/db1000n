@@ -96,7 +96,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		defaultTimeout         = 90 * time.Second
 	)
 
-	timeout := utils.NonNilDurationOrDefault(clientConfig.Timeout, defaultTimeout)
+	timeout := utils.NonNilOrDefault(clientConfig.Timeout, defaultTimeout)
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
@@ -110,10 +110,10 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 			Addr:                          clientConfig.StaticHost.Addr,
 			IsTLS:                         clientConfig.StaticHost.IsTLS,
 			MaxConnDuration:               timeout,
-			ReadTimeout:                   utils.NonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
-			WriteTimeout:                  utils.NonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
-			MaxIdleConnDuration:           utils.NonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
-			MaxConns:                      utils.NonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
+			ReadTimeout:                   utils.NonNilOrDefault(clientConfig.ReadTimeout, timeout),
+			WriteTimeout:                  utils.NonNilOrDefault(clientConfig.WriteTimeout, timeout),
+			MaxIdleConnDuration:           utils.NonNilOrDefault(clientConfig.IdleTimeout, timeout),
+			MaxConns:                      utils.NonNilOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
 			NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 			DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 			DisablePathNormalizing:        true,
@@ -124,10 +124,10 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 
 	return &fasthttp.Client{
 		MaxConnDuration:               timeout,
-		ReadTimeout:                   utils.NonNilDurationOrDefault(clientConfig.ReadTimeout, timeout),
-		WriteTimeout:                  utils.NonNilDurationOrDefault(clientConfig.WriteTimeout, timeout),
-		MaxIdleConnDuration:           utils.NonNilDurationOrDefault(clientConfig.IdleTimeout, timeout),
-		MaxConnsPerHost:               utils.NonNilIntOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
+		ReadTimeout:                   utils.NonNilOrDefault(clientConfig.ReadTimeout, timeout),
+		WriteTimeout:                  utils.NonNilOrDefault(clientConfig.WriteTimeout, timeout),
+		MaxIdleConnDuration:           utils.NonNilOrDefault(clientConfig.IdleTimeout, timeout),
+		MaxConnsPerHost:               utils.NonNilOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,

@@ -150,7 +150,7 @@ func Parse(input string) (*template.Template, error) {
 }
 
 // Execute template, returns empty string in case of errors
-func Execute(logger *zap.Logger, tpl *template.Template, data interface{}) string {
+func Execute(logger *zap.Logger, tpl *template.Template, data any) string {
 	var res strings.Builder
 	if err := tpl.Execute(&res, data); err != nil {
 		logger.Warn("error executing template", zap.Error(err))
@@ -162,7 +162,7 @@ func Execute(logger *zap.Logger, tpl *template.Template, data interface{}) strin
 }
 
 // ParseAndExecute template, returns input string in case of errors. Expensive operation.
-func ParseAndExecute(logger *zap.Logger, input string, data interface{}) string {
+func ParseAndExecute(logger *zap.Logger, input string, data any) string {
 	tpl, err := Parse(input)
 	if err != nil {
 		logger.Warn("error parsing template", zap.Error(err))
@@ -181,7 +181,7 @@ func ParseAndExecute(logger *zap.Logger, input string, data interface{}) string 
 }
 
 // ParseAndExecuteMapStruct is like ParseAndExecute but takes mapstructure as input
-func ParseAndExecuteMapStruct(logger *zap.Logger, input map[string]interface{}, data interface{}) map[string]interface{} {
+func ParseAndExecuteMapStruct(logger *zap.Logger, input map[string]any, data any) map[string]any {
 	tpl, err := ParseMapStruct(input)
 	if err != nil {
 		logger.Warn("error parsing template", zap.Error(err))
@@ -194,12 +194,12 @@ func ParseAndExecuteMapStruct(logger *zap.Logger, input map[string]interface{}, 
 
 // MapStruct is a helper structure to parse configs in a format accepted by mapstructure package
 type MapStruct struct {
-	tpl map[string]interface{}
+	tpl map[string]any
 }
 
 // ParseMapStruct is like Parse but takes mapstructure as input
-func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
-	result := make(map[string]interface{})
+func ParseMapStruct(input map[string]any) (*MapStruct, error) {
+	result := make(map[string]any)
 
 	for key, value := range input {
 		switch v := value.(type) {
@@ -210,7 +210,7 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 			}
 
 			result[key] = tpl
-		case map[string]interface{}:
+		case map[string]any:
 			tpl, err := ParseMapStruct(v)
 			if err != nil {
 				return nil, err
@@ -226,8 +226,8 @@ func ParseMapStruct(input map[string]interface{}) (*MapStruct, error) {
 }
 
 // Execute same as regular Execute
-func (tpl *MapStruct) Execute(logger *zap.Logger, data interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func (tpl *MapStruct) Execute(logger *zap.Logger, data any) map[string]any {
+	result := make(map[string]any)
 
 	for key, value := range tpl.tpl {
 		switch v := value.(type) {

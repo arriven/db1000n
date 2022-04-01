@@ -1,7 +1,7 @@
 package ota
 
 func appendArgIfNotPresent(osArgs, extraArgs []string) []string {
-	osArgsMap := make(map[string]interface{}, len(osArgs))
+	osArgsMap := make(map[string]any, len(osArgs))
 	for _, osArg := range osArgs {
 		osArgsMap[osArg] = nil
 	}

@@ -36,7 +36,7 @@ import (
 )
 
 func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
-	data interface{}, err error, //nolint:unparam // data is here to match Job
+	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
 		Text string
@@ -51,7 +51,7 @@ func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args confi
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data interface{}, err error) {
+func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -64,7 +64,7 @@ func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args co
 }
 
 func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
-	data interface{}, err error, //nolint:unparam // data is here to match Job
+	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
 		Value string
@@ -81,7 +81,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	return nil, nil
 }
 
-func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -122,7 +122,7 @@ func isInEncryptedContext(ctx context.Context) bool {
 	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
 }
 
-func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
 	}
