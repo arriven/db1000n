@@ -79,6 +79,9 @@ type rawConn struct {
 // use ipv6 as it also supports ipv4
 func openRawConn(c rawConnConfig) (*rawConn, error) {
 	packetConn, err := net.ListenPacket(c.Name, c.Address)
+	if err != nil {
+		return nil, err
+	}
 
 	return &rawConn{PacketConn: ipv6.NewPacketConn(packetConn)}, err
 }
