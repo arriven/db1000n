@@ -16,51 +16,51 @@ import (
 func TestSerialize(t *testing.T) {
 	t.Parallel()
 
-	configTpls := []map[string]interface{}{
+	configTpls := []map[string]any{
 		{
-			"network": map[string]interface{}{
+			"network": map[string]any{
 				"type": "ipv6",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"src_ip": "{{ local_ipv6 }}",
 					"dst_ip": "{{ local_ipv6 }}",
 				},
 			},
-			"transport": map[string]interface{}{
+			"transport": map[string]any{
 				"type": "tcp",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"src_port": "{{ random_port }}",
 					"dst_port": "{{ random_port }}",
-					"flags": map[string]interface{}{
+					"flags": map[string]any{
 						"syn": true,
 					},
 				},
 			},
-			"payload": map[string]interface{}{
+			"payload": map[string]any{
 				"type": "raw",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"payload": "test",
 				},
 			},
 			"expected_result": "test",
 		},
 		{
-			"network": map[string]interface{}{
+			"network": map[string]any{
 				"type": "ipv4",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"src_ip": "{{ local_ipv4 }}",
 					"dst_ip": "{{ local_ipv4 }}",
 				},
 			},
-			"transport": map[string]interface{}{
+			"transport": map[string]any{
 				"type": "tcp",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"src_port": "{{ random_port }}",
 					"dst_port": "{{ random_port }}",
 				},
 			},
-			"payload": map[string]interface{}{
+			"payload": map[string]any{
 				"type": "icmpv4",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"type_code": 130,
 					"seq":       1231231,
 					"id":        1231231231,
@@ -119,7 +119,7 @@ func TestSerialize(t *testing.T) {
 	}
 }
 
-func extractPayload(p gopacket.Packet, c map[string]interface{}) error {
+func extractPayload(p gopacket.Packet, c map[string]any) error {
 	switch res := c["expected_result"].(type) {
 	case int:
 		if binary.BigEndian.Uint16(p.ApplicationLayer().Payload()) != uint16(res) {

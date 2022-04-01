@@ -43,7 +43,7 @@ type packetgenJobConfig struct {
 	Connection packetgen.ConnectionConfig
 }
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data interface{}, err error) {
+func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -104,7 +104,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 func parsePacketgenArgs(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (tpl *packetgenJobConfig, err error) {
 	var jobConfig struct {
 		BasicJobConfig
-		Packet     map[string]interface{}
+		Packet     map[string]any
 		Connection packetgen.ConnectionConfig
 	}
 

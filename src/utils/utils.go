@@ -102,7 +102,7 @@ func NonNilIntOrDefault(i *int, dflt int) int {
 
 // Decode is an alias to a mapstructure.NewDecoder({Squash: true}).Decode()
 // with WeaklyTypedInput set to true and MatchFunc that only compares aplhanumeric sequence in field names
-func Decode(input interface{}, output interface{}) error {
+func Decode(input any, output any) error {
 	filter := func(r rune) rune {
 		if ('a' <= r && r <= 'z') ||
 			('A' <= r && r <= 'Z') ||
@@ -125,7 +125,7 @@ func Decode(input interface{}, output interface{}) error {
 	return decoder.Decode(input)
 }
 
-func Unmarshal(input []byte, output interface{}, format string) error {
+func Unmarshal(input []byte, output any, format string) error {
 	switch format {
 	case "", "json", "yaml":
 		if err := yaml.Unmarshal(input, output); err != nil {
