@@ -19,7 +19,7 @@ jobs:
             dst_port: "{{ random_port }}"
             flags:
               syn: true
-        application:
+        payload:
           type: raw
           data:
             payload: "test"
