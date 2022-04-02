@@ -92,6 +92,11 @@ func fetchSingle(path string, lastKnownConfig *RawMultiConfig) (*RawMultiConfig,
 		return &RawMultiConfig{Body: res, lastModified: "", etag: ""}, nil
 	}
 
+	return fetchURL(configURL, lastKnownConfig)
+}
+
+func fetchURL(configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
+
 	const requestTimeout = 20 * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
