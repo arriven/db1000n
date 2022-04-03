@@ -173,6 +173,7 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent\t|\tData received \t|\n")
 
 	const BytesInMegabyte = 1024 * 1024
+
 	var totals [NumStats]uint64
 
 	for _, tgt := range stats.sortedTargets() {
