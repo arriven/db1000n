@@ -20,106 +20,235 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package metrics [everything related to metrics goes here]
+// Package metrics collects and reports job metrics.
 package metrics
 
 import (
-	"context"
+	"fmt"
+	"io"
+	"sort"
 	"sync"
-	"time"
+	"text/tabwriter"
 )
 
-// supported default metrics
+// Stat is the type of statistical metrics.
+type Stat int
+
 const (
-	Traffic          = "traffic"
-	ProcessedTraffic = "processed_traffic"
+	RequestsAttemptedStat Stat = iota
+	RequestsSentStat
+	ResponsesReceivedStat
+	BytesSentStat
+	BytesReceivedStat
+
+	NumStats
 )
 
-// Storage is a general struct to store custom metrics
-type Storage struct {
-	trackers map[string]*metricTracker // map by metric type
-}
-
-type metricTracker struct {
-	metrics sync.Map // map by job ID
-}
-
-// Default to allow global access for ease of use
-// similar to http.DefaultClient and such
-var Default = Storage{
-	trackers: map[string]*metricTracker{
-		Traffic:          {},
-		ProcessedTraffic: {},
-	},
-}
-
-func (ms *Storage) Write(name, jobID string, value uint64) {
-	if tracker, ok := ms.trackers[name]; ok {
-		tracker.metrics.Store(jobID, value)
+// String representation of the Stat.
+func (s Stat) String() string {
+	if !s.valid() {
+		return "<unknown>"
 	}
+
+	return [...]string{
+		"requests attempted",
+		"requests sent",
+		"responses received",
+		"bytes sent",
+		"bytes received",
+	}[s]
 }
 
-func (ms *Storage) Read(name string) uint64 {
-	var sum uint64
+func (s Stat) valid() bool { return s >= RequestsAttemptedStat && s < NumStats }
 
-	if tracker, ok := ms.trackers[name]; ok {
-		tracker.metrics.Range(func(k, v any) bool {
-			if value, ok := v.(uint64); ok {
-				sum += value
+type dimensions struct {
+	jobID  string
+	target string
+}
+
+// Reporter gathers metrics across jobs and reports them.
+// Concurrency-safe.
+type Reporter struct {
+	metrics [NumStats]sync.Map // Array of metrics by Stat. Each metric is a map of uint64 values by dimensions.
+
+	clientID string
+}
+
+// NewReporter creates a new Reporter.
+func NewReporter(clientID string) *Reporter { return &Reporter{clientID: clientID} }
+
+// Sum returns a total sum of metric s.
+func (r *Reporter) Sum(s Stat) uint64 {
+	if r == nil || !s.valid() {
+		return 0
+	}
+
+	var res uint64
+
+	r.metrics[s].Range(func(_, v interface{}) bool {
+		value, ok := v.(uint64)
+		if !ok {
+			return true
+		}
+
+		res += value
+
+		return true
+	})
+
+	return res
+}
+
+type PerTargetStats map[string][NumStats]uint64
+
+func (ts PerTargetStats) sum(s Stat) uint64 {
+	var res uint64
+
+	for _, v := range ts {
+		res += v[s]
+	}
+
+	return res
+}
+
+func (ts PerTargetStats) sortedTargets() []string {
+	res := make([]string, 0, len(ts))
+	for k := range ts {
+		res = append(res, k)
+	}
+
+	sort.Strings(res)
+
+	return res
+}
+
+// SumAllStatsByTarget returns a total sum of all metrics by target.
+func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
+	if r == nil {
+		return nil
+	}
+
+	res := make(PerTargetStats)
+
+	for s := RequestsAttemptedStat; s < NumStats; s++ {
+		r.metrics[s].Range(func(k, v interface{}) bool {
+			d, ok := k.(dimensions)
+			if !ok {
+				return true
 			}
+
+			value, ok := v.(uint64)
+			if !ok {
+				return true
+			}
+
+			stats := res[d.target]
+			stats[s] += value
+			res[d.target] = stats
 
 			return true
 		})
 	}
 
-	return sum
+	return res
 }
 
-func (ms *Storage) ResetAll() {
-	for k := range ms.trackers {
-		ms.trackers[k] = &metricTracker{}
+// WriteSummary dumps Reporter contents into the target.
+func (r *Reporter) WriteSummary(target io.Writer) {
+	w := tabwriter.NewWriter(target, 1, 1, 1, ' ', tabwriter.AlignRight)
+
+	defer w.Flush()
+
+	stats := r.SumAllStatsByTarget()
+	if stats.sum(RequestsSentStat) == 0 {
+		fmt.Fprintln(w, "[Error] No traffic generated. If you see this message a lot - contact admins")
+
+		return
 	}
+
+	fmt.Fprintln(w, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
+	fmt.Fprintln(w, "!Attack is successful! Russian warship, go fuck yourself!")
+
+	fmt.Fprintln(w, "\n --- Traffic stats ---")
+	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent\t|\tData received \t|\n")
+
+	const BytesInMegabyte = 1024 * 1024
+	var totals [NumStats]uint64
+
+	for _, tgt := range stats.sortedTargets() {
+		tgtStats := stats[tgt]
+
+		fmt.Fprintf(w, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB\t|\t%.2f MB \t|\n", tgt,
+			tgtStats[RequestsAttemptedStat],
+			tgtStats[RequestsSentStat],
+			tgtStats[ResponsesReceivedStat],
+			float64(tgtStats[BytesSentStat])/BytesInMegabyte,
+			float64(tgtStats[BytesReceivedStat])/BytesInMegabyte,
+		)
+
+		for s := range totals {
+			totals[s] += tgtStats[s]
+		}
+	}
+
+	fmt.Fprintln(w, "|\t---\t|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
+	fmt.Fprintf(w, "|\tTotal\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB\t|\t%.2f MB \t|\n\n",
+		totals[RequestsAttemptedStat],
+		totals[RequestsSentStat],
+		totals[ResponsesReceivedStat],
+		float64(totals[BytesSentStat])/BytesInMegabyte,
+		float64(totals[BytesReceivedStat])/BytesInMegabyte,
+	)
 }
 
-// NewWriter creates a writer for accumulated writes to the storage
-func (ms *Storage) NewWriter(name, jobID string) *Writer {
-	return &Writer{ms: ms, jobID: jobID, name: name, value: 0}
+// NewAccumulator returns a new metrics Accumulator for the Reporter.
+func (r *Reporter) NewAccumulator(jobID string) *Accumulator {
+	if r == nil {
+		return nil
+	}
+
+	res := &Accumulator{
+		jobID: jobID,
+		r:     r,
+	}
+
+	for s := RequestsAttemptedStat; s < NumStats; s++ {
+		res.metrics[s] = make(map[string]uint64)
+	}
+
+	return res
 }
 
-// Writer is a helper to accumulate writes to a storage on a regular basis
-type Writer struct {
-	ms    *Storage
-	jobID string
-	name  string
-	value uint64
+// Accumulator for statistical metrics for use in a single job. Requires Flush()-ing to Reporter.
+// Not concurrency-safe.
+type Accumulator struct {
+	jobID   string
+	metrics [NumStats]map[string]uint64 // Array of metrics by Stat. Each metric is a map of uint64 values by target.
+
+	r *Reporter
 }
 
-// Add used to increase metric value by a specific amount
-func (w *Writer) Add(value uint64) {
-	w.value += value
+// Add n to the Accumulator Stat value.
+func (a *Accumulator) Add(s Stat, target string, n uint64) {
+	if a == nil || !s.valid() {
+		return
+	}
+
+	a.metrics[s][target] += n
 }
 
-// Set used to set metric to a specific value
-func (w *Writer) Set(value uint64) {
-	w.value = value
-}
+// Inc increases Accumulator Stat value by 1.
+func (a *Accumulator) Inc(s Stat, target string) { a.Add(s, target, 1) }
 
-// Flush used to flush pending metrics updates to the storage
-func (w *Writer) Flush() {
-	w.ms.Write(w.name, w.jobID, w.value)
-}
+// Flush Accumulator contents to the Reporter.
+func (a *Accumulator) Flush() {
+	if a == nil {
+		return
+	}
 
-// Update updates writer with a set uint64erval
-func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
-	ticker := time.NewTicker(uint64erval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			w.Flush()
+	for stat := RequestsAttemptedStat; stat < NumStats; stat++ {
+		for target, value := range a.metrics[stat] {
+			a.r.metrics[stat].Store(dimensions{jobID: a.jobID, target: target}, value)
 		}
 	}
 }
@@ -127,6 +256,4 @@ func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
 // NopWriter implements io.Writer interface to simply track how much data has to be serialized
 type NopWriter struct{}
 
-func (w NopWriter) Write(p []byte) (n int, _ error) {
-	return len(p), nil
-}
+func (w NopWriter) Write(p []byte) (int, error) { return len(p), nil }
