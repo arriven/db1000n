@@ -16,10 +16,10 @@ jobs:
           type: tcp
           data:
             src_port: "{{ random_port }}"
-            dst_port: "{{ random_port }}"
+            dst_port: "1234"
             flags:
               syn: true
-        application:
+        payload:
           type: raw
           data:
             payload: "test"

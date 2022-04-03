@@ -5,11 +5,11 @@ jobs:
         type: net
         args:
           protocol: "tcp"
-          address: "google.com:443"
+          address: "localhost:1234"
           tls_config:
             insecure_skip_verify: true # this is not snake case because I decode it straight into tls config
       packet:
-        application:
+        payload:
           type: raw
           data:
             payload: "test"

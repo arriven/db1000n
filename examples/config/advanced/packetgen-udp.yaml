@@ -7,7 +7,7 @@ jobs:
           protocol: "udp"
           address: "localhost:1234"
       packet:
-        application:
+        payload:
           type: raw
           data:
             payload: "test"
