@@ -30,6 +30,8 @@ import (
 )
 
 func TestReporter_WriteSummary(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		metrics [NumStats]map[dimensions]uint64
@@ -173,6 +175,8 @@ func TestReporter_WriteSummary(t *testing.T) {
 		tt := tests[i]
 
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			r := &Reporter{}
 
 			for s := range tt.metrics {
