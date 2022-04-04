@@ -52,16 +52,17 @@ type GlobalConfig struct {
 }
 
 func (config *GlobalConfig) GetProxiesFromPath() {
-
 	if config.proxyPath != "" {
 		proxies, err := templates.GetURLContent(config.proxyPath)
 		if err != nil {
 			log.Println("Could not obtain proxies from given proxy path", err.Error())
+
 			return
 		}
 
 		if len(proxies) == 0 {
 			log.Println("Given proxy path returns nothing")
+
 			return
 		}
 
@@ -77,7 +78,7 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 
 	flag.StringVar(&res.ProxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
 		"system proxy to set by default (can be a comma-separated list or a template)")
-	flag.StringVar(&res.proxyPath, "proxy-path", utils.GetEnvStringDefault("SYTEM_PROXY_PATH", ""),
+	flag.StringVar(&res.proxyPath, "proxy-path", utils.GetEnvStringDefault("SYSTEM_PROXY_PATH", ""),
 		"url to a list of proxies")
 	flag.BoolVar(&res.SkipEncrypted, "skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
 		"set to true if you want to only run plaintext jobs from the config for security considerations")

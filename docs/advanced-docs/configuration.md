@@ -28,7 +28,7 @@ Usage of db1000n:
   -proxy string
       system proxy (SYSTEM_PROXY environment variable) to set by default (can be a comma-separated list or a template)
   -proxy-path string
-      an url returning a list of proxies; SYSTEM_PROXY_PATH environment variable is set by default. Overrides `-proxy` flag 
+      an url returning a list of proxies; SYSTEM_PROXY_PATH environment variable is set by default. Overrides `-proxy` flag
   -refresh-interval duration
       refresh timeout for updating the config (default 1m0s)
   -restart-on-update
