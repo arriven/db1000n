@@ -1,7 +1,7 @@
 #cloud-config
 runcmd:
   # replace with the latest version
-  - wget -c https://github.com/Arriven/db1000n/releases/download/v0.8.15/db1000n-v0.8.15-linux-amd64.tar.gz -O - | tar -xz
+  - wget -c https://github.com/Arriven/db1000n/releases/download/v0.8.17/db1000n-v0.8.17-linux-amd64.tar.gz -O - | tar -xz
   - systemctl daemon-reload
   - systemctl enable db1000n
   - systemctl start db1000n

@@ -9,5 +9,10 @@ resource "awslightsail_container_deployment" "deployment" {
   container {
     container_name = "${var.app}-deployment"
     image          = var.image
+
+    environment {
+      key   = "ENABLE_PRIMITIVE"
+      value = "false"
+    }
   }
 }
