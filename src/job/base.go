@@ -26,6 +26,7 @@ package job
 import (
 	"context"
 	"flag"
+	"log"
 	"strings"
 	"time"
 
@@ -54,7 +55,13 @@ func (config *GlobalConfig) GetProxiesFromPath() {
 
 	if config.proxyPath != "" {
 		proxies, err := templates.GetURLContent(config.proxyPath)
-		if err != nil || len(proxies) == 0 {
+		if err != nil {
+			log.Println("Could not obtain proxies from given proxy path", err.Error())
+			return
+		}
+
+		if len(proxies) == 0 {
+			log.Println("Given proxy path returns nothing")
 			return
 		}
 
