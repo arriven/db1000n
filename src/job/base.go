@@ -107,6 +107,8 @@ func Get(t string) Job {
 		return checkJob
 	case "loop":
 		return loopJob
+	case "discard-error":
+		return discardErrorJob
 	case "encrypted":
 		return encryptedJob
 	default:
