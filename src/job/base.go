@@ -26,6 +26,7 @@ package job
 import (
 	"context"
 	"flag"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,6 +34,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // GlobalConfig passes commandline arguments to every job.
@@ -40,11 +42,24 @@ type GlobalConfig struct {
 	ClientID string
 
 	ProxyURLs           string
+	proxyPath           string
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         int
 	MinInterval         time.Duration
 	Backoff             utils.BackoffConfig
+}
+
+func (config *GlobalConfig) GetProxiesFromPath() {
+
+	if config.proxyPath != "" {
+		proxies, err := templates.GetURLContent(config.proxyPath)
+		if err != nil || len(proxies) == 0 {
+			return
+		}
+
+		config.ProxyURLs = strings.Join(strings.Split(proxies, "\n"), ",")
+	}
 }
 
 // NewGlobalConfigWithFlags returns a GlobalConfig initialized with command line flags.
@@ -55,6 +70,8 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 
 	flag.StringVar(&res.ProxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
 		"system proxy to set by default (can be a comma-separated list or a template)")
+	flag.StringVar(&res.proxyPath, "proxy-path", utils.GetEnvStringDefault("SYTEM_PROXY_PATH", ""),
+		"url to a list of proxies")
 	flag.BoolVar(&res.SkipEncrypted, "skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
 		"set to true if you want to only run plaintext jobs from the config for security considerations")
 	flag.BoolVar(&res.EnablePrimitiveJobs, "enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true),

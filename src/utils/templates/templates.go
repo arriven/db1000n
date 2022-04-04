@@ -38,7 +38,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func getURLContent(url string) (string, error) {
+func GetURLContent(url string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -141,7 +141,7 @@ func Parse(input string) (*template.Template, error) {
 		"from_string_array":   fromStringArray,
 		"join":                strings.Join,
 		"split":               strings.Split,
-		"get_url":             getURLContent,
+		"get_url":             GetURLContent,
 		"mod":                 mod,
 		"add":                 add,
 		"ctx_key":             ctxKey,

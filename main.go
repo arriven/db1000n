@@ -78,6 +78,8 @@ func main() {
 		log.Fatalf("failed to initialize Zap logger: %v", err)
 	}
 
+	jobsGlobalConfig.GetProxiesFromPath()
+
 	go ota.WatchUpdates(otaConfig)
 	setUpPprof(*pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
