@@ -26,7 +26,9 @@ Usage of db1000n:
   -prometheus_on
       Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>) (default true)
   -proxy string
-      system proxy to set by default (can be a comma-separated list or a template)
+      system proxy (SYSTEM_PROXY environment variable) to set by default (can be a comma-separated list or a template)
+  -proxy-path string
+      an url returning a list of proxies; SYSTEM_PROXY_PATH environment variable is set by default. Overrides `-proxy` flag 
   -refresh-interval duration
       refresh timeout for updating the config (default 1m0s)
   -restart-on-update
