@@ -107,10 +107,12 @@ func Get(t string) Job {
 		return checkJob
 	case "sleep":
 		return sleepJob
-	case "loop":
-		return loopJob
 	case "discard-error":
 		return discardErrorJob
+	case "timeout":
+		return timeoutJob
+	case "loop":
+		return loopJob
 	case "encrypted":
 		return encryptedJob
 	default:

@@ -124,6 +124,32 @@ func discardErrorJob(ctx context.Context, logger *zap.Logger, globalConfig *Glob
 	return data, nil
 }
 
+func timeoutJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (
+	data any, err error, //nolint:unparam // data is here to match Job
+) {
+	var jobConfig struct {
+		BasicJobConfig
+
+		Timeout time.Duration
+		Job     config.Config
+	}
+
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, jobConfig.Timeout)
+	defer cancel()
+
+	job := Get(jobConfig.Job.Type)
+
+	if job == nil {
+		return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
+	}
+
+	return job(ctx, logger, globalConfig, jobConfig.Job.Args)
+}
+
 func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
