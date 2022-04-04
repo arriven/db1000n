@@ -7,7 +7,7 @@ jobs:
           protocol: "tcp"
           address: "localhost:1234"
           tls_config:
-            insecure_skip_verify: true # this is not snake case because I decode it straight into tls config
+            insecure_skip_verify: true
       packet:
         payload:
           type: raw
