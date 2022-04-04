@@ -82,7 +82,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	return nil, nil
 }
 
-func timeoutJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
+func sleepJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
 	var jobConfig struct {
 		Value time.Duration
 	}
