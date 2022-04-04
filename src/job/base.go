@@ -105,6 +105,8 @@ func Get(t string) Job {
 		return setVarJob
 	case "check":
 		return checkJob
+	case "timeout":
+		return timeoutJob
 	case "loop":
 		return loopJob
 	case "discard-error":

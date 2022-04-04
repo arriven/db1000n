@@ -26,6 +26,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
@@ -77,6 +78,20 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	if templates.ParseAndExecute(logger, jobConfig.Value, ctx) != "true" {
 		return nil, fmt.Errorf("validation failed %v", jobConfig.Value)
 	}
+
+	return nil, nil
+}
+
+func timeoutJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
+	var jobConfig struct {
+		Value time.Duration
+	}
+
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	time.Sleep(jobConfig.Value)
 
 	return nil, nil
 }
