@@ -72,7 +72,12 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 		return nil, fmt.Errorf("error decoding rawnet job config: %w", err)
 	}
 
-	args["connection"] = map[string]any{
+	packetgenArgs := make(map[string]any)
+	for k, v := range args {
+		packetgenArgs[k] = v
+	}
+
+	packetgenArgs["connection"] = map[string]any{
 		"type": "net",
 		"args": map[string]any{
 			"protocol":   protocol,
@@ -81,7 +86,7 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 			"proxy_urls": jobConfig.ProxyURLs,
 		},
 	}
-	args["packet"] = map[string]any{
+	packetgenArgs["packet"] = map[string]any{
 		"payload": map[string]any{
 			"type": "raw",
 			"data": map[string]any{
@@ -90,5 +95,5 @@ func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *G
 		},
 	}
 
-	return args, nil
+	return packetgenArgs, nil
 }
