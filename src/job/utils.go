@@ -26,6 +26,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
@@ -79,6 +80,74 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	}
 
 	return nil, nil
+}
+
+func sleepJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
+	var jobConfig struct {
+		Value time.Duration
+	}
+
+	if err := utils.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	time.Sleep(jobConfig.Value)
+
+	return nil, nil
+}
+
+func discardErrorJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (
+	data any, err error, //nolint:unparam // data is here to match Job
+) {
+	var jobConfig struct {
+		BasicJobConfig
+
+		Job config.Config
+	}
+
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	job := Get(jobConfig.Job.Type)
+	if job == nil {
+		logger.Debug("unknown job, discarding", zap.String("job", jobConfig.Job.Type))
+
+		return nil, nil
+	}
+
+	data, err = job(ctx, logger, globalConfig, jobConfig.Job.Args)
+	if err != nil {
+		logger.Debug("discarded error", zap.Error(err))
+	}
+
+	return data, nil
+}
+
+func timeoutJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (
+	data any, err error, //nolint:unparam // data is here to match Job
+) {
+	var jobConfig struct {
+		BasicJobConfig
+
+		Timeout time.Duration
+		Job     config.Config
+	}
+
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, jobConfig.Timeout)
+	defer cancel()
+
+	job := Get(jobConfig.Job.Type)
+
+	if job == nil {
+		return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
+	}
+
+	return job(ctx, logger, globalConfig, jobConfig.Job.Args)
 }
 
 func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
