@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"math/rand"
 	"net"
 	"net/url"
@@ -20,15 +21,18 @@ func GetProxyFunc(proxyURLs string, timeout time.Duration) ProxyFunc {
 
 	proxies := strings.Split(proxyURLs, ",")
 
-	u, err := url.Parse(proxies[rand.Intn(len(proxies))]) //nolint:gosec // Cryptographically secure random not required
-	if err != nil {
-		return proxy.FromEnvironmentUsing(direct).Dial
-	}
+	// We need to dial new proxy on each call
+	return func(network, addr string) (net.Conn, error) {
+		u, err := url.Parse(proxies[rand.Intn(len(proxies))]) //nolint:gosec // Cryptographically secure random not required
+		if err != nil {
+			return nil, fmt.Errorf("error building proxy %v: %w", u.String(), err)
+		}
 
-	client, err := proxy.FromURL(u, direct)
-	if err != nil {
-		return proxy.FromEnvironmentUsing(direct).Dial
-	}
+		client, err := proxy.FromURL(u, direct)
+		if err != nil {
+			return nil, fmt.Errorf("error building proxy %v: %w", u.String(), err)
+		}
 
-	return client.Dial
+		return client.Dial(network, addr)
+	}
 }
