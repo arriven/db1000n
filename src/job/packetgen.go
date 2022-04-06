@@ -92,9 +92,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 		_, err = conn.Write(packet)
 		if err != nil {
 			return err
-		}
-
-		// trafficMonitor.Add(uint64(n))
+		} // trafficMonitor.Add(uint64(n))
 	}
 
 	return nil
