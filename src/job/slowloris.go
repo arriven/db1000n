@@ -32,10 +32,11 @@ import (
 	"github.com/Arriven/db1000n/src/core/slowloris"
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func slowLorisJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func slowLorisJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

@@ -23,6 +23,7 @@
 // Package metrics [everything related to metrics goes here]
 package metrics
 
+/*
 import (
 	"context"
 	"sync"
@@ -123,6 +124,7 @@ func (w *Writer) Update(ctx context.Context, uint64erval time.Duration) {
 		}
 	}
 }
+*/
 
 // NopWriter implements io.Writer interface to simply track how much data has to be serialized
 // type NopWriter struct{}

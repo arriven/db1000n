@@ -33,10 +33,11 @@ import (
 
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
+func logJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
@@ -52,7 +53,7 @@ func logJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args confi
 	return nil, nil
 }
 
-func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
+func setVarJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	var jobConfig struct {
 		Value string
 	}
@@ -64,7 +65,7 @@ func setVarJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args co
 	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
 }
 
-func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (
+func checkJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
@@ -82,7 +83,7 @@ func checkJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	return nil, nil
 }
 
-func sleepJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args config.Args) (data any, err error) {
+func sleepJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	var jobConfig struct {
 		Value time.Duration
 	}
@@ -96,7 +97,7 @@ func sleepJob(ctx context.Context, logger *zap.Logger, _ *GlobalConfig, args con
 	return nil, nil
 }
 
-func discardErrorJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (
+func discardErrorJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
@@ -116,7 +117,7 @@ func discardErrorJob(ctx context.Context, logger *zap.Logger, globalConfig *Glob
 		return nil, nil
 	}
 
-	data, err = job(ctx, logger, globalConfig, jobConfig.Job.Args)
+	data, err = job(ctx, jobConfig.Job.Args, globalConfig, a, logger)
 	if err != nil {
 		logger.Debug("discarded error", zap.Error(err))
 	}
@@ -124,7 +125,7 @@ func discardErrorJob(ctx context.Context, logger *zap.Logger, globalConfig *Glob
 	return data, nil
 }
 
-func timeoutJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (
+func timeoutJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
 	var jobConfig struct {
@@ -147,10 +148,10 @@ func timeoutJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCon
 		return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
 	}
 
-	return job(ctx, logger, globalConfig, jobConfig.Job.Args)
+	return job(ctx, jobConfig.Job.Args, globalConfig, a, logger)
 }
 
-func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func loopJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -170,7 +171,7 @@ func loopJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig
 			return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
 		}
 
-		data, err := job(ctx, logger, globalConfig, jobConfig.Job.Args)
+		data, err := job(ctx, jobConfig.Job.Args, globalConfig, a, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
@@ -191,7 +192,7 @@ func isInEncryptedContext(ctx context.Context) bool {
 	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
 }
 
-func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func encryptedJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
 	}
@@ -231,5 +232,5 @@ func encryptedJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
 	}
 
-	return job(EncryptedContext(ctx), zap.NewNop(), globalConfig, jobCfg.Args)
+	return job(EncryptedContext(ctx), jobCfg.Args, globalConfig, a, zap.NewNop())
 }

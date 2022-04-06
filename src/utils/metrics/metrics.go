@@ -155,6 +155,10 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 
 // WriteSummary dumps Reporter contents into the target.
 func (r *Reporter) WriteSummary(target io.Writer) {
+	if r == nil {
+		return
+	}
+
 	w := tabwriter.NewWriter(target, 1, 1, 1, ' ', tabwriter.AlignRight)
 
 	defer w.Flush()
@@ -208,16 +212,7 @@ func (r *Reporter) NewAccumulator(jobID string) *Accumulator {
 		return nil
 	}
 
-	res := &Accumulator{
-		jobID: jobID,
-		r:     r,
-	}
-
-	for s := RequestsAttemptedStat; s < NumStats; s++ {
-		res.metrics[s] = make(map[string]uint64)
-	}
-
-	return res
+	return newAccumulator(jobID, r)
 }
 
 // Accumulator for statistical metrics for use in a single job. Requires Flush()-ing to Reporter.
@@ -252,6 +247,28 @@ func (a *Accumulator) Flush() {
 			a.r.metrics[stat].Store(dimensions{jobID: a.jobID, target: target}, value)
 		}
 	}
+}
+
+// Clone a new, blank metrics Accumulator with the same Reporter as the original.
+func (a *Accumulator) Clone(jobID string) *Accumulator {
+	if a == nil {
+		return nil
+	}
+
+	return newAccumulator(jobID, a.r)
+}
+
+func newAccumulator(jobID string, r *Reporter) *Accumulator {
+	res := &Accumulator{
+		jobID: jobID,
+		r:     r,
+	}
+
+	for s := RequestsAttemptedStat; s < NumStats; s++ {
+		res.metrics[s] = make(map[string]uint64)
+	}
+
+	return res
 }
 
 // NopWriter implements io.Writer interface to simply track how much data has to be serialized

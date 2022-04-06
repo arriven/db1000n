@@ -25,9 +25,7 @@ package job
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
@@ -43,22 +41,22 @@ type packetgenJobConfig struct {
 	Connection packetgen.ConnectionConfig
 }
 
-func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobConfig, err := parsePacketgenArgs(ctx, logger, globalConfig, args)
+	jobConfig, err := parsePacketgenArgs(ctx, args, globalConfig, a, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 
-	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
-	go trafficMonitor.Update(ctx, time.Second)
+	// trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
+	// go trafficMonitor.Update(ctx, time.Second)
 
 	for jobConfig.Next(ctx) {
-		err := sendPacket(ctx, logger, jobConfig, trafficMonitor)
+		err := sendPacket(ctx, logger, jobConfig, a)
 		if err != nil {
 			logger.Debug("error sending packet", zap.Error(err), zap.Any("args", args))
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
@@ -70,7 +68,7 @@ func packetgenJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalC
 	return nil, nil
 }
 
-func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJobConfig, trafficMonitor *metrics.Writer) error {
+func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJobConfig, a *metrics.Accumulator) error {
 	conn, err := packetgen.OpenConnection(jobConfig.Connection)
 	if err != nil {
 		return err
@@ -90,18 +88,21 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 			return err
 		}
 
-		n, err := conn.Write(packet)
+		// n, err :=
+		_, err = conn.Write(packet)
 		if err != nil {
 			return err
 		}
 
-		trafficMonitor.Add(uint64(n))
+		// trafficMonitor.Add(uint64(n))
 	}
 
 	return nil
 }
 
-func parsePacketgenArgs(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (tpl *packetgenJobConfig, err error) {
+func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
+	tpl *packetgenJobConfig, err error,
+) {
 	var jobConfig struct {
 		BasicJobConfig
 		Packet     map[string]any

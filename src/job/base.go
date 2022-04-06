@@ -33,6 +33,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
 // GlobalConfig passes commandline arguments to every job.
@@ -75,7 +76,7 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 }
 
 // Job comment for linter
-type Job = func(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error)
+type Job = func(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error)
 
 // Get job by type name
 //nolint:cyclop // The string map alternative is orders of magnitude slower

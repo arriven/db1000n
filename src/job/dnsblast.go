@@ -33,6 +33,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/core/dnsblast"
 	"github.com/Arriven/db1000n/src/job/config"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
 type dnsBlastConfig struct {
@@ -43,7 +44,7 @@ type dnsBlastConfig struct {
 	ParallelQueries int
 }
 
-func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func dnsBlastJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	jobConfig, err := getDNSBlastConfig(args, globalConfig)
 	if err != nil {
 		return nil, err
@@ -51,14 +52,14 @@ func dnsBlastJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 
 	var wg sync.WaitGroup
 
-	err = dnsblast.Start(ctx, logger, &wg, &dnsblast.Config{
+	err = dnsblast.Start(ctx, &dnsblast.Config{
 		RootDomain:      jobConfig.RootDomain,
 		Protocol:        jobConfig.Protocol,
 		SeedDomains:     jobConfig.SeedDomains,
 		ParallelQueries: jobConfig.ParallelQueries,
 		Delay:           time.Duration(jobConfig.IntervalMs) * time.Millisecond,
 		ClientID:        globalConfig.ClientID,
-	})
+	}, &wg, a, logger)
 
 	wg.Wait()
 

