@@ -109,7 +109,7 @@ type netConn struct {
 }
 
 func openNetConn(c netConnConfig) (*netConn, error) {
-	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout)(c.Protocol, c.Address)
+	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout, false)(c.Protocol, c.Address)
 
 	if c.TLSClientConfig != nil {
 		tlsConn := tls.Client(conn, c.TLSClientConfig)
