@@ -115,7 +115,7 @@ func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
 }
 
 func (s SlowLoris) dialVictim(logger *zap.Logger, config *Config, hostPort string, isTLS bool) io.ReadWriteCloser {
-	conn, err := utils.GetProxyFunc(config.ProxyURLs, config.Timeout)("tcp", hostPort)
+	conn, err := utils.GetProxyFunc(config.ProxyURLs, config.Timeout, false)("tcp", hostPort)
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
 		logger.Debug("couldn't establish connection", zap.String("addr", hostPort), zap.Error(err))

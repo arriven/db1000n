@@ -105,6 +105,8 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
+	proxyFunc := utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout, true)
+
 	if clientConfig.StaticHost != nil {
 		return &fasthttp.HostClient{
 			Addr:                          clientConfig.StaticHost.Addr,
@@ -118,7 +120,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 			DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 			DisablePathNormalizing:        true,
 			TLSConfig:                     tlsConfig,
-			Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
+			Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 		}
 	}
 
@@ -132,7 +134,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
-		Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
+		Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 	}
 }
 
