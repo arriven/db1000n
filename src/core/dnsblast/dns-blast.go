@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -76,7 +75,7 @@ func Start(ctx context.Context, config *Config, wg *sync.WaitGroup, a *metrics.A
 
 			defer utils.PanicHandler(logger)
 
-			executeStressTest(ctx, nameserver, stressTestParameters, config.ClientID, a, logger)
+			executeStressTest(ctx, nameserver, stressTestParameters, a, logger)
 		}(nameserver, a.Clone(uuid.NewString())) // metrics.Accumulator is not safe for concurrent use, so let's make a new one
 	}
 
@@ -92,39 +91,41 @@ type stressTestParameters struct {
 }
 
 // executeStressTest executes a stress test based on parameters
-func executeStressTest(ctx context.Context, nameserver string, parameters *stressTestParameters, clientID string, a *metrics.Accumulator, logger *zap.Logger) {
+func executeStressTest(ctx context.Context, nameserver string, parameters *stressTestParameters, a *metrics.Accumulator, logger *zap.Logger) {
 	defer utils.PanicHandler(logger)
 
 	sharedDNSClient := newDefaultDNSClient(parameters.Protocol)
-	reusableQuery := &QueryParameters{
-		HostAndPort: nameserver,
-		QName:       "", // To be generated on each cycle
-		QType:       dns.TypeA,
+	reusableQuery := &queryParameters{
+		hostAndPort: nameserver,
+		qName:       "", // To be generated on each cycle
+		qType:       dns.TypeA,
 	}
 
 	nextLoopTicker := time.NewTicker(parameters.Delay)
 	defer nextLoopTicker.Stop()
 
 	for {
-		reusableQuery.QName = randomSubdomain(parameters.SeedDomains)
+		reusableQuery.qName = randomSubdomain(parameters.SeedDomains)
+		stats := make(metrics.MultiStats, parameters.ParallelQueries)
 
 		var wg sync.WaitGroup
 
 		wg.Add(parameters.ParallelQueries)
 
 		for i := 0; i < parameters.ParallelQueries; i++ {
-			go func() {
+			go func(i int) {
+				defer wg.Done()
 				defer utils.PanicHandler(logger)
-				simpleQueryWithNoResponse(sharedDNSClient, reusableQuery, clientID, logger)
-				wg.Done()
-			}()
+				stats[i] = query(sharedDNSClient, reusableQuery, logger)
+			}(i)
 		}
 
 		wg.Wait()
+		a.AddStats("dns://"+nameserver, stats.Sum()).Flush()
 
 		select {
 		case <-ctx.Done():
-			logger.Debug("DNS stress canceled", zap.String("server", reusableQuery.HostAndPort))
+			logger.Debug("DNS stress canceled", zap.String("server", reusableQuery.hostAndPort))
 
 			return
 		case <-nextLoopTicker.C:
@@ -148,49 +149,44 @@ func randomSubdomain(rootDomains []string) string {
 	return string(b) + "." + rootDomains[rand.Intn(len(rootDomains))] + "."
 }
 
-// QueryParameters contains parameters of a single dns query
-type QueryParameters struct {
-	HostAndPort string
-	QName       string
-	QType       uint16
+// queryParameters contains parameters of a single DNS query
+type queryParameters struct {
+	hostAndPort string
+	qName       string
+	qType       uint16
 }
 
-// Response is a dns response struct
-type Response struct {
-	WithErr bool
-	Err     error
-	Latency time.Duration
-}
+func query(client *dns.Client, parameters *queryParameters, logger *zap.Logger) metrics.Stats {
+	seedDomain := getSeedDomain(parameters.qName)
 
-// simpleQueryWithNoResponse is like SimpleQuery but with optimizations enabled by not needing a response
-func simpleQueryWithNoResponse(sharedDNSClient *dns.Client, parameters *QueryParameters, clientID string, logger *zap.Logger) {
-	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.QName), parameters.QType)
-	seedDomain := getSeedDomain(parameters.QName)
-
-	conn, err := sharedDNSClient.Dial(parameters.HostAndPort)
+	conn, err := client.Dial(parameters.hostAndPort)
 	if err != nil {
-		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.HostAndPort), zap.Error(err))
-		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
+		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.hostAndPort), zap.Error(err))
+		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 
-		return
+		return metrics.Stats{1, 0, 0, 0, 0}
 	}
 
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
-	if sharedDNSClient.Net == TCPTLSProtoName {
+	if client.Net == TCPTLSProtoName {
 		conn.Conn = utls.UClient(conn, &utls.Config{InsecureSkipVerify: true}, utls.HelloRandomized)
 	}
 
 	defer conn.Close()
 
-	_, _, err = sharedDNSClient.ExchangeWithConn(question, conn)
+	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.qName), parameters.qType)
+
+	response, _, err := client.ExchangeWithConn(question, conn)
 	if err != nil {
-		metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusFail)
+		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 		logger.Debug("failed to complete the DNS query", zap.Error(err))
 
-		return
+		return metrics.Stats{1, 1, 0, uint64(question.Len()), 0}
 	}
 
-	metrics.IncDNSBlast(parameters.HostAndPort, seedDomain, sharedDNSClient.Net, metrics.StatusSuccess)
+	metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusSuccess)
+
+	return metrics.Stats{1, 1, 1, uint64(question.Len()), uint64(response.Len())}
 }
 
 func newDefaultDNSClient(proto string) *dns.Client {
@@ -219,10 +215,15 @@ func newDefaultDNSClient(proto string) *dns.Client {
 	return c
 }
 
-func getNameservers(rootDomain string, protocol string) (res []string, err error) {
+func getNameservers(rootDomain string, protocol string) ([]string, error) {
+	nameservers, err := net.LookupNS(rootDomain)
+	if err != nil {
+		return nil, err
+	}
+
 	const (
-		defaultDNSPort        = 53
-		defaultDNSOverTLSPort = 853
+		defaultDNSPort        = "53"
+		defaultDNSOverTLSPort = "853"
 	)
 
 	port := defaultDNSPort
@@ -230,13 +231,9 @@ func getNameservers(rootDomain string, protocol string) (res []string, err error
 		port = defaultDNSOverTLSPort
 	}
 
-	nameservers, err := net.LookupNS(rootDomain)
-	if err != nil {
-		return nil, err
-	}
-
+	res := make([]string, 0, len(nameservers))
 	for _, nameserver := range nameservers {
-		res = append(res, net.JoinHostPort(nameserver.Host, strconv.Itoa(port)))
+		res = append(res, net.JoinHostPort(nameserver.Host, port))
 	}
 
 	return res, nil

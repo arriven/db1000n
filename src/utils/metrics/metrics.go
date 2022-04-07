@@ -99,7 +99,27 @@ func (r *Reporter) Sum(s Stat) uint64 {
 	return res
 }
 
-type PerTargetStats map[string][NumStats]uint64
+type (
+	// Stats contains all metrics packed as an array.
+	Stats [NumStats]uint64
+	// MultiStats contains multiple Stats as a slice. Useful for collecting Stats from coroutines.
+	MultiStats []Stats
+	// PerTargetStats is a map of Stats per target.
+	PerTargetStats map[string]Stats
+)
+
+// Sum up all Stats into a total Stats record.
+func (s MultiStats) Sum() Stats {
+	var res Stats
+
+	for i := range s {
+		for j := RequestsAttemptedStat; j < NumStats; j++ {
+			res[j] += s[i][j]
+		}
+	}
+
+	return res
+}
 
 func (ts PerTargetStats) sum(s Stat) uint64 {
 	var res uint64
@@ -178,7 +198,7 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 
 	const BytesInMegabyte = 1024 * 1024
 
-	var totals [NumStats]uint64
+	var totals Stats
 
 	for _, tgt := range stats.sortedTargets() {
 		tgtStats := stats[tgt]
@@ -224,17 +244,32 @@ type Accumulator struct {
 	r *Reporter
 }
 
-// Add n to the Accumulator Stat value.
-func (a *Accumulator) Add(s Stat, target string, n uint64) {
+// Add n to the Accumulator Stat value. Returns self for chaining.
+func (a *Accumulator) Add(target string, s Stat, n uint64) *Accumulator {
 	if a == nil || !s.valid() {
-		return
+		return a
 	}
 
 	a.metrics[s][target] += n
+
+	return a
 }
 
-// Inc increases Accumulator Stat value by 1.
-func (a *Accumulator) Inc(s Stat, target string) { a.Add(s, target, 1) }
+// Inc increases Accumulator Stat value by 1. Returns self for chaining.
+func (a *Accumulator) Inc(target string, s Stat) *Accumulator { return a.Add(target, s, 1) }
+
+// AddStats to the Accumulator. Returns self for chaining.
+func (a *Accumulator) AddStats(target string, s Stats) *Accumulator {
+	if a == nil {
+		return a
+	}
+
+	for i := range a.metrics {
+		a.metrics[i][target] += s[i]
+	}
+
+	return a
+}
 
 // Flush Accumulator contents to the Reporter.
 func (a *Accumulator) Flush() {
