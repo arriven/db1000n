@@ -33,9 +33,9 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
    - [Linux 32bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_linux_386.zip)
    - [Linux 64bit](https://github.com/Arriven/db1000n/releases/latest/download/db1000n_linux_amd64.tar.gz)
 
-2. Unpack the archive
-3. Launch the file inside the archive
-4. Done!
+1. Unpack the archive
+1. Launch the file inside the archive
+1. Done!
 
 !!! important
 
