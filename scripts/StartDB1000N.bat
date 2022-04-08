@@ -16,7 +16,7 @@ rem Iterate over list of all files in release
 echo Foreach ($Asset IN $Assets)                                                  >> %temp%\GetDB1000N.ps1
 echo {                                                                            >> %temp%\GetDB1000N.ps1
 rem Search for windows x64 build with regex
-echo 	if ($Asset.name -match 'db1000n_.*_windows_amd64.zip')                    >> %temp%\GetDB1000N.ps1
+echo 	if ($Asset.name -match 'db1000n_windows_amd64.zip')                    >> %temp%\GetDB1000N.ps1
 echo 	{                                                                         >> %temp%\GetDB1000N.ps1
 rem Download found build
 echo 		$DownloadURL = $Asset.browser_download_url                            >> %temp%\GetDB1000N.ps1
