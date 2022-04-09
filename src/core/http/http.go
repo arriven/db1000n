@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -48,7 +47,7 @@ type RequestConfig struct {
 }
 
 // InitRequest is used to populate data from request config to fasthttp.Request
-func InitRequest(c RequestConfig, req *fasthttp.Request) int64 {
+func InitRequest(c RequestConfig, req *fasthttp.Request) {
 	req.SetRequestURI(c.Path)
 	req.Header.SetMethod(c.Method)
 	req.SetBodyString(c.Body)
@@ -62,10 +61,6 @@ func InitRequest(c RequestConfig, req *fasthttp.Request) int64 {
 	for key, value := range c.Cookies {
 		req.Header.SetCookie(key, value)
 	}
-
-	dataSize, _ := req.WriteTo(metrics.NopWriter{})
-
-	return dataSize
 }
 
 type Client interface {

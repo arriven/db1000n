@@ -23,11 +23,14 @@
 package packetgen
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/valyala/fasthttp"
 
+	"github.com/Arriven/db1000n/src/core/http"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
@@ -45,20 +48,12 @@ func BuildPayload(c LayerConfig) (gopacket.Layer, error) {
 		}
 
 		return gopacket.Payload([]byte(packetConfig.Payload)), nil
+	case "http":
+		return buildHTTPPacket(c.Data)
 	case "icmpv4":
-		var packetConfig ICMPV4PacketConfig
-		if err := utils.Decode(c.Data, &packetConfig); err != nil {
-			return nil, err
-		}
-
-		return buildICMPV4Packet(packetConfig), nil
+		return buildICMPV4Packet(c.Data)
 	case "dns":
-		var packetConfig DNSPacketConfig
-		if err := utils.Decode(c.Data, &packetConfig); err != nil {
-			return nil, err
-		}
-
-		return buildDNSPacket(packetConfig), nil
+		return buildDNSPacket(c.Data)
 	default:
 		return nil, fmt.Errorf("unsupported layer type %s", c.Type)
 	}
@@ -70,12 +65,17 @@ type ICMPV4PacketConfig struct {
 	Seq      uint16
 }
 
-func buildICMPV4Packet(c ICMPV4PacketConfig) *layers.ICMPv4 {
+func buildICMPV4Packet(data map[string]any) (*layers.ICMPv4, error) {
+	var c ICMPV4PacketConfig
+	if err := utils.Decode(data, &c); err != nil {
+		return nil, err
+	}
+
 	return &layers.ICMPv4{
 		TypeCode: layers.ICMPv4TypeCode(c.TypeCode),
 		Id:       c.ID,
 		Seq:      c.Seq,
-	}
+	}, nil
 }
 
 // DNSQuestion wraps a single request (question) within a DNS query.
@@ -103,7 +103,12 @@ type DNSPacketConfig struct {
 	Questions []DNSQuestion
 }
 
-func buildDNSPacket(c DNSPacketConfig) *layers.DNS {
+func buildDNSPacket(data map[string]any) (*layers.DNS, error) {
+	var c DNSPacketConfig
+	if err := utils.Decode(data, &c); err != nil {
+		return nil, err
+	}
+
 	questions := make([]layers.DNSQuestion, 0, len(c.Questions))
 	for _, question := range c.Questions {
 		questions = append(questions, layers.DNSQuestion{Name: []byte(question.Name), Type: question.Type, Class: question.Class})
@@ -122,5 +127,25 @@ func buildDNSPacket(c DNSPacketConfig) *layers.DNS {
 
 		QDCount:   utils.NonNilOrDefault(c.QDCount, uint16(len(c.Questions))),
 		Questions: questions,
+	}, nil
+}
+
+func buildHTTPPacket(data map[string]any) (gopacket.Payload, error) {
+	var c http.RequestConfig
+
+	if err := utils.Decode(data, &c); err != nil {
+		return nil, err
 	}
+
+	var req fasthttp.Request
+
+	http.InitRequest(c, &req)
+
+	var buf bytes.Buffer
+
+	if _, err := req.WriteTo(&buf); err != nil {
+		return nil, err
+	}
+
+	return gopacket.Payload(buf.Bytes()), nil
 }

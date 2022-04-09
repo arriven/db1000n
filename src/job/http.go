@@ -72,7 +72,9 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *Glo
 		log.Printf("Sent single http request to %v", requestConfig.Path)
 	}
 
-	dataSize := http.InitRequest(requestConfig, req)
+	http.InitRequest(requestConfig, req)
+
+	dataSize, _ := req.WriteTo(metrics.NopWriter{})
 
 	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
 
@@ -153,7 +155,9 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 			return nil, fmt.Errorf("error executing request template: %w", err)
 		}
 
-		dataSize := http.InitRequest(requestConfig, req)
+		http.InitRequest(requestConfig, req)
+
+		dataSize, _ := req.WriteTo(metrics.NopWriter{})
 
 		trafficMonitor.Add(uint64(dataSize))
 
