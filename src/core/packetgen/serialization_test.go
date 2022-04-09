@@ -1,12 +1,14 @@
 package packetgen
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"testing"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/miekg/dns"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
@@ -132,4 +134,59 @@ func extractPayload(p gopacket.Packet, c map[string]any) error {
 	}
 
 	return nil
+}
+
+func TestDNS(t *testing.T) {
+	t.Parallel()
+
+	configTPL := map[string]any{
+		"payload": map[string]any{
+			"type": "dns",
+			"data": map[string]any{
+				"id":      1234,
+				"op_code": 0,
+				"rd":      true,
+				"questions": []map[string]any{
+					{
+						"name":  "google.com",
+						"type":  "1",
+						"class": "1",
+					},
+				},
+			},
+		},
+	}
+
+	logger := zap.NewExample()
+	config := templates.ParseAndExecuteMapStruct(logger, configTPL, nil)
+
+	var packetConfig PacketConfig
+	if err := utils.Decode(config, &packetConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	logger.Debug("deserialized packet config", zap.Any("packet", packetConfig))
+
+	packet, err := packetConfig.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf := gopacket.NewSerializeBuffer()
+	if err = packet.Serialize(buf); err != nil {
+		t.Fatal(err)
+	}
+
+	question := new(dns.Msg).
+		SetQuestion(dns.Fqdn("google.com"), 1)
+	question.Id = 1234
+
+	out, err := question.Pack()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(buf.Bytes(), out) {
+		t.Fatal(fmt.Errorf("not equal %v to %v", buf.Bytes(), out))
+	}
 }

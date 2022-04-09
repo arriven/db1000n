@@ -78,18 +78,49 @@ func buildICMPV4Packet(c ICMPV4PacketConfig) *layers.ICMPv4 {
 	}
 }
 
+// DNSQuestion wraps a single request (question) within a DNS query.
+type DNSQuestion struct {
+	Name  string
+	Type  layers.DNSType
+	Class layers.DNSClass
+}
+
 type DNSPacketConfig struct {
-	ID      uint16
-	Qr      bool
-	OpCode  uint8
-	QDCount uint16
+	ID     uint16
+	Qr     bool
+	OpCode uint8
+
+	AA bool  // Authoritative answer
+	TC bool  // Truncated
+	RD bool  // Recursion desired
+	RA bool  // Recursion available
+	Z  uint8 // Reserved for future use
+
+	ResponseCode uint8
+	QDCount      *uint16 // Number of questions to expect
+
+	// Entries
+	Questions []DNSQuestion
 }
 
 func buildDNSPacket(c DNSPacketConfig) *layers.DNS {
+	questions := make([]layers.DNSQuestion, 0, len(c.Questions))
+	for _, question := range c.Questions {
+		questions = append(questions, layers.DNSQuestion{Name: []byte(question.Name), Type: question.Type, Class: question.Class})
+	}
+
 	return &layers.DNS{
-		ID:      c.ID,
-		QR:      c.Qr,
-		OpCode:  layers.DNSOpCode(c.OpCode),
-		QDCount: c.QDCount,
+		ID:     c.ID,
+		QR:     c.Qr,
+		OpCode: layers.DNSOpCode(c.OpCode),
+
+		AA: c.AA,
+		TC: c.TC,
+		RD: c.RD,
+		RA: c.RA,
+		Z:  c.Z,
+
+		QDCount:   utils.NonNilOrDefault(c.QDCount, uint16(len(c.Questions))),
+		Questions: questions,
 	}
 }
