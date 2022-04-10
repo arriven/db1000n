@@ -37,9 +37,6 @@ import (
 )
 
 func slowLorisJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	var jobConfig *slowloris.Config
 	if err := utils.Decode(templates.ParseAndExecuteMapStruct(logger, args, ctx), &jobConfig); err != nil {
 		return nil, err
@@ -81,14 +78,7 @@ func slowLorisJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 		jobConfig.ProxyURLs = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
 	}
 
-	shouldStop := make(chan bool)
-
-	go func() {
-		<-ctx.Done()
-		close(shouldStop)
-	}()
-
 	logger.Debug("sending flow loris with params", zap.Reflect("params", jobConfig))
 
-	return nil, slowloris.Start(shouldStop, logger, jobConfig)
+	return nil, slowloris.Start(ctx.Done(), jobConfig, a, logger)
 }

