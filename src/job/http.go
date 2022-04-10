@@ -61,11 +61,11 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
+	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
 
 	if !isInEncryptedContext(ctx) {
 		log.Printf("Sent single http request to %v", requestConfig.Path)
@@ -73,17 +73,16 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 
 	http.InitRequest(requestConfig, req)
 
-	// dataSize, _ :=
-	_, err = req.WriteTo(metrics.NopWriter{})
-	if err != nil {
+	if err = sendFastHTTPRequest(client, req, resp); err != nil {
+		a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+
 		return nil, err
 	}
 
-	// metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
+	requestSize, _ := req.WriteTo(metrics.NopWriter{})
+	responseSize, _ := resp.WriteTo(metrics.NopWriter{})
 
-	if err = sendFastHTTPRequest(client, req, resp); err == nil {
-		// metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
-	}
+	a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize), uint64(responseSize)}).Flush()
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
@@ -136,17 +135,13 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	}
 
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
-
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	// trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
-	// go trafficMonitor.Update(ctx, time.Second)
-
-	// processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
-	// go processedTrafficMonitor.Update(ctx, time.Second)
-
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
+	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
 
 	if !isInEncryptedContext(ctx) {
 		log.Printf("Attacking %v", jobConfig.Request["path"])
@@ -160,25 +155,25 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		http.InitRequest(requestConfig, req)
 
-		// dataSize, _ :=
-		_, err := req.WriteTo(metrics.NopWriter{})
-		if err != nil {
-			return nil, err
-		}
-
-		// trafficMonitor.Add(uint64(dataSize))
-
-		if err := sendFastHTTPRequest(client, req, nil); err != nil {
+		if err := sendFastHTTPRequest(client, req, resp); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
+			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
-		} else {
-			// processedTrafficMonitor.Add(uint64(dataSize))
-			backoffController.Reset()
+
+			continue
 		}
+
+		requestSize, _ := req.WriteTo(metrics.NopWriter{})
+		responseSize, _ := resp.WriteTo(metrics.NopWriter{})
+
+		a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize), uint64(responseSize)}).Flush()
+		backoffController.Reset()
 	}
 
 	return nil, nil
 }
+
+func target(uri *fasthttp.URI) string { return string(uri.Scheme()) + "://" + string(uri.Host()) }
 
 func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfig, logger *zap.Logger) (
 	cfg *httpJobConfig, clientCfg *http.ClientConfig, requestTpl *templates.MapStruct, err error,
