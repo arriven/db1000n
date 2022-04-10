@@ -52,12 +52,8 @@ func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 
-	// trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
-	// go trafficMonitor.Update(ctx, time.Second)
-
 	for jobConfig.Next(ctx) {
-		err := sendPacket(ctx, logger, jobConfig, a)
-		if err != nil {
+		if err := sendPacket(ctx, logger, jobConfig, a); err != nil {
 			logger.Debug("error sending packet", zap.Error(err), zap.Any("args", args))
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
 		} else {
@@ -88,11 +84,14 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 			return err
 		}
 
-		// n, err :=
-		_, err = conn.Write(packet)
+		n, err := conn.Write(packet)
 		if err != nil {
+			a.Inc(conn.Target(), metrics.RequestsAttemptedStat)
+
 			return err
-		} // trafficMonitor.Add(uint64(n))
+		}
+
+		a.AddStats(conn.Target(), metrics.Stats{1, 1, 0, uint64(n), 0}).Flush()
 	}
 
 	return nil
