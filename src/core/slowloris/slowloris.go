@@ -169,7 +169,7 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 		select {
 		case <-time.After(config.SleepInterval):
 		case <-readerStopCh:
-			a.AddStats(target, metrics.Stats{0, 0, 1, 0})
+			a.Inc(target, metrics.ResponsesReceivedStat)
 
 			break
 		}
@@ -184,7 +184,7 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 
-	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent)})
+	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent)}).Flush()
 }
 
 func nullReader(conn io.Reader, ch chan<- struct{}, logger *zap.Logger) {
