@@ -86,11 +86,12 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	defer refreshTimer.Stop()
 	metrics.IncClient()
 
-	var cancel context.CancelFunc
+	var (
+		cancel   context.CancelFunc
+		reporter *metrics.Reporter
+	)
 
 	for {
-		var reporter *metrics.Reporter
-
 		rawConfig := config.FetchRawMultiConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
 			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
 				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),

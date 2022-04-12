@@ -45,10 +45,6 @@ const (
 
 // String representation of the Stat.
 func (s Stat) String() string {
-	if !s.valid() {
-		return "<unknown>"
-	}
-
 	return [...]string{
 		"requests attempted",
 		"requests sent",
@@ -56,8 +52,6 @@ func (s Stat) String() string {
 		"bytes sent",
 	}[s]
 }
-
-func (s Stat) valid() bool { return s >= RequestsAttemptedStat && s < NumStats }
 
 type dimensions struct {
 	jobID  string
@@ -77,10 +71,6 @@ func NewReporter(clientID string) *Reporter { return &Reporter{clientID: clientI
 
 // Sum returns a total sum of metric s.
 func (r *Reporter) Sum(s Stat) uint64 {
-	if r == nil || !s.valid() {
-		return 0
-	}
-
 	var res uint64
 
 	r.metrics[s].Range(func(_, v interface{}) bool {
@@ -147,10 +137,6 @@ func (ts PerTargetStats) sortedTargets() []string {
 
 // SumAllStatsByTarget returns a total sum of all metrics by target.
 func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
-	if r == nil {
-		return nil
-	}
-
 	res := make(PerTargetStats)
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
@@ -178,10 +164,6 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 
 // WriteSummary dumps Reporter contents into the target.
 func (r *Reporter) WriteSummary(target io.Writer) {
-	if r == nil {
-		return
-	}
-
 	w := tabwriter.NewWriter(target, 1, 1, 1, ' ', tabwriter.AlignRight)
 
 	defer w.Flush()
@@ -228,13 +210,7 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 }
 
 // NewAccumulator returns a new metrics Accumulator for the Reporter.
-func (r *Reporter) NewAccumulator(jobID string) *Accumulator {
-	if r == nil {
-		return nil
-	}
-
-	return newAccumulator(jobID, r)
-}
+func (r *Reporter) NewAccumulator(jobID string) *Accumulator { return newAccumulator(jobID, r) }
 
 // Accumulator for statistical metrics for use in a single job. Requires Flush()-ing to Reporter.
 // Not concurrency-safe.
@@ -247,10 +223,6 @@ type Accumulator struct {
 
 // Add n to the Accumulator Stat value. Returns self for chaining.
 func (a *Accumulator) Add(target string, s Stat, n uint64) *Accumulator {
-	if a == nil || !s.valid() {
-		return a
-	}
-
 	a.metrics[s][target] += n
 
 	return a
@@ -261,10 +233,6 @@ func (a *Accumulator) Inc(target string, s Stat) *Accumulator { return a.Add(tar
 
 // AddStats to the Accumulator. Returns self for chaining.
 func (a *Accumulator) AddStats(target string, s Stats) *Accumulator {
-	if a == nil {
-		return a
-	}
-
 	for i := range a.metrics {
 		a.metrics[i][target] += s[i]
 	}
@@ -274,10 +242,6 @@ func (a *Accumulator) AddStats(target string, s Stats) *Accumulator {
 
 // Flush Accumulator contents to the Reporter.
 func (a *Accumulator) Flush() {
-	if a == nil {
-		return
-	}
-
 	for stat := RequestsAttemptedStat; stat < NumStats; stat++ {
 		for target, value := range a.metrics[stat] {
 			a.r.metrics[stat].Store(dimensions{jobID: a.jobID, target: target}, value)
@@ -286,13 +250,7 @@ func (a *Accumulator) Flush() {
 }
 
 // Clone a new, blank metrics Accumulator with the same Reporter as the original.
-func (a *Accumulator) Clone(jobID string) *Accumulator {
-	if a == nil {
-		return nil
-	}
-
-	return newAccumulator(jobID, a.r)
-}
+func (a *Accumulator) Clone(jobID string) *Accumulator { return newAccumulator(jobID, a.r) }
 
 func newAccumulator(jobID string, r *Reporter) *Accumulator {
 	res := &Accumulator{
