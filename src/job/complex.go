@@ -27,16 +27,15 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job/config"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
-func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
+func sequenceJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	var jobConfig struct {
 		BasicJobConfig
 
@@ -53,7 +52,7 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 			return nil, fmt.Errorf("unknown job %q", cfg.Type)
 		}
 
-		data, err := job(ctx, logger, globalConfig, cfg.Args)
+		data, err := job(ctx, cfg.Args, globalConfig, a, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error running job: %w", err)
 		}
@@ -64,7 +63,7 @@ func sequenceJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	return nil, nil
 }
 
-func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func parallelJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -95,13 +94,13 @@ func parallelJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 		for j := 0; j < jobConfig.Jobs[i].Count; j++ {
 			wg.Add(1)
 
-			go func(i int) {
-				if _, err := job(ctx, logger, globalConfig, jobConfig.Jobs[i].Args); err != nil {
+			go func(i int, a *metrics.Accumulator) {
+				if _, err := job(ctx, jobConfig.Jobs[i].Args, globalConfig, a, logger); err != nil {
 					logger.Error("error running one of the jobs", zap.Error(err))
 				}
 
 				wg.Done()
-			}(i)
+			}(i, a.Clone(uuid.NewString())) // metrics.Accumulator is not safe for concurrent use, so let's make a new one
 		}
 	}
 

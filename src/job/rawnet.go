@@ -30,33 +30,29 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job/config"
+	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
-func tcpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func tcpJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
+	return rawnetJob(ctx, "tcp", args, globalConfig, a, logger)
+}
 
-	packetgenArgs, err := parseRawNetJobArgs(ctx, logger, globalConfig, args, "tcp")
+func udpJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
+	return rawnetJob(ctx, "udp", args, globalConfig, a, logger)
+}
+
+func rawnetJob(ctx context.Context, protocol string, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
+	data any, err error,
+) {
+	packetgenArgs, err := parseRawNetJobArgs(logger, globalConfig, args, protocol)
 	if err != nil {
 		return nil, err
 	}
 
-	return packetgenJob(ctx, logger, globalConfig, packetgenArgs)
+	return packetgenJob(ctx, packetgenArgs, globalConfig, a, logger)
 }
 
-func udpJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	packetgenArgs, err := parseRawNetJobArgs(ctx, logger, globalConfig, args, "udp")
-	if err != nil {
-		return nil, err
-	}
-
-	return packetgenJob(ctx, logger, globalConfig, packetgenArgs)
-}
-
-func parseRawNetJobArgs(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args, protocol string) (
+func parseRawNetJobArgs(logger *zap.Logger, globalConfig *GlobalConfig, args config.Args, protocol string) (
 	result map[string]any, err error,
 ) {
 	var jobConfig struct {
