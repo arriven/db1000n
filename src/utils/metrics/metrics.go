@@ -169,11 +169,6 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 	defer w.Flush()
 
 	stats := r.SumAllStatsByTarget()
-	if stats.sum(RequestsSentStat) == 0 {
-		fmt.Fprintln(w, "[Error] No traffic generated. If you see this message a lot - contact admins")
-
-		return
-	}
 
 	fmt.Fprintln(w, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
 	fmt.Fprintln(w, "!Attack is successful! Russian warship, go fuck yourself!")
