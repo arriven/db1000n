@@ -152,7 +152,7 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 	target := scheme + "://" + destinationHostPort
 	headerLen, err := conn.Write(requestHeader)
 
-	a.AddStats(target, metrics.Stats{1, 0, 0, uint64(headerLen)})
+	a.AddStats(target, metrics.NewStats(1, 0, 0, uint64(headerLen)))
 
 	if err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
@@ -184,7 +184,7 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 
-	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent)}).Flush()
+	a.AddStats(target, metrics.NewStats(0, 1, 0, uint64(bytesSent))).Flush()
 }
 
 func nullReader(conn io.Reader, ch chan<- struct{}, logger *zap.Logger) {

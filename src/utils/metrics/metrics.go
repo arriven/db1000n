@@ -106,6 +106,11 @@ type (
 	PerTargetStats map[string]Stats
 )
 
+// NewStats returns a new Stats record.
+func NewStats(requestsAttempted, requestsSent, responsesReceived, bytesSent uint64) Stats {
+	return Stats{requestsAttempted, requestsSent, responsesReceived, bytesSent}
+}
+
 // Sum up all Stats into a total Stats record.
 func (s MultiStats) Sum() Stats {
 	var res Stats

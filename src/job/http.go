@@ -81,7 +81,7 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 
 	requestSize, _ := req.WriteTo(metrics.NopWriter{})
 
-	a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize)}).Flush()
+	a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
@@ -161,7 +161,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		requestSize, _ := req.WriteTo(metrics.NopWriter{})
 
-		a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize)}).Flush()
+		a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
 		backoffController.Reset()
 	}
 

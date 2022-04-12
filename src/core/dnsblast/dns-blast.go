@@ -164,7 +164,7 @@ func query(client *dns.Client, parameters *queryParameters, logger *zap.Logger) 
 		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.hostAndPort), zap.Error(err))
 		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 
-		return metrics.Stats{1, 0, 0, 0}
+		return metrics.NewStats(1, 0, 0, 0)
 	}
 
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
@@ -180,12 +180,12 @@ func query(client *dns.Client, parameters *queryParameters, logger *zap.Logger) 
 		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 		logger.Debug("failed to complete the DNS query", zap.Error(err))
 
-		return metrics.Stats{1, 1, 0, uint64(question.Len())}
+		return metrics.NewStats(1, 1, 0, uint64(question.Len()))
 	}
 
 	metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusSuccess)
 
-	return metrics.Stats{1, 1, 1, uint64(question.Len())}
+	return metrics.NewStats(1, 1, 1, uint64(question.Len()))
 }
 
 func newDefaultDNSClient(proto string) *dns.Client {
