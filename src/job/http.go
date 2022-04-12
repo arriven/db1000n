@@ -80,9 +80,8 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 	}
 
 	requestSize, _ := req.WriteTo(metrics.NopWriter{})
-	responseSize, _ := resp.WriteTo(metrics.NopWriter{})
 
-	a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize), uint64(responseSize)}).Flush()
+	a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize)}).Flush()
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
@@ -137,11 +136,8 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
-	defer func() {
-		fasthttp.ReleaseRequest(req)
-		fasthttp.ReleaseResponse(resp)
-	}()
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
 
 	if !isInEncryptedContext(ctx) {
 		log.Printf("Attacking %v", jobConfig.Request["path"])
@@ -155,7 +151,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		http.InitRequest(requestConfig, req)
 
-		if err := sendFastHTTPRequest(client, req, resp); err != nil {
+		if err := sendFastHTTPRequest(client, req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
 			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
@@ -164,9 +160,8 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 		}
 
 		requestSize, _ := req.WriteTo(metrics.NopWriter{})
-		responseSize, _ := resp.WriteTo(metrics.NopWriter{})
 
-		a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize), uint64(responseSize)}).Flush()
+		a.AddStats(target(req.URI()), metrics.Stats{1, 1, 1, uint64(requestSize)}).Flush()
 		backoffController.Reset()
 	}
 

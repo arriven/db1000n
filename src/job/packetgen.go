@@ -91,7 +91,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 			return err
 		}
 
-		a.AddStats(conn.Target(), metrics.Stats{1, 1, 0, uint64(n), 0}).Flush()
+		a.AddStats(conn.Target(), metrics.Stats{1, 1, 0, uint64(n)}).Flush()
 	}
 
 	return nil

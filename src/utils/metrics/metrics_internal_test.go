@@ -39,7 +39,7 @@ func TestReporter_WriteSummary(t *testing.T) {
 	}{
 		{
 			name:    "empty",
-			metrics: [NumStats]map[dimensions]uint64{nil, nil, nil, nil, nil},
+			metrics: [NumStats]map[dimensions]uint64{nil, nil, nil, nil},
 			want:    "[Error] No traffic generated. If you see this message a lot - contact admins\n",
 		},
 		{
@@ -47,8 +47,6 @@ func TestReporter_WriteSummary(t *testing.T) {
 			metrics: [NumStats]map[dimensions]uint64{
 				{
 					{"job1", "http://foobar.com"}: 10,
-				}, {
-					{"job1", "http://foobar.com"}: 0,
 				}, {
 					{"job1", "http://foobar.com"}: 0,
 				}, {
@@ -74,9 +72,6 @@ func TestReporter_WriteSummary(t *testing.T) {
 				}, {
 					{"job1", "http://foobar.com"}: 0,
 					{"job2", "http://foobar.com"}: 1638400,
-				}, {
-					{"job1", "http://foobar.com"}: 0,
-					{"job2", "http://foobar.com"}: 409600,
 				},
 			},
 			want: `
@@ -85,10 +80,10 @@ func TestReporter_WriteSummary(t *testing.T) {
 !Attack is successful! Russian warship, go fuck yourself!
 
  --- Traffic stats ---
- |            Target | Requests attempted | Requests sent | Responses received | Data sent | Data received |
- | http://foobar.com |                110 |            10 |                 10 |   1.56 MB |       0.39 MB |
- |               --- |                --- |           --- |                --- |       --- |           --- |
- |             Total |                110 |            10 |                 10 |   1.56 MB |       0.39 MB |
+ |            Target | Requests attempted | Requests sent | Responses received | Data sent |
+ | http://foobar.com |                110 |            10 |                 10 |   1.56 MB |
+ |               --- |                --- |           --- |                --- |       --- |
+ |             Total |                110 |            10 |                 10 |   1.56 MB |
 
 `,
 		},
@@ -107,9 +102,6 @@ func TestReporter_WriteSummary(t *testing.T) {
 				}, {
 					{"job1", "http://foobar.com"}: 16384000,
 					{"job2", "http://foobar.com"}: 1638400,
-				}, {
-					{"job1", "http://foobar.com"}: 4096000,
-					{"job2", "http://foobar.com"}: 409600,
 				},
 			},
 			want: `
@@ -118,10 +110,10 @@ func TestReporter_WriteSummary(t *testing.T) {
 !Attack is successful! Russian warship, go fuck yourself!
 
  --- Traffic stats ---
- |            Target | Requests attempted | Requests sent | Responses received | Data sent | Data received |
- | http://foobar.com |               1100 |           110 |                 11 |  17.19 MB |       4.30 MB |
- |               --- |                --- |           --- |                --- |       --- |           --- |
- |             Total |               1100 |           110 |                 11 |  17.19 MB |       4.30 MB |
+ |            Target | Requests attempted | Requests sent | Responses received | Data sent |
+ | http://foobar.com |               1100 |           110 |                 11 |  17.19 MB |
+ |               --- |                --- |           --- |                --- |       --- |
+ |             Total |               1100 |           110 |                 11 |  17.19 MB |
 
 `,
 		},
@@ -148,11 +140,6 @@ func TestReporter_WriteSummary(t *testing.T) {
 					{"job2", "http://foobar.com"}: 1638400,
 					{"job1", "tcp://foobar.com"}:  1638400,
 					{"job2", "tcp://foobar.com"}:  163840,
-				}, {
-					{"job1", "http://foobar.com"}: 4096000,
-					{"job2", "http://foobar.com"}: 409600,
-					{"job1", "tcp://foobar.com"}:  409600,
-					{"job2", "tcp://foobar.com"}:  40960,
 				},
 			},
 			want: `
@@ -161,11 +148,11 @@ func TestReporter_WriteSummary(t *testing.T) {
 !Attack is successful! Russian warship, go fuck yourself!
 
  --- Traffic stats ---
- |            Target | Requests attempted | Requests sent | Responses received | Data sent | Data received |
- | http://foobar.com |               1100 |           110 |                 11 |  17.19 MB |       4.30 MB |
- |  tcp://foobar.com |               1100 |           110 |                 11 |   1.72 MB |       0.43 MB |
- |               --- |                --- |           --- |                --- |       --- |           --- |
- |             Total |               2200 |           220 |                 22 |  18.91 MB |       4.73 MB |
+ |            Target | Requests attempted | Requests sent | Responses received | Data sent |
+ | http://foobar.com |               1100 |           110 |                 11 |  17.19 MB |
+ |  tcp://foobar.com |               1100 |           110 |                 11 |   1.72 MB |
+ |               --- |                --- |           --- |                --- |       --- |
+ |             Total |               2200 |           220 |                 22 |  18.91 MB |
 
 `,
 		},

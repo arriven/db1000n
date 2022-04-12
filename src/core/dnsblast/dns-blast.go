@@ -164,7 +164,7 @@ func query(client *dns.Client, parameters *queryParameters, logger *zap.Logger) 
 		logger.Debug("failed to dial remote host to do the DNS query", zap.String("host", parameters.hostAndPort), zap.Error(err))
 		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 
-		return metrics.Stats{1, 0, 0, 0, 0}
+		return metrics.Stats{1, 0, 0, 0}
 	}
 
 	// Upgrade connection to use randomized ClientHello for TCP-TLS connections
@@ -176,17 +176,16 @@ func query(client *dns.Client, parameters *queryParameters, logger *zap.Logger) 
 
 	question := new(dns.Msg).SetQuestion(dns.Fqdn(parameters.qName), parameters.qType)
 
-	response, _, err := client.ExchangeWithConn(question, conn)
-	if err != nil {
+	if _, _, err = client.ExchangeWithConn(question, conn); err != nil {
 		metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusFail)
 		logger.Debug("failed to complete the DNS query", zap.Error(err))
 
-		return metrics.Stats{1, 1, 0, uint64(question.Len()), 0}
+		return metrics.Stats{1, 1, 0, uint64(question.Len())}
 	}
 
 	metrics.IncDNSBlast(parameters.hostAndPort, seedDomain, client.Net, metrics.StatusSuccess)
 
-	return metrics.Stats{1, 1, 1, uint64(question.Len()), uint64(response.Len())}
+	return metrics.Stats{1, 1, 1, uint64(question.Len())}
 }
 
 func newDefaultDNSClient(proto string) *dns.Client {

@@ -39,7 +39,6 @@ const (
 	RequestsSentStat
 	ResponsesReceivedStat
 	BytesSentStat
-	BytesReceivedStat
 
 	NumStats
 )
@@ -55,7 +54,6 @@ func (s Stat) String() string {
 		"requests sent",
 		"responses received",
 		"bytes sent",
-		"bytes received",
 	}[s]
 }
 
@@ -194,7 +192,7 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 	fmt.Fprintln(w, "!Attack is successful! Russian warship, go fuck yourself!")
 
 	fmt.Fprintln(w, "\n --- Traffic stats ---")
-	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent\t|\tData received \t|\n")
+	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
 
 	const BytesInMegabyte = 1024 * 1024
 
@@ -203,12 +201,11 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 	for _, tgt := range stats.sortedTargets() {
 		tgtStats := stats[tgt]
 
-		fmt.Fprintf(w, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB\t|\t%.2f MB \t|\n", tgt,
+		fmt.Fprintf(w, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n", tgt,
 			tgtStats[RequestsAttemptedStat],
 			tgtStats[RequestsSentStat],
 			tgtStats[ResponsesReceivedStat],
 			float64(tgtStats[BytesSentStat])/BytesInMegabyte,
-			float64(tgtStats[BytesReceivedStat])/BytesInMegabyte,
 		)
 
 		for s := range totals {
@@ -216,13 +213,12 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 		}
 	}
 
-	fmt.Fprintln(w, "|\t---\t|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
-	fmt.Fprintf(w, "|\tTotal\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB\t|\t%.2f MB \t|\n\n",
+	fmt.Fprintln(w, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
+	fmt.Fprintf(w, "|\tTotal\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n\n",
 		totals[RequestsAttemptedStat],
 		totals[RequestsSentStat],
 		totals[ResponsesReceivedStat],
 		float64(totals[BytesSentStat])/BytesInMegabyte,
-		float64(totals[BytesReceivedStat])/BytesInMegabyte,
 	)
 }
 
