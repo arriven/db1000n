@@ -1,0 +1,55 @@
+- name: Prepare AWS account and create instances
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: "Add SSH key"
+      tags:
+        - aws
+      amazon.aws.ec2_key:
+        name: AWS
+        key_material: "{{ lookup('file', 'AWS.pub') }}"
+
+    - name: "Create SG with allowed management traffic"
+      tags:
+        - aws
+      amazon.aws.ec2_group:
+        name: ddos
+        description: Allows management traffic
+        rules:
+          - rule_desc: SSH
+            cidr_ip: 0.0.0.0/0
+            proto: tcp
+            from_port: 22
+            to_port: 22
+          - rule_desc: RDP
+            cidr_ip: 0.0.0.0/0
+            proto: tcp
+            from_port: 3389
+            to_port: 3389
+
+    - name: "Create Linux instance"
+      tags:
+        - linux
+      amazon.aws.ec2_instance:
+        name: Linux
+        state: running
+        instance_type: t2.micro
+        security_group: ddos
+        image_id: ami-0ae4d073cedc64830
+        key_name: "AWS"
+        network:
+          assign_public_ip: true
+
+    - name: "Create Windows instance"
+      tags:
+        - windows
+      amazon.aws.ec2_instance:
+        name: Windows
+        state: running
+        instance_type: t2.micro
+        security_group: ddos
+        image_id: ami-050d60cac23150261
+        key_name: "AWS"
+        network:
+          assign_public_ip: true
