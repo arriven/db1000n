@@ -49,7 +49,10 @@
         state: running
         instance_type: t2.micro
         security_group: ddos
-        image_id: ami-050d60cac23150261
+        image_id: ami-06aa8ca602578e4a4
         key_name: "AWS"
         network:
           assign_public_ip: true
+        user_data: <powershell>
+                   echo {{ lookup('file', 'AWS.pub') }} > $env:ProgramData\ssh\administrators_authorized_keys
+                  </powershell>
