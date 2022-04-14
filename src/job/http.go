@@ -28,7 +28,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 
@@ -46,7 +45,7 @@ type httpJobConfig struct {
 	Client  map[string]any // See HTTPClientConfig
 }
 
-func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func singleRequestJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -62,23 +61,27 @@ func singleRequestJob(ctx context.Context, logger *zap.Logger, globalConfig *Glo
 
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
+	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
 
 	if !isInEncryptedContext(ctx) {
 		log.Printf("Sent single http request to %v", requestConfig.Path)
 	}
 
-	dataSize := http.InitRequest(requestConfig, req)
+	http.InitRequest(requestConfig, req)
 
-	metrics.Default.Write(metrics.Traffic, uuid.New().String(), uint64(dataSize))
+	if err = sendFastHTTPRequest(client, req, resp); err != nil {
+		a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 
-	if err = sendFastHTTPRequest(client, req, resp); err == nil {
-		metrics.Default.Write(metrics.ProcessedTraffic, uuid.New().String(), uint64(dataSize))
+		return nil, err
 	}
+
+	requestSize, _ := req.WriteTo(metrics.NopWriter{})
+
+	a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
@@ -121,7 +124,7 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 	}
 }
 
-func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalConfig, args config.Args) (data any, err error) {
+func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -131,14 +134,7 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 	}
 
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
-
 	client := http.NewClient(ctx, *clientConfig, logger)
-
-	trafficMonitor := metrics.Default.NewWriter(metrics.Traffic, uuid.New().String())
-	go trafficMonitor.Update(ctx, time.Second)
-
-	processedTrafficMonitor := metrics.Default.NewWriter(metrics.ProcessedTraffic, uuid.NewString())
-	go processedTrafficMonitor.Update(ctx, time.Second)
 
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
@@ -153,21 +149,26 @@ func fastHTTPJob(ctx context.Context, logger *zap.Logger, globalConfig *GlobalCo
 			return nil, fmt.Errorf("error executing request template: %w", err)
 		}
 
-		dataSize := http.InitRequest(requestConfig, req)
-
-		trafficMonitor.Add(uint64(dataSize))
+		http.InitRequest(requestConfig, req)
 
 		if err := sendFastHTTPRequest(client, req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
+			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
-		} else {
-			processedTrafficMonitor.Add(uint64(dataSize))
-			backoffController.Reset()
+
+			continue
 		}
+
+		requestSize, _ := req.WriteTo(metrics.NopWriter{})
+
+		a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
+		backoffController.Reset()
 	}
 
 	return nil, nil
 }
+
+func target(uri *fasthttp.URI) string { return string(uri.Scheme()) + "://" + string(uri.Host()) }
 
 func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfig, logger *zap.Logger) (
 	cfg *httpJobConfig, clientCfg *http.ClientConfig, requestTpl *templates.MapStruct, err error,

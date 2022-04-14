@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -48,7 +47,7 @@ type RequestConfig struct {
 }
 
 // InitRequest is used to populate data from request config to fasthttp.Request
-func InitRequest(c RequestConfig, req *fasthttp.Request) int64 {
+func InitRequest(c RequestConfig, req *fasthttp.Request) {
 	req.SetRequestURI(c.Path)
 	req.Header.SetMethod(c.Method)
 	req.SetBodyString(c.Body)
@@ -62,10 +61,6 @@ func InitRequest(c RequestConfig, req *fasthttp.Request) int64 {
 	for key, value := range c.Cookies {
 		req.Header.SetCookie(key, value)
 	}
-
-	dataSize, _ := req.WriteTo(metrics.NopWriter{})
-
-	return dataSize
 }
 
 type Client interface {
@@ -105,6 +100,8 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
+	proxyFunc := utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout, true)
+
 	if clientConfig.StaticHost != nil {
 		return &fasthttp.HostClient{
 			Addr:                          clientConfig.StaticHost.Addr,
@@ -118,7 +115,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 			DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 			DisablePathNormalizing:        true,
 			TLSConfig:                     tlsConfig,
-			Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
+			Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 		}
 	}
 
@@ -132,7 +129,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     tlsConfig,
-		Dial:                          dialViaProxyFunc(utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout), "tcp"),
+		Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 	}
 }
 

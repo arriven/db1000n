@@ -1,3 +1,6 @@
+//go:build encrypted
+// +build encrypted
+
 package utils
 
 import (

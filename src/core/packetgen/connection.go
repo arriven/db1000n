@@ -63,6 +63,7 @@ func OpenConnection(c ConnectionConfig) (Connection, error) {
 
 type Connection interface {
 	Write(Packet) (int, error)
+	Target() string
 }
 
 // raw ipv4/ipv6 connection
@@ -73,6 +74,8 @@ type rawConnConfig struct {
 
 type rawConn struct {
 	*ipv6.PacketConn
+
+	target string
 }
 
 // openRawConn opens a raw ip network connection based on the provided config
@@ -83,18 +86,23 @@ func openRawConn(c rawConnConfig) (*rawConn, error) {
 		return nil, err
 	}
 
-	return &rawConn{PacketConn: ipv6.NewPacketConn(packetConn)}, err
+	return &rawConn{
+		PacketConn: ipv6.NewPacketConn(packetConn),
+		target:     c.Name + "://" + c.Address,
+	}, nil
 }
 
-func (conn rawConn) Write(packet Packet) (n int, err error) {
+func (conn *rawConn) Write(packet Packet) (n int, err error) {
 	payloadBuf := gopacket.NewSerializeBuffer()
 
-	if err = packet.Serialize(payloadBuf); err != nil {
+	if err := packet.Serialize(payloadBuf); err != nil {
 		return 0, fmt.Errorf("error serializing packet: %w", err)
 	}
 
 	return conn.PacketConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
 }
+
+func (conn *rawConn) Target() string { return conn.target }
 
 type netConnConfig struct {
 	Protocol        string
@@ -106,26 +114,31 @@ type netConnConfig struct {
 
 type netConn struct {
 	net.Conn
+
+	target string
 }
 
 func openNetConn(c netConnConfig) (*netConn, error) {
-	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout)(c.Protocol, c.Address)
+	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout, false)(c.Protocol, c.Address)
 
-	if c.TLSClientConfig != nil {
-		tlsConn := tls.Client(conn, c.TLSClientConfig)
-		if err := tlsConn.Handshake(); err != nil {
-			tlsConn.Close()
-
-			return nil, err
-		}
-
-		return &netConn{Conn: tlsConn}, err
+	switch {
+	case err != nil:
+		return nil, err
+	case c.TLSClientConfig == nil:
+		return &netConn{Conn: conn, target: c.Protocol + "://" + c.Address}, nil
 	}
 
-	return &netConn{Conn: conn}, err
+	tlsConn := tls.Client(conn, c.TLSClientConfig)
+	if err = tlsConn.Handshake(); err != nil {
+		tlsConn.Close()
+
+		return nil, err
+	}
+
+	return &netConn{Conn: tlsConn, target: c.Protocol + "://" + c.Address}, nil
 }
 
-func (conn netConn) Write(packet Packet) (n int, err error) {
+func (conn *netConn) Write(packet Packet) (n int, err error) {
 	payloadBuf := gopacket.NewSerializeBuffer()
 
 	if err = packet.Serialize(payloadBuf); err != nil {
@@ -134,3 +147,5 @@ func (conn netConn) Write(packet Packet) (n int, err error) {
 
 	return conn.Conn.Write(payloadBuf.Bytes())
 }
+
+func (conn *netConn) Target() string { return conn.target }

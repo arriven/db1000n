@@ -2,6 +2,8 @@
 
 See [Docs](https://arriven.github.io/db1000n)
 
+[![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://stand-with-ukraine.pp.ua)
+
 This is a simple distributed load generation client written in go.
 It is able to fetch simple json config from a local or remote location.
 The config describes which load generation jobs should be launched in parallel.

@@ -58,6 +58,7 @@ func main() {
 	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
+	version := flag.Bool("version", false, "print version and exit")
 	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging")
 
 	flag.Parse()
@@ -66,6 +67,8 @@ func main() {
 	case *help:
 		flag.CommandLine.Usage()
 
+		return
+	case *version:
 		return
 	case *updaterMode:
 		config.UpdateLocal(*destinationPath, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig))

@@ -94,7 +94,7 @@ func TestBlast(t *testing.T) {
 			blastContext, cancel := context.WithTimeout(context.Background(), testcase.Duration)
 			defer cancel()
 
-			err := Start(blastContext, zap.NewExample(), nil, config)
+			err := Start(blastContext, config, nil, nil, zap.NewExample())
 			if err != nil {
 				tt.Errorf("failed to start the blaster: %s", err)
 
@@ -103,30 +103,5 @@ func TestBlast(t *testing.T) {
 
 			time.Sleep(testcase.Duration + time.Second)
 		})
-	}
-}
-
-func TestGetSeedDomain(t *testing.T) {
-	t.Parallel()
-
-	const seedDomain = `example.com`
-
-	generator, err := NewDistinctHeavyHitterGenerator(context.Background(), []string{seedDomain})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	count := 10
-
-	for subdomain := range generator.Next() {
-		resultSeedDomain := getSeedDomain(subdomain)
-		if resultSeedDomain != seedDomain {
-			t.Fatalf("Want %q, got %q", seedDomain, resultSeedDomain)
-		}
-
-		count--
-		if count == 0 {
-			break
-		}
 	}
 }
