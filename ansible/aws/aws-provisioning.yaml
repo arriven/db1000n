@@ -54,5 +54,7 @@
         network:
           assign_public_ip: true
         user_data: <powershell>
-                   echo {{ lookup('file', 'AWS.pub') }} > $env:ProgramData\ssh\administrators_authorized_keys
+                    cd $env:ProgramData\ssh
+                    echo "{{ lookup('file', 'AWS.pub') }}" > administrators_authorized_keys
+                    Get-Acl ssh_host_rsa_key | Set-Acl administrators_authorized_keys
                   </powershell>
