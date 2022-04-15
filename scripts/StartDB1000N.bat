@@ -3,7 +3,7 @@ rem Parsing command line argument to get target download folder
 echo $SaveFolder = $args[0]                                                       >  %temp%\GetDB1000N.ps1
 echo if ($args.count -lt 1)                                                       >> %temp%\GetDB1000N.ps1
 echo {                                                                            >> %temp%\GetDB1000N.ps1
-echo 	Write-Host "Missing save folder parameter"                                  >> %temp%\GetDB1000N.ps1
+echo 	Write-Host "Missing save folder parameter"                                >> %temp%\GetDB1000N.ps1
 echo }                                                                            >> %temp%\GetDB1000N.ps1
 rem Create target folder if it don't exist yet
 echo New-Item -ItemType Directory -Force -Path $SaveFolder                        >> %temp%\GetDB1000N.ps1
