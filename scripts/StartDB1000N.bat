@@ -9,15 +9,15 @@ rem Create target folder if it don't exist yet
 echo New-Item -ItemType Directory -Force -Path $SaveFolder                        >> %temp%\GetDB1000N.ps1
 rem Getting list of files in latest release via github API and parse response JSON
 echo $JSONURL = "https://api.github.com/repos/Arriven/db1000n/releases/latest"    >> %temp%\GetDB1000N.ps1
-echo $JSON = Invoke-WebRequest -Uri $JSONURL                                      >> %temp%\GetDB1000N.ps1
+echo $JSON = Invoke-WebRequest -Uri $JSONURL -UseBasicParsing                     >> %temp%\GetDB1000N.ps1
 echo $ParsedJSON = ConvertFrom-Json -InputObject $JSON                            >> %temp%\GetDB1000N.ps1
 echo $Assets = Select-Object -InputObject $ParsedJSON -ExpandProperty assets      >> %temp%\GetDB1000N.ps1
 rem Iterate over list of all files in release
 echo Foreach ($Asset IN $Assets)                                                  >> %temp%\GetDB1000N.ps1
 echo {                                                                            >> %temp%\GetDB1000N.ps1
 rem Search for windows x64 build with regex
-echo 	if ($Asset.name -match 'db1000n_windows_amd64.zip')                    >> %temp%\GetDB1000N.ps1
-echo 	{                                                                         >> %temp%\GetDB1000N.ps1
+echo 	if ($Asset.name -match 'db1000n_windows_amd64.zip')                         >> %temp%\GetDB1000N.ps1
+echo 	{                                                                           >> %temp%\GetDB1000N.ps1
 rem Download found build
 echo 		$DownloadURL = $Asset.browser_download_url                            >> %temp%\GetDB1000N.ps1
 echo 		$ZIPPath = Join-Path -Path $SaveFolder -ChildPath "db1000n.zip"       >> %temp%\GetDB1000N.ps1
