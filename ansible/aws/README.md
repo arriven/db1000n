@@ -45,6 +45,10 @@ ralfeus@trench:~/ddos$
 
 This playbook creates one Linux and one Windows EC2 instances from customized AMIs so whole setup fits into Free Tier limits. This means it can run for free 1 year from AWS account creation.
 
+The Linux instance user is `ec2-user`. 
+
+The Windows instance user is `administrator`.
+
 The Windows AMI has OpenSSH server installed. The public key is copied to the server if it's created using Ansible playbook provided. Otherwise it would have to be done manually after logging in to the server.
 
 The Administrator password is reset during startup and can be retrieved in a standard AWS way.
