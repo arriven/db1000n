@@ -92,8 +92,6 @@ func Get(t string) Job {
 		return udpJob
 	case "packetgen":
 		return packetgenJob
-	case "dns-blast":
-		return dnsBlastJob
 	case "sequence":
 		return sequenceJob
 	case "parallel":

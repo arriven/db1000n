@@ -1,0 +1,19 @@
+jobs:
+  - type: packetgen
+    args:
+      connection:
+        type: net
+        args:
+          protocol: "udp"
+          address: "localhost:53"
+      packet:
+        payload:
+          type: dns
+          data:
+            id: "{{ random_int_n 10000 }}"
+            op_code: 0
+            rd: true
+            questions:
+              - name: "{{ random_alphanum 10 }}.example.com"
+                type: 1
+                class: 1
