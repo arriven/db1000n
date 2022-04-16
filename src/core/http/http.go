@@ -26,6 +26,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"time"
 
@@ -69,7 +70,25 @@ type Client interface {
 
 type StaticHostConfig struct {
 	Addr  string
-	IsTLS bool
+	IsTLS *bool
+}
+
+// Not a very effective way but hey, it does it's job
+type StaticHostClient struct {
+	http  Client
+	https Client
+}
+
+func (c *StaticHostClient) Do(req *fasthttp.Request, resp *fasthttp.Response) error {
+	scheme := string(req.URI().Scheme())
+	switch scheme {
+	case "https":
+		return c.https.Do(req, resp)
+	case "http":
+		return c.http.Do(req, resp)
+	default:
+		return fmt.Errorf("unknown scheme: %v", scheme)
+	}
 }
 
 // ClientConfig is a http client configuration structure
@@ -103,19 +122,30 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	proxyFunc := utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout, true)
 
 	if clientConfig.StaticHost != nil {
-		return &fasthttp.HostClient{
-			Addr:                          clientConfig.StaticHost.Addr,
-			IsTLS:                         clientConfig.StaticHost.IsTLS,
-			MaxConnDuration:               timeout,
-			ReadTimeout:                   utils.NonNilOrDefault(clientConfig.ReadTimeout, timeout),
-			WriteTimeout:                  utils.NonNilOrDefault(clientConfig.WriteTimeout, timeout),
-			MaxIdleConnDuration:           utils.NonNilOrDefault(clientConfig.IdleTimeout, timeout),
-			MaxConns:                      utils.NonNilOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
-			NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
-			DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
-			DisablePathNormalizing:        true,
-			TLSConfig:                     tlsConfig,
-			Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
+		makeHostClient := func(tls bool) *fasthttp.HostClient {
+			return &fasthttp.HostClient{
+				Addr:                          clientConfig.StaticHost.Addr,
+				IsTLS:                         tls,
+				MaxConnDuration:               timeout,
+				ReadTimeout:                   utils.NonNilOrDefault(clientConfig.ReadTimeout, timeout),
+				WriteTimeout:                  utils.NonNilOrDefault(clientConfig.WriteTimeout, timeout),
+				MaxIdleConnDuration:           utils.NonNilOrDefault(clientConfig.IdleTimeout, timeout),
+				MaxConns:                      utils.NonNilOrDefault(clientConfig.MaxIdleConns, defaultMaxConnsPerHost),
+				NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+				DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+				DisablePathNormalizing:        true,
+				TLSConfig:                     tlsConfig,
+				Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
+			}
+		}
+
+		if clientConfig.StaticHost.IsTLS != nil {
+			return makeHostClient(*clientConfig.StaticHost.IsTLS)
+		}
+
+		return &StaticHostClient{
+			http:  makeHostClient(false),
+			https: makeHostClient(true),
 		}
 	}
 
