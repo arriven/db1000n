@@ -90,8 +90,6 @@ func Get(t string) Job {
 		return tcpJob
 	case "udp":
 		return udpJob
-	case "slow-loris":
-		return slowLorisJob
 	case "packetgen":
 		return packetgenJob
 	case "dns-blast":
