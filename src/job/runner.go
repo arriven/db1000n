@@ -70,11 +70,11 @@ type Runner struct {
 }
 
 // NewRunner according to the config
-func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig) (*Runner, error) {
+func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig) *Runner {
 	return &Runner{
 		cfgOptions:    cfgOptions,
 		globalJobsCfg: globalJobsCfg,
-	}, nil
+	}
 }
 
 // Run the runner and block until Stop() is called
