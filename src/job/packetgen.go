@@ -65,7 +65,10 @@ func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 }
 
 func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJobConfig, a *metrics.Accumulator) error {
-	conn, err := packetgen.OpenConnection(jobConfig.Connection)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	conn, err := packetgen.OpenConnection(ctx, jobConfig.Connection)
 	if err != nil {
 		return err
 	}

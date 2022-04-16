@@ -23,6 +23,7 @@
 package packetgen
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -40,7 +41,7 @@ type ConnectionConfig struct {
 	Args map[string]any
 }
 
-func OpenConnection(c ConnectionConfig) (Connection, error) {
+func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error) {
 	switch c.Type {
 	case "raw":
 		var cfg rawConnConfig
@@ -55,7 +56,7 @@ func OpenConnection(c ConnectionConfig) (Connection, error) {
 			return nil, fmt.Errorf("error decoding connection config: %w", err)
 		}
 
-		return openNetConn(cfg)
+		return openNetConn(ctx, cfg)
 	default:
 		return nil, fmt.Errorf("unknown connection type: %v", c.Type)
 	}
@@ -118,13 +119,32 @@ type netConn struct {
 	target string
 }
 
-func openNetConn(c netConnConfig) (*netConn, error) {
+func readStub(ctx context.Context, conn net.Conn) {
+	const bufSize = 1024
+	buf := make([]byte, bufSize)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_, err := conn.Read(buf)
+			if err != nil {
+				return
+			}
+		}
+	}
+}
+
+func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout, false)(c.Protocol, c.Address)
 
 	switch {
 	case err != nil:
 		return nil, err
 	case c.TLSClientConfig == nil:
+		go readStub(ctx, conn)
+
 		return &netConn{Conn: conn, target: c.Protocol + "://" + c.Address}, nil
 	}
 
@@ -134,6 +154,8 @@ func openNetConn(c netConnConfig) (*netConn, error) {
 
 		return nil, err
 	}
+
+	go readStub(ctx, tlsConn)
 
 	return &netConn{Conn: tlsConn, target: c.Protocol + "://" + c.Address}, nil
 }
