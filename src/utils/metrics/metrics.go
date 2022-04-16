@@ -170,9 +170,6 @@ func (r *Reporter) WriteSummary(target io.Writer) {
 
 	stats := r.SumAllStatsByTarget()
 
-	fmt.Fprintln(w, "\n\n!Атака проводиться успішно! Русскій воєнний корабль іди нахуй!")
-	fmt.Fprintln(w, "!Attack is successful! Russian warship, go fuck yourself!")
-
 	fmt.Fprintln(w, "\n --- Traffic stats ---")
 	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
 
