@@ -110,7 +110,15 @@ func Decode(input any, output any) error {
 		return strings.EqualFold(strings.Map(filter, lhs), strings.Map(filter, rhs))
 	}
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Squash: true, WeaklyTypedInput: true, MatchName: matchName, Result: output})
+	decoderConfig := &mapstructure.DecoderConfig{
+		Squash:           true,
+		WeaklyTypedInput: true,
+		MatchName:        matchName,
+		DecodeHook:       mapstructure.StringToTimeDurationHookFunc(),
+		Result:           output,
+	}
+
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
 		return err
 	}

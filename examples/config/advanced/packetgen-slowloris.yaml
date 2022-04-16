@@ -1,7 +1,7 @@
 jobs:
   - type: packetgen
     args:
-      interval_ms: 10000
+      interval: "10s"
       connection:
         type: net
         args:
