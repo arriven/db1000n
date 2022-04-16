@@ -2,6 +2,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -115,6 +116,28 @@ func Decode(input any, output any) error {
 	}
 
 	return decoder.Decode(input)
+}
+
+// It could've been more effective if go had yield but this should be close enough
+func InfiniteRange[T any](ctx context.Context, input []T) chan T {
+	result := make(chan T)
+
+	loop := func() {
+		defer close(result)
+
+		for {
+			for _, el := range input {
+				select {
+				case <-ctx.Done():
+					return
+				case result <- el:
+				}
+			}
+		}
+	}
+	go loop()
+
+	return result
 }
 
 func Unmarshal(input []byte, output any, format string) error {

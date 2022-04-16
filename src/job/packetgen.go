@@ -37,7 +37,7 @@ import (
 
 type packetgenJobConfig struct {
 	BasicJobConfig
-	Packet     *templates.MapStruct
+	Packets    []*templates.MapStruct
 	Connection packetgen.ConnectionConfig
 }
 
@@ -68,13 +68,20 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	packetsChan := utils.InfiniteRange(ctx, jobConfig.Packets)
+
 	conn, err := packetgen.OpenConnection(ctx, jobConfig.Connection)
 	if err != nil {
 		return err
 	}
 
 	for jobConfig.Next(ctx) {
-		packetConfigRaw := jobConfig.Packet.Execute(logger, ctx)
+		packetTpl, more := <-packetsChan
+		if !more {
+			return nil
+		}
+
+		packetConfigRaw := packetTpl.Execute(logger, ctx)
 		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
 		var packetConfig packetgen.PacketConfig
@@ -103,9 +110,15 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	tpl *packetgenJobConfig, err error,
 ) {
+	type packetDescriptor struct {
+		Packet map[string]any
+		Count  int
+	}
+
 	var jobConfig struct {
 		BasicJobConfig
 		Packet     map[string]any
+		Packets    []packetDescriptor
 		Connection packetgen.ConnectionConfig
 	}
 
@@ -113,9 +126,30 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing packet: %w", err)
+	packetTpls := make([]*templates.MapStruct, 0, len(jobConfig.Packets)+1)
+
+	if len(jobConfig.Packets) > 0 {
+		for _, descriptor := range jobConfig.Packets {
+			if descriptor.Count < 1 {
+				descriptor.Count = 1
+			}
+
+			packetTpl, err := templates.ParseMapStruct(descriptor.Packet)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing packet: %w", err)
+			}
+
+			for i := 0; i < descriptor.Count; i++ {
+				packetTpls = append(packetTpls, packetTpl)
+			}
+		}
+	} else {
+		packetTpl, err := templates.ParseMapStruct(jobConfig.Packet)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing packet: %w", err)
+		}
+
+		packetTpls = append(packetTpls, packetTpl)
 	}
 
 	if globalConfig.ProxyURLs != "" && jobConfig.Connection.Args["protocol"] == "tcp" {
@@ -124,7 +158,7 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
-		Packet:         packetTpl,
+		Packets:        packetTpls,
 		Connection:     jobConfig.Connection,
 	}, nil
 }

@@ -1,0 +1,22 @@
+jobs:
+  - type: packetgen
+    args:
+      connection:
+        type: net
+        args:
+          protocol: "udp"
+          address: "google.com:1234"
+          tls_config:
+            insecure_skip_verify: true
+      packets:
+        - packet:
+            payload:
+              type: raw
+              data:
+                payload: "POST /someapi HTTP/1.1\nHost: localhost\nContent-Type: application/x-www-form-urlencoded\nContent-Length: 1000\n\n"
+        - count: 1000
+          packet:
+            payload:
+              type: raw
+              data:
+                payload: "a"
