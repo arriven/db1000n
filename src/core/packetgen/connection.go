@@ -76,6 +76,7 @@ type rawConnConfig struct {
 
 type rawConn struct {
 	*ipv6.PacketConn
+	buf gopacket.SerializeBuffer
 
 	target string
 }
@@ -90,18 +91,17 @@ func openRawConn(c rawConnConfig) (*rawConn, error) {
 
 	return &rawConn{
 		PacketConn: ipv6.NewPacketConn(packetConn),
+		buf:        gopacket.NewSerializeBuffer(),
 		target:     c.Name + "://" + c.Address,
 	}, nil
 }
 
 func (conn *rawConn) Write(packet Packet) (n int, err error) {
-	payloadBuf := gopacket.NewSerializeBuffer()
-
-	if err := packet.Serialize(payloadBuf); err != nil {
+	if err := packet.Serialize(conn.buf); err != nil {
 		return 0, fmt.Errorf("error serializing packet: %w", err)
 	}
 
-	return conn.PacketConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+	return conn.PacketConn.WriteTo(conn.buf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
 }
 
 func (conn *rawConn) Close() error {
@@ -120,6 +120,7 @@ type netConnConfig struct {
 
 type netConn struct {
 	net.Conn
+	buf gopacket.SerializeBuffer
 
 	target string
 }
@@ -150,7 +151,7 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 	case c.TLSClientConfig == nil:
 		go readStub(ctx, conn)
 
-		return &netConn{Conn: conn, target: c.Protocol + "://" + c.Address}, nil
+		return &netConn{Conn: conn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
 	}
 
 	tlsConn := tls.Client(conn, c.TLSClientConfig)
@@ -162,17 +163,15 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 
 	go readStub(ctx, tlsConn)
 
-	return &netConn{Conn: tlsConn, target: c.Protocol + "://" + c.Address}, nil
+	return &netConn{Conn: tlsConn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
 }
 
 func (conn *netConn) Write(packet Packet) (n int, err error) {
-	payloadBuf := gopacket.NewSerializeBuffer()
-
-	if err = packet.Serialize(payloadBuf); err != nil {
+	if err = packet.Serialize(conn.buf); err != nil {
 		return 0, fmt.Errorf("error serializing packet: %w", err)
 	}
 
-	return conn.Conn.Write(payloadBuf.Bytes())
+	return conn.Conn.Write(conn.buf.Bytes())
 }
 
 func (conn *netConn) Close() error {
