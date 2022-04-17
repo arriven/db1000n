@@ -64,6 +64,7 @@ func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error)
 
 type Connection interface {
 	Write(Packet) (int, error)
+	Close() error
 	Target() string
 }
 
@@ -101,6 +102,10 @@ func (conn *rawConn) Write(packet Packet) (n int, err error) {
 	}
 
 	return conn.PacketConn.WriteTo(payloadBuf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+}
+
+func (conn *rawConn) Close() error {
+	return conn.PacketConn.Close()
 }
 
 func (conn *rawConn) Target() string { return conn.target }
@@ -168,6 +173,10 @@ func (conn *netConn) Write(packet Packet) (n int, err error) {
 	}
 
 	return conn.Conn.Write(payloadBuf.Bytes())
+}
+
+func (conn *netConn) Close() error {
+	return conn.Conn.Close()
 }
 
 func (conn *netConn) Target() string { return conn.target }

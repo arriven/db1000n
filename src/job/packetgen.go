@@ -74,6 +74,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	for jobConfig.Next(ctx) {
 		packetTpl, more := <-packetsChan
