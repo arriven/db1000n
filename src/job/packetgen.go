@@ -24,6 +24,7 @@ package job
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -37,8 +38,9 @@ import (
 
 type packetgenJobConfig struct {
 	BasicJobConfig
-	Packets    []*templates.MapStruct
-	Connection packetgen.ConnectionConfig
+	StaticPacket bool
+	Packets      []*templates.MapStruct
+	Connection   packetgen.ConnectionConfig
 }
 
 func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
@@ -68,31 +70,29 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	packetsChan := utils.InfiniteRange(ctx, jobConfig.Packets)
-
 	conn, err := packetgen.OpenConnection(ctx, jobConfig.Connection)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	for jobConfig.Next(ctx) {
-		packetTpl, more := <-packetsChan
-		if !more {
-			return nil
-		}
+	packetsChan := utils.InfiniteRange(ctx, jobConfig.Packets)
 
-		packetConfigRaw := packetTpl.Execute(logger, ctx)
-		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
+	var packet packetgen.Packet
 
-		var packetConfig packetgen.PacketConfig
-		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
-			return err
-		}
-
-		packet, err := packetConfig.Build()
+	if jobConfig.StaticPacket {
+		packet, err = getNextPacket(ctx, logger, packetsChan)
 		if err != nil {
 			return err
+		}
+	}
+
+	for jobConfig.Next(ctx) {
+		if !jobConfig.StaticPacket {
+			packet, err = getNextPacket(ctx, logger, packetsChan)
+			if err != nil {
+				return err
+			}
 		}
 
 		n, err := conn.Write(packet)
@@ -108,6 +108,27 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	return nil
 }
 
+func getNextPacket(ctx context.Context, logger *zap.Logger, packetsChan chan *templates.MapStruct) (packetgen.Packet, error) {
+	select {
+	case <-ctx.Done():
+		return packetgen.Packet{}, ctx.Err()
+	case packetTpl, more := <-packetsChan:
+		if !more {
+			return packetgen.Packet{}, errors.New("packetsChan closed")
+		}
+
+		packetConfigRaw := packetTpl.Execute(logger, ctx)
+		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
+
+		var packetConfig packetgen.PacketConfig
+		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
+			return packetgen.Packet{}, err
+		}
+
+		return packetConfig.Build()
+	}
+}
+
 func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	tpl *packetgenJobConfig, err error,
 ) {
@@ -118,9 +139,10 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 
 	var jobConfig struct {
 		BasicJobConfig
-		Packet     map[string]any
-		Packets    []packetDescriptor
-		Connection packetgen.ConnectionConfig
+		StaticPacket bool
+		Packet       map[string]any
+		Packets      []packetDescriptor
+		Connection   packetgen.ConnectionConfig
 	}
 
 	if err = ParseConfig(&jobConfig, args, *globalConfig); err != nil {
@@ -159,6 +181,7 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
+		StaticPacket:   jobConfig.StaticPacket,
 		Packets:        packetTpls,
 		Connection:     jobConfig.Connection,
 	}, nil

@@ -1,6 +1,7 @@
 jobs:
   - type: packetgen
     args:
+      static_packet: true # will only generate packet once instead of doing it on every iteration
       connection:
         type: net
         args:
