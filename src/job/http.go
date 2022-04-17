@@ -136,8 +136,13 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
+	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
+
+	resp.SkipBody = true
 
 	if !isInEncryptedContext(ctx) {
 		log.Printf("Attacking %v", jobConfig.Request["path"])
@@ -151,7 +156,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		http.InitRequest(requestConfig, req)
 
-		if err := sendFastHTTPRequest(client, req, nil); err != nil {
+		if err := sendFastHTTPRequest(client, req, resp); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
 			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
