@@ -1,0 +1,16 @@
+# this scenario copies the one from https://git.gay/a/ddos-guard-bypass/src/branch/master/index.js
+# it is here for educational purposes only and is meant to showcase the capabilities of the tool
+jobs:
+  - type: sequence
+    args:
+      jobs:
+        - type: js
+          name: testscript
+          args:
+            script: arg1 + arg2
+            data:
+              arg1: 2
+              arg2: 4
+        - type: log
+          args:
+            text: 'testscript result: {{ .Value (ctx_key "data.testscript") }}'

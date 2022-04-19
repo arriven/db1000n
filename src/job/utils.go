@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/robertkrimen/otto"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/job/config"
@@ -180,6 +181,29 @@ func loopJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, 
 	}
 
 	return nil, nil
+}
+
+func jsJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
+	data any, err error,
+) {
+	var jobConfig struct {
+		Script string
+		Data   map[string]any
+	}
+
+	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	vm := otto.New()
+
+	for key, value := range jobConfig.Data {
+		if err := vm.Set(key, value); err != nil {
+			return nil, fmt.Errorf("error setting script data: %w", err)
+		}
+	}
+
+	return vm.Run(jobConfig.Script)
 }
 
 const isEncryptedContextKey = "is_in_encrypted_context"

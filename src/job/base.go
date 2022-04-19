@@ -110,6 +110,8 @@ func Get(t string) Job {
 		return timeoutJob
 	case "loop":
 		return loopJob
+	case "js":
+		return jsJob
 	case "encrypted":
 		return encryptedJob
 	default:
