@@ -191,7 +191,7 @@ func jsJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a 
 		Data   map[string]any
 	}
 
-	if err := mapstructure.Decode(args, &jobConfig); err != nil {
+	if err := mapstructure.Decode(templates.ParseAndExecuteMapStruct(logger, args, ctx), &jobConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
