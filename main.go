@@ -55,16 +55,11 @@ func main() {
 	help := flag.Bool("h", false, "print help message and exit")
 	version := flag.Bool("version", false, "print version and exit")
 	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging and features")
-	verbose := flag.Int("verbose", utils.GetEnvIntDefault("VERBOSE", 1),
-		"verbosity level, 0 - disable most logs, 1 - standard level of logging, 2 - debug logs")
+	logLevel := flag.String("log-level", utils.GetEnvStringDefault("LOG_LEVEL", "none"), "log level override for zap, leave empty to use default")
 
 	flag.Parse()
 
-	if *debug {
-		*verbose = 2
-	}
-
-	logger, err := newZapLogger(*verbose)
+	logger, err := newZapLogger(*debug, *logLevel)
 	if err != nil {
 		panic(err)
 	}
@@ -104,15 +99,18 @@ func main() {
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig).Run(ctx, logger)
 }
 
-func newZapLogger(verbose int) (*zap.Logger, error) {
-	switch verbose {
-	case 0:
-		return zap.NewNop(), nil
-	case 1:
-		return zap.NewProduction()
-	default:
-		return zap.NewDevelopment()
+func newZapLogger(debug bool, logLevel string) (*zap.Logger, error) {
+	cfg := zap.NewProductionConfig()
+	if debug {
+		cfg = zap.NewDevelopmentConfig()
 	}
+
+	level, err := zap.ParseAtomicLevel(logLevel)
+	if err == nil {
+		cfg.Level = level
+	}
+
+	return cfg.Build()
 }
 
 func setUpPprof(logger *zap.Logger, pprof string, debug bool) {
