@@ -24,11 +24,10 @@
 package metrics
 
 import (
-	"fmt"
-	"io"
 	"sort"
 	"sync"
-	"text/tabwriter"
+
+	"go.uber.org/zap"
 )
 
 // Stat is the type of statistical metrics.
@@ -163,42 +162,29 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 }
 
 // WriteSummary dumps Reporter contents into the target.
-func (r *Reporter) WriteSummary(target io.Writer) {
-	w := tabwriter.NewWriter(target, 1, 1, 1, ' ', tabwriter.AlignRight)
-
-	defer w.Flush()
-
+func (r *Reporter) WriteSummary(logger *zap.Logger) {
 	stats := r.SumAllStatsByTarget()
-
-	fmt.Fprintln(w, "\n --- Traffic stats ---")
-	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
-
-	const BytesInMegabyte = 1024 * 1024
 
 	var totals Stats
 
 	for _, tgt := range stats.sortedTargets() {
 		tgtStats := stats[tgt]
-
-		fmt.Fprintf(w, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n", tgt,
-			tgtStats[RequestsAttemptedStat],
-			tgtStats[RequestsSentStat],
-			tgtStats[ResponsesReceivedStat],
-			float64(tgtStats[BytesSentStat])/BytesInMegabyte,
-		)
+		logger.Info("stats", zap.String("target", tgt),
+			zap.Uint64("requests_attempted", tgtStats[RequestsAttemptedStat]),
+			zap.Uint64("requests_sent", tgtStats[RequestsSentStat]),
+			zap.Uint64("responses_received", tgtStats[ResponsesReceivedStat]),
+			zap.Uint64("bytes_sent", tgtStats[BytesSentStat]))
 
 		for s := range totals {
 			totals[s] += tgtStats[s]
 		}
 	}
 
-	fmt.Fprintln(w, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
-	fmt.Fprintf(w, "|\tTotal\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n\n",
-		totals[RequestsAttemptedStat],
-		totals[RequestsSentStat],
-		totals[ResponsesReceivedStat],
-		float64(totals[BytesSentStat])/BytesInMegabyte,
-	)
+	logger.Info("stats", zap.String("target", "total"),
+		zap.Uint64("requests_attempted", totals[RequestsAttemptedStat]),
+		zap.Uint64("requests_sent", totals[RequestsSentStat]),
+		zap.Uint64("responses_received", totals[ResponsesReceivedStat]),
+		zap.Uint64("bytes_sent", totals[BytesSentStat]))
 }
 
 // NewAccumulator returns a new metrics Accumulator for the Reporter.
@@ -245,6 +231,10 @@ func (a *Accumulator) Flush() {
 func (a *Accumulator) Clone(jobID string) *Accumulator { return newAccumulator(jobID, a.r) }
 
 func newAccumulator(jobID string, r *Reporter) *Accumulator {
+	if r == nil {
+		return nil
+	}
+
 	res := &Accumulator{
 		jobID: jobID,
 		r:     r,

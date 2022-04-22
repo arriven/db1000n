@@ -7,6 +7,6 @@ import (
 	"context"
 )
 
-func serveMetrics(ctx context.Context, listen string) {
+func serveMetrics(ctx context.Context, logger *zap.Logger, listen string) {
 	<-ctx.Done()
 }

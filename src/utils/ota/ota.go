@@ -4,11 +4,11 @@ package ota
 import (
 	"flag"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -45,56 +45,56 @@ func NewConfigWithFlags() *Config {
 }
 
 // WatchUpdates performs OTA updates based on the config.
-func WatchUpdates(cfg *Config) {
+func WatchUpdates(logger *zap.Logger, cfg *Config) {
 	if !cfg.doAutoUpdate {
 		return
 	}
 
 	if !cfg.skipUpdateCheckOnStart {
-		runUpdate(cfg.doRestartOnUpdate)
+		runUpdate(logger, cfg.doRestartOnUpdate)
 	} else {
-		log.Printf("Version update on startup is skipped, next update check scheduled in %v",
-			cfg.autoUpdateCheckFrequency)
+		logger.Info("version update on startup is skipped",
+			zap.Duration("auto_update_check_frequency", cfg.autoUpdateCheckFrequency))
 	}
 
 	periodicalUpdateChecker := time.NewTicker(cfg.autoUpdateCheckFrequency)
 	defer periodicalUpdateChecker.Stop()
 
 	for range periodicalUpdateChecker.C {
-		runUpdate(cfg.doRestartOnUpdate)
+		runUpdate(logger, cfg.doRestartOnUpdate)
 	}
 }
 
-func runUpdate(doRestartOnUpdate bool) {
-	log.Println("Running a check for a newer version...")
+func runUpdate(logger *zap.Logger, doRestartOnUpdate bool) {
+	logger.Info("running a check for a newer version")
 
 	isUpdateFound, newVersion, changeLog, err := doAutoUpdate()
 
 	switch {
 	case err != nil:
-		log.Printf("Auto-update failed: %v", err)
+		logger.Warn("auto-update failed", zap.Error(err))
 
 		return
 	case !isUpdateFound:
-		log.Println("We are running the latest version, OK!")
+		logger.Info("running the latest version")
 
 		return
 	}
 
-	log.Printf("Newer version of the application is found [version=%s]", newVersion)
-	log.Printf("What's new:\n%s", changeLog)
+	logger.Info("newer version of the application is found", zap.String("version", newVersion))
+	logger.Info("changelog", zap.String("changes", changeLog))
 
 	if !doRestartOnUpdate {
-		log.Println("Auto restart is disabled, restart the application manually to apply changes!")
+		logger.Warn("auto restart is disabled, restart the application manually to apply changes")
 
 		return
 	}
 
-	log.Println("Auto restart is enabled, restarting the application to run a new version")
+	logger.Info("auto restart is enabled, restarting the application to run a new version")
 
-	if err = restart("-skip-update-check-on-start"); err != nil {
-		log.Printf("Failed to restart the application after the update to the new version: %v", err)
-		log.Println("Restart the application manually to apply changes!")
+	if err = restart(logger, "-skip-update-check-on-start"); err != nil {
+		logger.Warn("Failed to restart the application after the update to the new version", zap.Error(err))
+		logger.Warn("restart the application manually to apply changes")
 	}
 }
 

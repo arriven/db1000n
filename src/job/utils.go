@@ -206,16 +206,6 @@ func jsJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a 
 	return vm.Run(jobConfig.Script)
 }
 
-const isEncryptedContextKey = "is_in_encrypted_context"
-
-func EncryptedContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, templates.ContextKey(isEncryptedContextKey), true)
-}
-
-func isInEncryptedContext(ctx context.Context) bool {
-	return ctx.Value(templates.ContextKey(isEncryptedContextKey)) != nil
-}
-
 func encryptedJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	if globalConfig.SkipEncrypted {
 		return nil, fmt.Errorf("app is configured to skip encrypted jobs")
@@ -256,5 +246,5 @@ func encryptedJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
 	}
 
-	return job(EncryptedContext(ctx), jobCfg.Args, globalConfig, a, zap.NewNop())
+	return job(ctx, jobCfg.Args, globalConfig, nil, zap.NewNop())
 }

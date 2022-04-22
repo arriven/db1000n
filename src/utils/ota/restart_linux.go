@@ -5,12 +5,13 @@ package ota
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"syscall"
+
+	"go.uber.org/zap"
 )
 
-func restart(extraArgs ...string) error {
+func restart(logger *zap.Logger, extraArgs ...string) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to resolve the path to the current executable: %w", err)
@@ -44,8 +45,8 @@ func restart(extraArgs ...string) error {
 		return fmt.Errorf("failed to spawn a new process: %w", err)
 	}
 
-	log.Printf("new process has been started successfully [old_pid=%d,new_pid=%d]\n",
-		os.Getpid(), fork)
+	logger.Info("new process has been started successfully",
+		zap.Int("old_pid", os.Getpid()), zap.Int("new_pid", fork))
 
 	os.Exit(0)
 

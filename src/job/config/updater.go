@@ -3,9 +3,10 @@ package config
 import (
 	"bytes"
 	"flag"
-	"log"
 	"os"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -17,13 +18,13 @@ func NewUpdaterOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
 			"Destination config file to write (only applies if updater-mode is enabled")
 }
 
-func UpdateLocal(destinationPath string, configPaths []string, backupConfig []byte) {
+func UpdateLocal(logger *zap.Logger, destinationPath string, configPaths []string, backupConfig []byte) {
 	lastKnownConfig := &RawMultiConfig{Body: backupConfig}
 
 	for {
-		if rawConfig := FetchRawMultiConfig(configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
-			if err := writeConfig(rawConfig.Body, destinationPath); err != nil {
-				log.Printf("Error writing config: %v", err)
+		if rawConfig := FetchRawMultiConfig(logger, configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
+			if err := writeConfig(logger, rawConfig.Body, destinationPath); err != nil {
+				logger.Error("error writing config", zap.Error(err))
 
 				return
 			}
@@ -33,7 +34,7 @@ func UpdateLocal(destinationPath string, configPaths []string, backupConfig []by
 	}
 }
 
-func writeConfig(body []byte, destinationPath string) error {
+func writeConfig(logger *zap.Logger, body []byte, destinationPath string) error {
 	file, err := os.Create(destinationPath)
 	if err != nil {
 		return err
@@ -46,7 +47,7 @@ func writeConfig(body []byte, destinationPath string) error {
 		return err
 	}
 
-	log.Printf("Saved %s with size %d", destinationPath, size)
+	logger.Info("Saved file", zap.String("destination", destinationPath), zap.Int("size", size))
 
 	return nil
 }

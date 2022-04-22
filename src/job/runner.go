@@ -26,8 +26,6 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -92,31 +90,32 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	)
 
 	for {
-		rawConfig := config.FetchRawMultiConfig(strings.Split(r.cfgOptions.PathsCSV, ","),
+		rawConfig := config.FetchRawMultiConfig(logger, strings.Split(r.cfgOptions.PathsCSV, ","),
 			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
 				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),
 			}))
 		cfg := config.Unmarshal(rawConfig.Body, r.cfgOptions.Format)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
-			log.Println("New config received, applying")
+			logger.Info("new config received, applying")
 
 			lastKnownConfig = rawConfig
-			reporter = metrics.NewReporter(r.globalJobsCfg.ClientID)
 
 			if cancel != nil {
 				cancel()
 			}
 
 			if rawConfig.Encrypted {
-				log.Println("Config is encrypted, disabling logs")
+				logger.Info("config is encrypted, disabling logs")
 
-				cancel = r.runJobs(EncryptedContext(ctx), cfg, reporter, zap.NewNop())
+				reporter = metrics.NewReporter(r.globalJobsCfg.ClientID)
+				cancel = r.runJobs(ctx, cfg, reporter, zap.NewNop())
 			} else {
+				reporter = nil
 				cancel = r.runJobs(ctx, cfg, reporter, logger)
 			}
 		} else {
-			log.Println("The config has not changed. Keep calm and carry on!")
+			logger.Info("the config has not changed. Keep calm and carry on!")
 		}
 
 		// Wait for refresh timer or stop signal
@@ -130,7 +129,9 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		reportMetrics(reporter, r.globalJobsCfg.ClientID, !rawConfig.Encrypted, logger)
+		if reporter != nil {
+			reportMetrics(reporter, r.globalJobsCfg.ClientID, logger)
+		}
 	}
 }
 
@@ -200,15 +201,13 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter 
 		}
 	}
 
-	log.Printf("%d job instances (re)started", jobInstancesCount)
+	logger.Info("job instances (re)started", zap.Int("count", jobInstancesCount))
 
 	return cancel
 }
 
-func reportMetrics(reporter *metrics.Reporter, clientID string, writeToConsole bool, logger *zap.Logger) {
-	if writeToConsole {
-		reporter.WriteSummary(os.Stdout)
-	}
+func reportMetrics(reporter *metrics.Reporter, clientID string, logger *zap.Logger) {
+	reporter.WriteSummary(logger)
 
 	if err := metrics.ReportStatistics(int64(reporter.Sum(metrics.BytesSentStat)), clientID); err != nil {
 		logger.Debug("error reporting statistics", zap.Error(err))

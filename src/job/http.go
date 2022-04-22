@@ -25,7 +25,6 @@ package job
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -67,21 +66,23 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 		fasthttp.ReleaseResponse(resp)
 	}()
 
-	if !isInEncryptedContext(ctx) {
-		log.Printf("Sent single http request to %v", requestConfig.Path)
-	}
+	logger.Info("single http request", zap.String("target", requestConfig.Path))
 
 	http.InitRequest(requestConfig, req)
 
 	if err = sendFastHTTPRequest(client, req, resp); err != nil {
-		a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+		if a != nil {
+			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+		}
 
 		return nil, err
 	}
 
 	requestSize, _ := req.WriteTo(metrics.NopWriter{})
 
-	a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
+	if a != nil {
+		a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
+	}
 
 	headers, cookies := make(map[string]string), make(map[string]string)
 
@@ -144,9 +145,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 	resp.SkipBody = true
 
-	if !isInEncryptedContext(ctx) {
-		log.Printf("Attacking %v", jobConfig.Request["path"])
-	}
+	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
 	for jobConfig.Next(ctx) {
 		var requestConfig http.RequestConfig
@@ -158,7 +157,11 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		if err := sendFastHTTPRequest(client, req, resp); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
-			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+
+			if a != nil {
+				a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+			}
+
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
 
 			continue
@@ -166,7 +169,10 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		requestSize, _ := req.WriteTo(metrics.NopWriter{})
 
-		a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
+		if a != nil {
+			a.AddStats(target(req.URI()), metrics.NewStats(1, 1, 1, uint64(requestSize))).Flush()
+		}
+
 		backoffController.Reset()
 	}
 

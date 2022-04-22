@@ -6,15 +6,15 @@ package metrics
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
-func serveMetrics(ctx context.Context, listen string) {
+func serveMetrics(ctx context.Context, logger *zap.Logger, listen string) {
 	// We don't expect that rendering metrics should take a lot of time and needs long timeout
 	const timeout = 30 * time.Second
 
@@ -36,9 +36,9 @@ func serveMetrics(ctx context.Context, listen string) {
 		<-ctx.Done()
 
 		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Println("failure shutting down prometheus server:", err)
+			logger.Warn("failure shutting down prometheus server", zap.Error(err))
 		}
 	}(ctx, server)
 
-	log.Println(server.ListenAndServe())
+	logger.Warn("prometheus server", zap.Error(server.ListenAndServe()))
 }

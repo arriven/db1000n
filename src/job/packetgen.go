@@ -97,12 +97,16 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 
 		n, err := conn.Write(packet)
 		if err != nil {
-			a.Inc(conn.Target(), metrics.RequestsAttemptedStat)
+			if a != nil {
+				a.Inc(conn.Target(), metrics.RequestsAttemptedStat)
+			}
 
 			return err
 		}
 
-		a.AddStats(conn.Target(), metrics.NewStats(1, 1, 0, uint64(n))).Flush()
+		if a != nil {
+			a.AddStats(conn.Target(), metrics.NewStats(1, 1, 0, uint64(n))).Flush()
+		}
 	}
 
 	return nil

@@ -27,12 +27,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -62,16 +63,16 @@ type RawMultiConfig struct {
 }
 
 // fetch tries to read a config from the list of mirrors until it succeeds
-func fetch(paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
+func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
 	for i := range paths {
 		config, err := fetchSingle(paths[i], lastKnownConfig)
 		if err != nil {
-			log.Printf("Failed to fetch config from %q: %v", paths[i], err)
+			logger.Warn("failed to fetch config", zap.String("path", paths[i]), zap.Error(err))
 
 			continue
 		}
 
-		log.Printf("Loading config from %q", paths[i])
+		logger.Info("loading config", zap.String("path", paths[i]))
 
 		return config
 	}
@@ -141,18 +142,18 @@ func fetchURL(configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiCon
 }
 
 // FetchRawMultiConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
-func FetchRawMultiConfig(paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
-	newConfig := fetch(paths, lastKnownConfig)
+func FetchRawMultiConfig(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
+	newConfig := fetch(logger, paths, lastKnownConfig)
 
 	if utils.IsEncrypted(newConfig.Body) {
 		decryptedConfig, err := utils.Decrypt(newConfig.Body)
 		if err != nil {
-			log.Println("Can't decrypt config")
+			logger.Warn("can't decrypt config", zap.Error(err))
 
 			return lastKnownConfig
 		}
 
-		log.Println("Decrypted config")
+		logger.Info("decrypted config")
 
 		newConfig.Body = decryptedConfig
 		newConfig.Encrypted = true

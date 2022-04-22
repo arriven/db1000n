@@ -4,10 +4,7 @@ package utils
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -43,8 +40,6 @@ func GetEnvIntDefault(key string, defaultValue int) int {
 
 	v, err := strconv.Atoi(value)
 	if err != nil {
-		log.Printf("GetEnvIntDefault[%s]: %v", key, err)
-
 		return defaultValue
 	}
 
@@ -60,8 +55,6 @@ func GetEnvBoolDefault(key string, defaultValue bool) bool {
 
 	v, err := strconv.ParseBool(value)
 	if err != nil {
-		log.Printf("GetEnvBoolDefault[%s]: %v", key, err)
-
 		return defaultValue
 	}
 
@@ -77,8 +70,6 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 
 	v, err := time.ParseDuration(value)
 	if err != nil {
-		log.Printf("GetEnvBoolDefault[%s]: %v", key, err)
-
 		return defaultValue
 	}
 
@@ -159,15 +150,4 @@ func Unmarshal(input []byte, output any, format string) error {
 	}
 
 	return nil
-}
-
-func openBrowser(url string) {
-	switch runtime.GOOS {
-	case "windows":
-		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		_ = exec.Command("open", url).Start()
-	}
-
-	log.Printf("Please open %s", url)
 }
