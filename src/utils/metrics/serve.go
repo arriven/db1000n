@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func serveMetrics(ctx context.Context) {
+func serveMetrics(ctx context.Context, listen string) {
 	// We don't expect that rendering metrics should take a lot of time and needs long timeout
 	const timeout = 30 * time.Second
 
@@ -29,7 +29,7 @@ func serveMetrics(ctx context.Context) {
 	))
 
 	server := &http.Server{
-		Addr:    "0.0.0.0:9090",
+		Addr:    listen,
 		Handler: mux,
 	}
 	go func(ctx context.Context, server *http.Server) {

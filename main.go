@@ -55,7 +55,7 @@ func main() {
 	otaConfig := ota.NewConfigWithFlags()
 	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 	updaterMode, destinationPath := config.NewUpdaterOptionsWithFlags()
-	prometheusOn, prometheusPushGateways := metrics.NewOptionsWithFlags()
+	prometheusOn, prometheusListenAddress, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
 	help := flag.Bool("h", false, "print help message and exit")
 	version := flag.Bool("version", false, "print version and exit")
@@ -95,7 +95,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
+	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
 	go cancelOnSignal(cancel)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig).Run(ctx, logger)
