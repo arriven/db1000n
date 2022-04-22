@@ -108,10 +108,10 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			if rawConfig.Encrypted {
 				logger.Info("config is encrypted, disabling logs")
 
-				reporter = metrics.NewReporter(r.globalJobsCfg.ClientID)
+				reporter = nil
 				cancel = r.runJobs(ctx, cfg, reporter, zap.NewNop())
 			} else {
-				reporter = nil
+				reporter = metrics.NewReporter(r.globalJobsCfg.ClientID)
 				cancel = r.runJobs(ctx, cfg, reporter, logger)
 			}
 		} else {
