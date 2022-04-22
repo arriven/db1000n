@@ -115,7 +115,12 @@ type netConnConfig struct {
 	Address         string
 	Timeout         time.Duration
 	ProxyURLs       string
+	Reader          *netReaderConfig
 	TLSClientConfig *tls.Config
+}
+
+type netReaderConfig struct {
+	Interval time.Duration
 }
 
 type netConn struct {
@@ -125,15 +130,16 @@ type netConn struct {
 	target string
 }
 
-func readStub(ctx context.Context, conn net.Conn) {
+func readStub(ctx context.Context, conn net.Conn, c *netReaderConfig) {
 	const bufSize = 1024
 	buf := make([]byte, bufSize)
+	ticker := time.NewTicker(c.Interval)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 			_, err := conn.Read(buf)
 			if err != nil {
 				return
@@ -149,7 +155,9 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 	case err != nil:
 		return nil, err
 	case c.TLSClientConfig == nil:
-		go readStub(ctx, conn)
+		if c.Reader != nil {
+			go readStub(ctx, conn, c.Reader)
+		}
 
 		return &netConn{Conn: conn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
 	}
@@ -161,7 +169,9 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 		return nil, err
 	}
 
-	go readStub(ctx, tlsConn)
+	if c.Reader != nil {
+		go readStub(ctx, conn, c.Reader)
+	}
 
 	return &netConn{Conn: tlsConn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
 }
