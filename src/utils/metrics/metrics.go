@@ -188,7 +188,13 @@ func (r *Reporter) WriteSummary(logger *zap.Logger) {
 }
 
 // NewAccumulator returns a new metrics Accumulator for the Reporter.
-func (r *Reporter) NewAccumulator(jobID string) *Accumulator { return newAccumulator(jobID, r) }
+func (r *Reporter) NewAccumulator(jobID string) *Accumulator {
+	if r == nil {
+		return nil
+	}
+
+	return newAccumulator(jobID, r)
+}
 
 // Accumulator for statistical metrics for use in a single job. Requires Flush()-ing to Reporter.
 // Not concurrency-safe.
@@ -228,13 +234,15 @@ func (a *Accumulator) Flush() {
 }
 
 // Clone a new, blank metrics Accumulator with the same Reporter as the original.
-func (a *Accumulator) Clone(jobID string) *Accumulator { return newAccumulator(jobID, a.r) }
-
-func newAccumulator(jobID string, r *Reporter) *Accumulator {
-	if r == nil {
+func (a *Accumulator) Clone(jobID string) *Accumulator {
+	if a == nil {
 		return nil
 	}
 
+	return newAccumulator(jobID, a.r)
+}
+
+func newAccumulator(jobID string, r *Reporter) *Accumulator {
 	res := &Accumulator{
 		jobID: jobID,
 		r:     r,
