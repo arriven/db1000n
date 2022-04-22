@@ -5,9 +5,10 @@ package ota
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"syscall"
+
+	"go.uber.org/zap"
 )
 
 func restart(logger *zap.Logger, extraArgs ...string) error {
