@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func restart(logger *zap.logger, extraArgs ...string) error {
+func restart(logger *zap.Logger, extraArgs ...string) error {
 	execPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to locate the executable file: %w", err)
