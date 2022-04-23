@@ -27,6 +27,7 @@ case "$OSARCH" in
   armv6l)   INSTALL_ARCH="arm" ;;
   armv7l)   INSTALL_ARCH="arm" ;;
   arm*)     INSTALL_ARCH="arm64" ;;
+  aarch64*) INSTALL_ARCH="arm64" ;;
   *)        echo "unknown: $OSARCH"; exit 1 ;;
 esac
 
