@@ -6,6 +6,7 @@ package utils
 import (
 	"bytes"
 	"io/ioutil"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -53,7 +54,7 @@ func IsEncrypted(cfg []byte) bool {
 }
 
 // Decrypt decrypts config using EncryptionKeys
-func Decrypt(cfg []byte) ([]byte, error) {
+func Decrypt(cfg []byte) (result []byte, err error) {
 	keys, err := GetEncryptionKeys()
 	if err != nil {
 		return nil, err
@@ -62,25 +63,31 @@ func Decrypt(cfg []byte) ([]byte, error) {
 	decryptMutex.Lock()
 	defer decryptMutex.Unlock()
 
-	var lastErr error
 	// iterate over all keys and return on first success decryption
 	for _, key := range keys {
-		identity, err := age.NewScryptIdentity(key)
-		if err != nil {
-			lastErr = err
+		result, err = decrypt(cfg, key)
+		runtime.GC() // force GC to decrease memory usage
 
+		if err != nil {
 			continue
 		}
 
-		decryptedReader, err := age.Decrypt(bytes.NewReader(cfg), identity)
-		if err != nil {
-			lastErr = err
-
-			continue
-		}
-
-		return ioutil.ReadAll(decryptedReader)
+		return result, nil
 	}
 
-	return nil, lastErr
+	return nil, err
+}
+
+func decrypt(cfg []byte, key string) ([]byte, error) {
+	identity, err := age.NewScryptIdentity(key)
+	if err != nil {
+		return nil, err
+	}
+
+	decryptedReader, err := age.Decrypt(bytes.NewReader(cfg), identity)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadAll(decryptedReader)
 }
