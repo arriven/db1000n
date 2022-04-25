@@ -56,10 +56,13 @@ func main() {
 	version := flag.Bool("version", false, "print version and exit")
 	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging and features")
 	logLevel := flag.String("log-level", utils.GetEnvStringDefault("LOG_LEVEL", "none"), "log level override for zap, leave empty to use default")
+	logFormat := flag.String("log-format", utils.GetEnvStringDefault("LOG_FORMAT", ""), "overrides the default (json) log output format,\n"+
+		"possible values are: json, console, simple\n"+
+		"simple is the most human readable format if you only look at the output in your terminal")
 
 	flag.Parse()
 
-	logger, err := newZapLogger(*debug, *logLevel)
+	logger, err := newZapLogger(*debug, *logLevel, *logFormat)
 	if err != nil {
 		panic(err)
 	}
@@ -99,10 +102,22 @@ func main() {
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig).Run(ctx, logger)
 }
 
-func newZapLogger(debug bool, logLevel string) (*zap.Logger, error) {
+func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
 	if debug {
 		cfg = zap.NewDevelopmentConfig()
+	}
+
+	if logFormat == "simple" {
+		// turn off all output except the message itself
+		cfg.Encoding = "console"
+		cfg.EncoderConfig.LevelKey = ""
+		cfg.EncoderConfig.TimeKey = ""
+		cfg.EncoderConfig.NameKey = ""
+		cfg.EncoderConfig.CallerKey = ""
+		cfg.EncoderConfig.StacktraceKey = ""
+	} else if logFormat != "" {
+		cfg.Encoding = logFormat
 	}
 
 	level, err := zap.ParseAtomicLevel(logLevel)
