@@ -160,22 +160,27 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 // WriteSummary dumps Reporter contents into the target.
 func (r *Reporter) WriteSummary(logger *zap.Logger) {
 	stats := r.SumAllStatsByTarget()
-	statFields := make([]zap.Field, 0, len(stats)+1) // +1 for total stats
 
 	var totals Stats
 
-	for _, tgt := range stats.sortedTargets() {
-		tgtStats := stats[tgt]
-		statFields = append(statFields, zap.Object(tgt, &tgtStats))
+	for s := RequestsAttemptedStat; s < NumStats; s++ {
+		totals[s] = r.Sum(s)
+	}
 
-		for s := range totals {
-			totals[s] += tgtStats[s]
+	logger.Info("stats", zap.Object("total", &totals), zap.Object("targets", stats))
+}
+
+// MarshalLogObject is required to log PerTargetStats objects to zap above
+func (ts PerTargetStats) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, tgt := range ts.sortedTargets() {
+		tgtStats := ts[tgt]
+
+		if err := enc.AddObject(tgt, &tgtStats); err != nil {
+			return err
 		}
 	}
 
-	statFields = append(statFields, zap.Object("total", &totals))
-
-	logger.Info("stats", statFields...)
+	return nil
 }
 
 // MarshalLogObject is required to log Stats objects to zap above
