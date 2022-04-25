@@ -73,7 +73,7 @@ func NewReporter(clientID string) *Reporter { return &Reporter{clientID: clientI
 func (r *Reporter) Sum(s Stat) uint64 {
 	var res uint64
 
-	r.metrics[s].Range(func(_, v interface{}) bool {
+	r.metrics[s].Range(func(_, v any) bool {
 		value, ok := v.(uint64)
 		if !ok {
 			return true
@@ -135,7 +135,7 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 	res := make(PerTargetStats)
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
-		r.metrics[s].Range(func(k, v interface{}) bool {
+		r.metrics[s].Range(func(k, v any) bool {
 			d, ok := k.(dimensions)
 			if !ok {
 				return true
