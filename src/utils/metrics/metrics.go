@@ -96,11 +96,6 @@ type (
 	PerTargetStats map[string]Stats
 )
 
-// NewStats returns a new Stats record.
-func NewStats(requestsAttempted, requestsSent, responsesReceived, bytesSent uint64) Stats {
-	return Stats{requestsAttempted, requestsSent, responsesReceived, bytesSent}
-}
-
 // Sum up all Stats into a total Stats record.
 func (s MultiStats) Sum() Stats {
 	var res Stats
@@ -220,15 +215,6 @@ func (a *Accumulator) Add(target string, s Stat, n uint64) *Accumulator {
 
 // Inc increases Accumulator Stat value by 1. Returns self for chaining.
 func (a *Accumulator) Inc(target string, s Stat) *Accumulator { return a.Add(target, s, 1) }
-
-// AddStats to the Accumulator. Returns self for chaining.
-func (a *Accumulator) AddStats(target string, s Stats) *Accumulator {
-	for i := range a.metrics {
-		a.metrics[i][target] += s[i]
-	}
-
-	return a
-}
 
 // Flush Accumulator contents to the Reporter.
 func (a *Accumulator) Flush() {
