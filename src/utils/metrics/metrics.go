@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Stat is the type of statistical metrics.
@@ -164,27 +165,32 @@ func (r *Reporter) SumAllStatsByTarget() PerTargetStats {
 // WriteSummary dumps Reporter contents into the target.
 func (r *Reporter) WriteSummary(logger *zap.Logger) {
 	stats := r.SumAllStatsByTarget()
+	statFields := make([]zap.Field, 0, len(stats)+1) // +1 for total stats
 
 	var totals Stats
 
 	for _, tgt := range stats.sortedTargets() {
 		tgtStats := stats[tgt]
-		logger.Info("stats", zap.String("target", tgt),
-			zap.Uint64("requests_attempted", tgtStats[RequestsAttemptedStat]),
-			zap.Uint64("requests_sent", tgtStats[RequestsSentStat]),
-			zap.Uint64("responses_received", tgtStats[ResponsesReceivedStat]),
-			zap.Uint64("bytes_sent", tgtStats[BytesSentStat]))
+		statFields = append(statFields, zap.Object(tgt, &tgtStats))
 
 		for s := range totals {
 			totals[s] += tgtStats[s]
 		}
 	}
 
-	logger.Info("stats", zap.String("target", "total"),
-		zap.Uint64("requests_attempted", totals[RequestsAttemptedStat]),
-		zap.Uint64("requests_sent", totals[RequestsSentStat]),
-		zap.Uint64("responses_received", totals[ResponsesReceivedStat]),
-		zap.Uint64("bytes_sent", totals[BytesSentStat]))
+	statFields = append(statFields, zap.Object("total", &totals))
+
+	logger.Info("stats", statFields...)
+}
+
+// MarshalLogObject is required to log Stats objects to zap above
+func (stats *Stats) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddUint64("requests_attempted", stats[RequestsAttemptedStat])
+	enc.AddUint64("requests_sent", stats[RequestsSentStat])
+	enc.AddUint64("responses_received", stats[ResponsesReceivedStat])
+	enc.AddUint64("bytes_sent", stats[BytesSentStat])
+
+	return nil
 }
 
 // NewAccumulator returns a new metrics Accumulator for the Reporter.
