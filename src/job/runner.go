@@ -207,7 +207,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter 
 func reportMetrics(reporter metrics.Reporter, clientID string, logger *zap.Logger) {
 	reporter.WriteSummary()
 
-	if err := metrics.ReportStatistics(int64(reporter.Sum(metrics.BytesSentStat)), clientID); err != nil {
+	if err := metrics.ReportStatistics(int64(reporter.SumBytesSent()), clientID); err != nil {
 		logger.Debug("error reporting statistics", zap.Error(err))
 	}
 }
