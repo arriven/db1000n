@@ -44,6 +44,8 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+const simpleLogFormat = "simple"
+
 func main() {
 	runnerConfigOptions := job.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
@@ -56,7 +58,7 @@ func main() {
 	version := flag.Bool("version", false, "print version and exit")
 	debug := flag.Bool("debug", utils.GetEnvBoolDefault("DEBUG", false), "enable debug level logging and features")
 	logLevel := flag.String("log-level", utils.GetEnvStringDefault("LOG_LEVEL", "none"), "log level override for zap, leave empty to use default")
-	logFormat := flag.String("log-format", utils.GetEnvStringDefault("LOG_FORMAT", ""), "overrides the default (json) log output format,\n"+
+	logFormat := flag.String("log-format", utils.GetEnvStringDefault("LOG_FORMAT", simpleLogFormat), "overrides the default (simple) log output format,\n"+
 		"possible values are: json, console, simple\n"+
 		"simple is the most human readable format if you only look at the output in your terminal")
 
@@ -99,7 +101,16 @@ func main() {
 	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
 	go cancelOnSignal(logger, cancel)
-	job.NewRunner(runnerConfigOptions, jobsGlobalConfig).Run(ctx, logger)
+
+	var reporter metrics.Reporter
+
+	if *logFormat == simpleLogFormat {
+		reporter = metrics.NewConsoleReporter(os.Stdout)
+	} else {
+		reporter = metrics.NewZapReporter(logger)
+	}
+
+	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
 }
 
 func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, error) {
@@ -108,14 +119,18 @@ func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, e
 		cfg = zap.NewDevelopmentConfig()
 	}
 
-	if logFormat == "simple" {
+	if logFormat == simpleLogFormat {
 		// turn off all output except the message itself
 		cfg.Encoding = "console"
 		cfg.EncoderConfig.LevelKey = ""
 		cfg.EncoderConfig.TimeKey = ""
 		cfg.EncoderConfig.NameKey = ""
-		cfg.EncoderConfig.CallerKey = ""
-		cfg.EncoderConfig.StacktraceKey = ""
+
+		// turning these off for debug output would be undesirable
+		if !debug {
+			cfg.EncoderConfig.CallerKey = ""
+			cfg.EncoderConfig.StacktraceKey = ""
+		}
 	} else if logFormat != "" {
 		cfg.Encoding = logFormat
 	}
