@@ -102,14 +102,7 @@ func main() {
 
 	go cancelOnSignal(logger, cancel)
 
-	var reporter metrics.Reporter
-
-	if *logFormat == simpleLogFormat {
-		reporter = metrics.NewConsoleReporter(os.Stdout)
-	} else {
-		reporter = metrics.NewZapReporter(logger)
-	}
-
+	reporter := newReporter(*logFormat, logger)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
 }
 
@@ -173,4 +166,12 @@ func cancelOnSignal(logger *zap.Logger, cancel context.CancelFunc) {
 	<-sigs
 	logger.Info("terminating")
 	cancel()
+}
+
+func newReporter(logFormat string, logger *zap.Logger) metrics.Reporter {
+	if logFormat == simpleLogFormat {
+		return metrics.NewConsoleReporter(os.Stdout)
+	}
+
+	return metrics.NewZapReporter(logger)
 }
