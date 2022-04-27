@@ -87,6 +87,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	metrics.IncClient()
 
 	var cancel context.CancelFunc
+
 	var metric *metrics.Metrics
 
 	for {
