@@ -87,6 +87,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	metrics.IncClient()
 
 	var cancel context.CancelFunc
+	var metric *metrics.Metrics
 
 	for {
 		rawConfig := config.FetchRawMultiConfig(logger, strings.Split(r.cfgOptions.PathsCSV, ","),
@@ -104,14 +105,14 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 				cancel()
 			}
 
-			r.reporter.ClearData() // clear info about previous targets
+			metric = &metrics.Metrics{} // clear info about previous targets and avoid old jobs from dumping old info to new metrics
 
 			if rawConfig.Encrypted {
 				logger.Info("config is encrypted, disabling logs")
 
 				cancel = r.runJobs(ctx, cfg, nil, zap.NewNop())
 			} else {
-				cancel = r.runJobs(ctx, cfg, r.reporter, logger)
+				cancel = r.runJobs(ctx, cfg, metric, logger)
 			}
 		} else {
 			logger.Info("the config has not changed. Keep calm and carry on!")
@@ -129,7 +130,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 		}
 
 		if r.reporter != nil {
-			reportMetrics(r.reporter, r.globalJobsCfg.ClientID, logger)
+			reportMetrics(r.reporter, metric, r.globalJobsCfg.ClientID, logger)
 		}
 	}
 }
@@ -150,7 +151,7 @@ func nonNilConfigOrDefault(c, defaultConfig *config.RawMultiConfig) *config.RawM
 	return defaultConfig
 }
 
-func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter metrics.Reporter, logger *zap.Logger) (cancel context.CancelFunc) {
+func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *metrics.Metrics, logger *zap.Logger) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
 	var jobInstancesCount int
@@ -188,7 +189,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter 
 			go func(i int) {
 				defer utils.PanicHandler(logger)
 
-				if _, err := job(ctx, cfg.Jobs[i].Args, r.globalJobsCfg, reporter.NewAccumulator(uuid.NewString()), logger); err != nil {
+				if _, err := job(ctx, cfg.Jobs[i].Args, r.globalJobsCfg, metric.NewAccumulator(uuid.NewString()), logger); err != nil {
 					logger.Error("error running job",
 						zap.String("name", cfg.Jobs[i].Name),
 						zap.String("type", cfg.Jobs[i].Type),
@@ -205,10 +206,10 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, reporter 
 	return cancel
 }
 
-func reportMetrics(reporter metrics.Reporter, clientID string, logger *zap.Logger) {
-	reporter.WriteSummary()
+func reportMetrics(reporter metrics.Reporter, metric *metrics.Metrics, clientID string, logger *zap.Logger) {
+	reporter.WriteSummary(metric)
 
-	if err := metrics.ReportStatistics(int64(reporter.SumBytesSent()), clientID); err != nil {
+	if err := metrics.ReportStatistics(int64(metric.Sum(metrics.BytesSentStat)), clientID); err != nil {
 		logger.Debug("error reporting statistics", zap.Error(err))
 	}
 }

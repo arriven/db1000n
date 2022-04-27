@@ -25,36 +25,33 @@ package metrics
 
 import "sync"
 
-type ReporterData struct {
-	metrics [NumStats]sync.Map // Array of metrics by Stat. Each metric is a map of uint64 values by dimensions.
-}
+type Metrics [NumStats]sync.Map // Array of metrics by Stat. Each metric is a map of uint64 values by dimensions.
 
-// Clears all targets and stats
-func (d *ReporterData) ClearData() {
-	d.metrics = [NumStats]sync.Map{}
-}
+// NewAccumulator returns a new metrics Accumulator for the Reporter.
+func (m *Metrics) NewAccumulator(jobID string) *Accumulator {
+	if m == nil {
+		return nil
+	}
 
-// Calculates the whole sum of sent bytes
-func (d *ReporterData) SumBytesSent() uint64 {
-	return d.sum(BytesSentStat)
+	return newAccumulator(jobID, m)
 }
 
 // Calculates all targets and total stats
-func (d *ReporterData) SumAllStats() (stats PerTargetStats, totals Stats) {
-	stats = d.sumAllStatsByTarget()
+func (m *Metrics) SumAllStats() (stats PerTargetStats, totals Stats) {
+	stats = m.sumAllStatsByTarget()
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
-		totals[s] = d.sum(s)
+		totals[s] = m.Sum(s)
 	}
 
 	return
 }
 
 // Sum returns a total sum of metric s.
-func (d *ReporterData) sum(s Stat) uint64 {
+func (m *Metrics) Sum(s Stat) uint64 {
 	var res uint64
 
-	d.metrics[s].Range(func(_, v any) bool {
+	m[s].Range(func(_, v any) bool {
 		value, ok := v.(uint64)
 		if !ok {
 			return true
@@ -69,11 +66,11 @@ func (d *ReporterData) sum(s Stat) uint64 {
 }
 
 // Returns a total sum of all metrics by target.
-func (d *ReporterData) sumAllStatsByTarget() PerTargetStats {
+func (m *Metrics) sumAllStatsByTarget() PerTargetStats {
 	res := make(PerTargetStats)
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
-		d.metrics[s].Range(func(k, v any) bool {
+		m[s].Range(func(k, v any) bool {
 			d, ok := k.(dimensions)
 			if !ok {
 				return true

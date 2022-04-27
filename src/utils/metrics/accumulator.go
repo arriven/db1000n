@@ -4,9 +4,8 @@ package metrics
 // Not concurrency-safe.
 type Accumulator struct {
 	jobID   string
-	metrics [NumStats]map[string]uint64 // Array of metrics by Stat. Each metric is a map of uint64 values by target.
-
-	data *ReporterData
+	stats   [NumStats]map[string]uint64 // Array of metrics by Stat. Each metric is a map of uint64 values by target.
+	metrics *Metrics
 }
 
 type dimensions struct {
@@ -16,7 +15,7 @@ type dimensions struct {
 
 // Add n to the Accumulator Stat value. Returns self for chaining.
 func (a *Accumulator) Add(target string, s Stat, n uint64) *Accumulator {
-	a.metrics[s][target] += n
+	a.stats[s][target] += n
 
 	return a
 }
@@ -27,8 +26,8 @@ func (a *Accumulator) Inc(target string, s Stat) *Accumulator { return a.Add(tar
 // Flush Accumulator contents to the Reporter.
 func (a *Accumulator) Flush() {
 	for stat := RequestsAttemptedStat; stat < NumStats; stat++ {
-		for target, value := range a.metrics[stat] {
-			a.data.metrics[stat].Store(dimensions{jobID: a.jobID, target: target}, value)
+		for target, value := range a.stats[stat] {
+			a.metrics[stat].Store(dimensions{jobID: a.jobID, target: target}, value)
 		}
 	}
 }
@@ -39,17 +38,17 @@ func (a *Accumulator) Clone(jobID string) *Accumulator {
 		return nil
 	}
 
-	return newAccumulator(jobID, a.data)
+	return newAccumulator(jobID, a.metrics)
 }
 
-func newAccumulator(jobID string, data *ReporterData) *Accumulator {
+func newAccumulator(jobID string, data *Metrics) *Accumulator {
 	res := &Accumulator{
-		jobID: jobID,
-		data:  data,
+		jobID:   jobID,
+		metrics: data,
 	}
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
-		res.metrics[s] = make(map[string]uint64)
+		res.stats[s] = make(map[string]uint64)
 	}
 
 	return res
