@@ -78,7 +78,7 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 		return nil, err
 	}
 
-	requestSize, _ := req.WriteTo(metrics.NopWriter{})
+	requestSize, _ := req.WriteTo(nopWriter{})
 
 	if a != nil {
 		tgt := target(req.URI())
@@ -173,7 +173,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 			continue
 		}
 
-		requestSize, _ := req.WriteTo(metrics.NopWriter{})
+		requestSize, _ := req.WriteTo(nopWriter{})
 
 		if a != nil {
 			tgt := target(req.URI())
@@ -229,3 +229,8 @@ func sendFastHTTPRequest(client http.Client, req *fasthttp.Request, resp *fastht
 
 	return nil
 }
+
+// nopWriter implements io.Writer interface to simply track how much data has to be serialized
+type nopWriter struct{}
+
+func (w nopWriter) Write(p []byte) (int, error) { return len(p), nil }
