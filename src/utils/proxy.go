@@ -15,8 +15,8 @@ import (
 
 type ProxyFunc func(network, addr string) (net.Conn, error)
 
-func GetProxyFunc(proxyURLs string, timeout time.Duration, httpEnabled bool) ProxyFunc {
-	direct := &net.Dialer{Timeout: timeout}
+func GetProxyFunc(proxyURLs string, localAddr net.Addr, timeout time.Duration, httpEnabled bool) ProxyFunc {
+	direct := &net.Dialer{Timeout: timeout, LocalAddr: localAddr}
 	if proxyURLs == "" {
 		return proxy.FromEnvironmentUsing(direct).Dial
 	}
@@ -47,5 +47,22 @@ func GetProxyFunc(proxyURLs string, timeout time.Duration, httpEnabled bool) Pro
 
 			return nil, fmt.Errorf("unsupported proxy scheme %v", u.Scheme)
 		}
+	}
+}
+
+func ResolveAddr(network, addr string) net.Addr {
+	if addr == "" {
+		return nil
+	}
+
+	ip := net.ParseIP(addr)
+
+	switch network {
+	case "tcp", "tcp4", "tcp6":
+		return &net.TCPAddr{IP: ip}
+	case "udp", "udp4", "udp6":
+		return &net.UDPAddr{IP: ip}
+	default:
+		return &net.IPAddr{IP: ip}
 	}
 }

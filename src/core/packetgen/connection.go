@@ -115,6 +115,7 @@ type netConnConfig struct {
 	Address         string
 	Timeout         time.Duration
 	ProxyURLs       string
+	LocalAddr       string
 	Reader          *netReaderConfig
 	TLSClientConfig *tls.Config
 }
@@ -149,7 +150,7 @@ func readStub(ctx context.Context, conn net.Conn, c *netReaderConfig) {
 }
 
 func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
-	conn, err := utils.GetProxyFunc(c.ProxyURLs, c.Timeout, false)(c.Protocol, c.Address)
+	conn, err := utils.GetProxyFunc(c.ProxyURLs, utils.ResolveAddr(c.Protocol, c.LocalAddr), c.Timeout, false)(c.Protocol, c.Address)
 
 	switch {
 	case err != nil:

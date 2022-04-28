@@ -101,6 +101,7 @@ type ClientConfig struct {
 	IdleTimeout     *time.Duration
 	MaxIdleConns    *int
 	ProxyURLs       string
+	LocalAddr       string
 }
 
 // NewClient creates a fasthttp client based on the config.
@@ -119,7 +120,9 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		tlsConfig = clientConfig.TLSClientConfig
 	}
 
-	proxyFunc := utils.GetProxyFunc(templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx), timeout, true)
+	proxyURLs := templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx)
+	localAddr := utils.ResolveAddr("tcp", clientConfig.LocalAddr)
+	proxyFunc := utils.GetProxyFunc(proxyURLs, localAddr, timeout, true)
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {
