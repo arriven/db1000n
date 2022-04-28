@@ -13,7 +13,7 @@ RUN make build_encrypted
 
 FROM alpine:3.15.2 as advanced
 
-RUN apk add --no-cache --update curl==7.80.0-r0
+RUN apk add --no-cache --update curl
 
 WORKDIR /usr/src/app
 COPY --from=builder /build/db1000n .
@@ -22,7 +22,7 @@ CMD ["./db1000n", "--enable-primitive=false"]
 
 FROM alpine:3.15.2
 
-RUN apk add --no-cache --update curl==7.80.0-r0
+RUN apk add --no-cache --update curl
 
 WORKDIR /usr/src/app
 COPY --from=builder /build/db1000n .
