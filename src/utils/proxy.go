@@ -55,13 +55,21 @@ func ResolveAddr(network, addr string) net.Addr {
 		return nil
 	}
 
+	var zone string
+
+	// handle ipv6 zone
+	if strings.Contains(addr, "%") {
+		split := strings.Split(addr, "%")
+		addr, zone = split[0], split[1]
+	}
+
 	ip := net.ParseIP(addr)
 
 	switch network {
 	case "tcp", "tcp4", "tcp6":
-		return &net.TCPAddr{IP: ip}
+		return &net.TCPAddr{IP: ip, Zone: zone}
 	case "udp", "udp4", "udp6":
-		return &net.UDPAddr{IP: ip}
+		return &net.UDPAddr{IP: ip, Zone: zone}
 	default:
 		return &net.IPAddr{IP: ip}
 	}
