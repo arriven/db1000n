@@ -42,6 +42,7 @@ type GlobalConfig struct {
 
 	ProxyURLs           string
 	LocalAddr           string
+	Interface           string
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         int
@@ -59,6 +60,8 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"system proxy to set by default (can be a comma-separated list or a template)")
 	flag.StringVar(&res.LocalAddr, "local-address", utils.GetEnvStringDefault("LOCAL_ADDRESS", ""),
 		"specify ip address of local interface to use")
+	flag.StringVar(&res.Interface, "interface", utils.GetEnvStringDefault("NETWORK_INTERFACE", ""),
+		"specify which interface to bind to for attacks (ignored on windows)")
 	flag.BoolVar(&res.SkipEncrypted, "skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
 		"set to true if you want to only run plaintext jobs from the config for security considerations")
 	flag.BoolVar(&res.EnablePrimitiveJobs, "enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true),

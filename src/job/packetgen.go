@@ -201,6 +201,10 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 		jobConfig.Connection.Args["local_addr"] = templates.ParseAndExecute(logger, globalConfig.LocalAddr, ctx)
 	}
 
+	if globalConfig.Interface != "" {
+		jobConfig.Connection.Args["interface"] = templates.ParseAndExecute(logger, globalConfig.Interface, ctx)
+	}
+
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
 		StaticPacket:   jobConfig.StaticPacket,

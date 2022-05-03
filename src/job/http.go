@@ -214,6 +214,10 @@ func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfi
 		clientConfig.LocalAddr = templates.ParseAndExecute(logger, global.LocalAddr, ctx)
 	}
 
+	if global.Interface != "" {
+		clientConfig.Interface = templates.ParseAndExecute(logger, global.Interface, ctx)
+	}
+
 	requestTpl, err = templates.ParseMapStruct(jobConfig.Request)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error parsing request config: %w", err)

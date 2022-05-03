@@ -4,6 +4,8 @@
 package utils
 
 import (
+	"syscall"
+
 	"go.uber.org/zap"
 	sys "golang.org/x/sys/unix"
 )
@@ -19,4 +21,18 @@ func UpdateRLimit(logger *zap.Logger) error {
 	rLimit.Cur = rLimit.Max
 
 	return sys.Setrlimit(sys.RLIMIT_NOFILE, &rLimit)
+}
+
+func BindToInterface(name string) func(network, address string, conn syscall.RawConn) error {
+	return func(network, address string, conn syscall.RawConn) error {
+		var operr error
+
+		if err := conn.Control(func(fd uintptr) {
+			operr = syscall.BindToDevice(int(fd), name)
+		}); err != nil {
+			return err
+		}
+
+		return operr
+	}
 }

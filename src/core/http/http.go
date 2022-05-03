@@ -35,7 +35,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
-	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // RequestConfig is a struct representing the config of a single request
@@ -102,6 +101,7 @@ type ClientConfig struct {
 	MaxIdleConns    *int
 	ProxyURLs       string
 	LocalAddr       string
+	Interface       string
 }
 
 // NewClient creates a fasthttp client based on the config.
@@ -112,17 +112,15 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	)
 
 	timeout := utils.NonNilOrDefault(clientConfig.Timeout, defaultTimeout)
-
-	tlsConfig := &tls.Config{
+	tlsConfig := utils.NonNilOrDefault(clientConfig.TLSClientConfig, tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
-	}
-	if clientConfig.TLSClientConfig != nil {
-		tlsConfig = clientConfig.TLSClientConfig
-	}
-
-	proxyURLs := templates.ParseAndExecute(logger, clientConfig.ProxyURLs, ctx)
-	localAddr := utils.ResolveAddr("tcp", clientConfig.LocalAddr)
-	proxyFunc := utils.GetProxyFunc(proxyURLs, localAddr, timeout, true)
+	})
+	proxyFunc := utils.GetProxyFunc(utils.ProxyParams{
+		URLs:      clientConfig.ProxyURLs,
+		LocalAddr: utils.ResolveAddr("tcp", clientConfig.LocalAddr),
+		Timeout:   timeout,
+		Interface: clientConfig.Interface,
+	}, true)
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {
@@ -137,7 +135,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 				NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 				DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 				DisablePathNormalizing:        true,
-				TLSConfig:                     tlsConfig,
+				TLSConfig:                     &tlsConfig,
 				Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 			}
 		}
@@ -161,7 +159,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
-		TLSConfig:                     tlsConfig,
+		TLSConfig:                     &tlsConfig,
 		Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
 	}
 }
