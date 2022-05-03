@@ -84,7 +84,7 @@ func main() {
 		return
 	}
 
-	err = utils.UpdateRLimit(logger)
+	err = utils.UpdateRLimit()
 	if err != nil {
 		logger.Warn("failed to increase rlimit", zap.Error(err))
 	}

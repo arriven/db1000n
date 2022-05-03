@@ -1,6 +1,3 @@
-//go:build !linux && !windows
-// +build !linux,!windows
-
 package utils
 
 import (
@@ -24,6 +21,14 @@ func UpdateRLimit() error {
 
 func BindToInterface(name string) func(network, address string, conn syscall.RawConn) error {
 	return func(network, address string, conn syscall.RawConn) error {
-		return nil
+		var operr error
+
+		if err := conn.Control(func(fd uintptr) {
+			operr = syscall.BindToDevice(int(fd), name)
+		}); err != nil {
+			return err
+		}
+
+		return operr
 	}
 }

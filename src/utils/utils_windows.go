@@ -1,10 +1,8 @@
 package utils
 
-import (
-	"go.uber.org/zap"
-)
+import "syscall"
 
-func UpdateRLimit(logger *zap.Logger) error {
+func UpdateRLimit() error {
 	return nil
 }
 
