@@ -8,16 +8,17 @@ on:
     branches:
       - main
     paths:
-      - 'Dockerfile'
-      - '.github/workflows/docker-lint.yaml'
+      - "Dockerfile"
+      - ".github/workflows/docker-lint.yaml"
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2 
+      - uses: actions/checkout@v2
       - uses: hadolint/hadolint-action@v1.6.0
         with:
           dockerfile: Dockerfile
+          ignore: DL3018
       - name: Test image building
         run: make docker_build
