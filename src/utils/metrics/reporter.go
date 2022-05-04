@@ -44,37 +44,33 @@ func NewConsoleReporter(target io.Writer) Reporter {
 }
 
 func (r *ConsoleReporter) WriteSummary(metrics *Metrics) {
-	w := tabwriter.NewWriter(r.target, 1, 1, 1, ' ', tabwriter.AlignRight)
-
-	defer w.Flush()
-
+	writer := tabwriter.NewWriter(r.target, 1, 1, 1, ' ', tabwriter.AlignRight)
 	stats, totals := metrics.SumAllStats()
 
-	fmt.Fprintln(w, "\n --- Traffic stats ---")
-	fmt.Fprintf(w, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
+	defer writer.Flush()
 
-	const BytesInMegabyte = 1024 * 1024
+	// Print table's header
+	fmt.Fprintln(writer, "\n --- Traffic stats ---")
+	fmt.Fprintf(writer, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
 
+	// Print all table rows
 	for _, tgt := range stats.sortedTargets() {
-		tgtStats := stats[tgt]
-
-		fmt.Fprintf(w, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n", tgt,
-			tgtStats[RequestsAttemptedStat],
-			tgtStats[RequestsSentStat],
-			tgtStats[ResponsesReceivedStat],
-			float64(tgtStats[BytesSentStat])/BytesInMegabyte,
-		)
-
-		for s := range totals {
-			totals[s] += tgtStats[s]
-		}
+		printStatsRow(writer, tgt, stats[tgt])
 	}
 
-	fmt.Fprintln(w, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
-	fmt.Fprintf(w, "|\tTotal\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n\n",
-		totals[RequestsAttemptedStat],
-		totals[RequestsSentStat],
-		totals[ResponsesReceivedStat],
-		float64(totals[BytesSentStat])/BytesInMegabyte,
+	// Print table's footer
+	fmt.Fprintln(writer, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
+	printStatsRow(writer, "Total", totals)
+	fmt.Fprintln(writer)
+}
+
+func printStatsRow(writer *tabwriter.Writer, rowName string, stats Stats) {
+	const BytesInMegabyte = 1024 * 1024
+
+	fmt.Fprintf(writer, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n", rowName,
+		stats[RequestsAttemptedStat],
+		stats[RequestsSentStat],
+		stats[ResponsesReceivedStat],
+		float64(stats[BytesSentStat])/BytesInMegabyte,
 	)
 }
