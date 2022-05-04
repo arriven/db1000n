@@ -61,10 +61,15 @@ func getSockaddrByName(name string) syscall.Sockaddr {
 
 func BindToInterface(name string) func(network, address string, conn syscall.RawConn) error {
 	return func(network, address string, conn syscall.RawConn) error {
+		sockAddr := getSockaddrByName(name)
+		if sockAddr == nil {
+			return nil
+		}
+
 		var operr error
 
 		if err := conn.Control(func(fd uintptr) {
-			operr = syscall.Bind(int(fd), getSockaddrByName(name))
+			operr = syscall.Bind(int(fd), sockAddr)
 		}); err != nil {
 			return err
 		}
