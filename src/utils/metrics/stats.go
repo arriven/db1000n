@@ -11,8 +11,6 @@ type (
 	Stat int
 	// Stats contains all metrics packed as an array.
 	Stats [NumStats]uint64
-	// MultiStats contains multiple Stats as a slice. Useful for collecting Stats from coroutines.
-	MultiStats []Stats
 	// PerTargetStats is a map of Stats per target.
 	PerTargetStats map[string]Stats
 )
@@ -25,39 +23,6 @@ const (
 
 	NumStats
 )
-
-// String representation of the Stat.
-func (s Stat) String() string {
-	return [...]string{
-		"requests attempted",
-		"requests sent",
-		"responses received",
-		"bytes sent",
-	}[s]
-}
-
-// Sum up all Stats into a total Stats record.
-func (s MultiStats) Sum() Stats {
-	var res Stats
-
-	for i := range s {
-		for j := RequestsAttemptedStat; j < NumStats; j++ {
-			res[j] += s[i][j]
-		}
-	}
-
-	return res
-}
-
-func (ts PerTargetStats) sum(s Stat) uint64 {
-	var res uint64
-
-	for _, v := range ts {
-		res += v[s]
-	}
-
-	return res
-}
 
 func (ts PerTargetStats) sortedTargets() []string {
 	res := make([]string, 0, len(ts))
