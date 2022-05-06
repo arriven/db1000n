@@ -156,8 +156,11 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 		LocalAddr: utils.ResolveAddr(c.Protocol, c.LocalAddr),
 		Interface: c.Interface,
 		Timeout:   c.Timeout,
+		// Disable HTTP proxy.
+		// Note: Most HTTP proxies support TCP over HTTP (with CONNECT method)
+		HttpEnabled: false,
 	}
-	conn, err := utils.GetProxyFunc(proxyParams, false)(c.Protocol, c.Address)
+	conn, err := utils.GetProxyFunc(proxyParams)(c.Protocol, c.Address)
 
 	switch {
 	case err != nil:

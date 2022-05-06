@@ -16,18 +16,26 @@ import (
 type ProxyFunc func(network, addr string) (net.Conn, error)
 
 type ProxyParams struct {
-	URLs      string
+	// URLs separated with comma (,)
+	// Not a proxy chain. List of proxies to choose from
+	URLs string
+	// Local IPv4 or IPv6 to dial from
 	LocalAddr net.Addr
+	// Name of network device / interface to dial from
 	Interface string
-	Timeout   time.Duration
+	// net.Dialer timeout
+	Timeout time.Duration
+	// True to use HTTP proxy
+	HttpEnabled bool
 }
 
-func GetProxyFunc(params ProxyParams, httpEnabled bool) ProxyFunc {
+func GetProxyFunc(params ProxyParams) ProxyFunc {
 	direct := &net.Dialer{Timeout: params.Timeout, LocalAddr: params.LocalAddr, Control: BindToInterface(params.Interface)}
 	if params.URLs == "" {
 		return proxy.FromEnvironmentUsing(direct).Dial
 	}
 
+	// Not a proxy chain. List of proxies to choose from
 	proxies := strings.Split(params.URLs, ",")
 
 	// We need to dial new proxy on each call
@@ -48,7 +56,7 @@ func GetProxyFunc(params ProxyParams, httpEnabled bool) ProxyFunc {
 		case "socks4", "socks4a":
 			return socks.Dial(u.String())(network, addr)
 		default:
-			if httpEnabled {
+			if params.HttpEnabled {
 				return fasthttpproxy.FasthttpHTTPDialerTimeout(u.Host, params.Timeout)(addr)
 			}
 

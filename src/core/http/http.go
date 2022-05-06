@@ -116,11 +116,12 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
 	})
 	proxyFunc := utils.GetProxyFunc(utils.ProxyParams{
-		URLs:      clientConfig.ProxyURLs,
-		LocalAddr: utils.ResolveAddr("tcp", clientConfig.LocalAddr),
-		Timeout:   timeout,
-		Interface: clientConfig.Interface,
-	}, true)
+		URLs:        clientConfig.ProxyURLs,
+		LocalAddr:   utils.ResolveAddr("tcp", clientConfig.LocalAddr),
+		Timeout:     timeout,
+		Interface:   clientConfig.Interface,
+		HttpEnabled: true,
+	})
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {
