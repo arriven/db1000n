@@ -231,8 +231,23 @@ func getBasicAuth() (string, string, error) {
 // PushGatewayCA variable to embed self-signed CA for TLS
 var PushGatewayCA string
 
-// getTLSConfig returns tls.Config with system root CAs and embedded CA if not empty
-func getTLSConfig() (*tls.Config, error) {
+// getTLSConfig returns cached tls.Config with system root CAs and embedded CA if not empty
+func getTLSConfig() (config *tls.Config, err error) {
+	config = cachedTLSConfig
+	if config != nil {
+		return
+	}
+	config, err = decodeTLSConfig()
+	cachedTLSConfig = config
+	return
+}
+
+// Cache'ing tls.Config is faster than decrypting base64 every time
+var cachedTLSConfig *tls.Config
+
+// decodeTLSConfig decrypts tls.Config
+// with rootCAs from base64 using encrypted with scrypt.salsaXOR
+func decodeTLSConfig() (*tls.Config, error) {
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
 		rootCAs = x509.NewCertPool()
