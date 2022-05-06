@@ -110,16 +110,14 @@ func NewOptionsWithFlags() (prometheusOn *bool, prometheusListenAddress *string,
 			"Comma separated list of prometheus push gateways")
 }
 
-func InitOrFail(ctx context.Context, logger *zap.Logger, prometheusOn bool, prometheusListenAddress, prometheusPushGateways, clientID, country string) {
+func InitOrFail(ctx context.Context, logger *zap.Logger, prometheusListenAddress, prometheusPushGateways, clientID, country string) {
 	if err := ValidatePrometheusPushGateways(prometheusPushGateways); err != nil {
 		logger.Fatal("Invalid value for --prometheus_gateways", zap.String("value", prometheusPushGateways), zap.Error(err))
 	}
 
-	if prometheusOn {
-		Init(clientID, country)
+	Init(clientID, country)
 
-		go ExportPrometheusMetrics(ctx, logger, clientID, prometheusListenAddress, prometheusPushGateways)
-	}
+	go ExportPrometheusMetrics(ctx, logger, clientID, prometheusListenAddress, prometheusPushGateways)
 }
 
 // Init prometheus counters.

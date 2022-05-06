@@ -98,9 +98,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
-
-	go cancelOnSignal(logger, cancel)
+	if *prometheusOn {
+		metrics.InitOrFail(ctx, logger, *prometheusListenAddress, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
+		go cancelOnSignal(logger, cancel)
+	}
 
 	reporter := newReporter(*logFormat, logger)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
