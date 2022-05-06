@@ -120,7 +120,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		LocalAddr:   utils.ResolveAddr("tcp", clientConfig.LocalAddr),
 		Timeout:     timeout,
 		Interface:   clientConfig.Interface,
-		HttpEnabled: true,
+		HTTPEnabled: true,
 	})
 
 	if clientConfig.StaticHost != nil {

@@ -26,7 +26,7 @@ type ProxyParams struct {
 	// net.Dialer timeout
 	Timeout time.Duration
 	// True to use HTTP proxy
-	HttpEnabled bool
+	HTTPEnabled bool
 }
 
 func GetProxyFunc(params ProxyParams) ProxyFunc {
@@ -56,7 +56,7 @@ func GetProxyFunc(params ProxyParams) ProxyFunc {
 		case "socks4", "socks4a":
 			return socks.Dial(u.String())(network, addr)
 		default:
-			if params.HttpEnabled {
+			if params.HTTPEnabled {
 				return fasthttpproxy.FasthttpHTTPDialerTimeout(u.Host, params.Timeout)(addr)
 			}
 

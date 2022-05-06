@@ -158,7 +158,7 @@ func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
 		Timeout:   c.Timeout,
 		// Disable HTTP proxy.
 		// Note: Most HTTP proxies support TCP over HTTP (with CONNECT method)
-		HttpEnabled: false,
+		HTTPEnabled: false,
 	}
 	conn, err := utils.GetProxyFunc(proxyParams)(c.Protocol, c.Address)
 

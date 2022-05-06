@@ -237,8 +237,11 @@ func getTLSConfig() (config *tls.Config, err error) {
 	if config != nil {
 		return
 	}
+
 	config, err = decodeTLSConfig()
+
 	cachedTLSConfig = config
+
 	return
 }
 
