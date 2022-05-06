@@ -149,7 +149,8 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 		fasthttp.ReleaseResponse(resp)
 	}()
 
-	resp.SkipBody = true
+	// TODO: DiscardBody here
+	resp.SkipBody = false
 
 	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
