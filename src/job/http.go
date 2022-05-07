@@ -44,6 +44,7 @@ type httpJobConfig struct {
 	Client  map[string]any // See HTTPClientConfig
 }
 
+// "http-request" in config
 func singleRequestJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -131,6 +132,7 @@ func cookieLoaderFunc(cookies map[string]string, logger *zap.Logger) func(key []
 	}
 }
 
+// "http" or "http-flood" in config
 func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

@@ -33,10 +33,12 @@ import (
 	"github.com/Arriven/db1000n/src/utils/metrics"
 )
 
+// "tcp" in config
 func tcpJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	return rawnetJob(ctx, "tcp", args, globalConfig, a, logger)
 }
 
+// "udp" in config
 func udpJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	return rawnetJob(ctx, "udp", args, globalConfig, a, logger)
 }

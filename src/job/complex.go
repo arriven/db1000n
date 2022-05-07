@@ -35,6 +35,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+// "sequence" in config
 func sequenceJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	var jobConfig struct {
 		BasicJobConfig
@@ -63,6 +64,7 @@ func sequenceJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	return nil, nil
 }
 
+// "parallel" in config
 func parallelJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

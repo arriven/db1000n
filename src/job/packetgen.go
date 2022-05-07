@@ -43,6 +43,7 @@ type packetgenJobConfig struct {
 	Connection   packetgen.ConnectionConfig
 }
 
+// "packetgen" in config
 func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
