@@ -71,3 +71,7 @@ func (c *Counter) Next() bool {
 
 	return c.iter <= c.Count
 }
+
+func (c *Counter) Get() int {
+	return c.iter
+}

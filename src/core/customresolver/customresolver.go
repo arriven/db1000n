@@ -2,7 +2,6 @@ package customresolver
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -63,7 +62,6 @@ func (cr *CustomResolver) LookupIPAddr(ctx context.Context, host string) (names 
 	return
 }
 func (cr *CustomResolver) LookupIPAddrNoCache(ctx context.Context, host string) (names []net.IPAddr, err error) {
-	fmt.Printf("looking up %v\n", host)
 	names, err = cr.FirstResolver.LookupIPAddr(ctx, host)
 	if err == nil {
 		return
