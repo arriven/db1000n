@@ -36,12 +36,12 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/core/countrychecker"
 	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
-	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 const simpleLogFormat = "simple"
@@ -50,7 +50,7 @@ func main() {
 	runnerConfigOptions := job.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
-	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
+	countryCheckerConfig := countrychecker.NewCountryCheckerConfigWithFlags()
 	updaterMode, destinationPath := config.NewUpdaterOptionsWithFlags()
 	prometheusOn, prometheusListenAddress, prometheusPushGateways := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
@@ -93,7 +93,7 @@ func main() {
 	setUpPprof(logger, *pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
-	country := utils.CheckCountryOrFail(logger, countryCheckerConfig, templates.ParseAndExecute(logger, jobsGlobalConfig.ProxyURLs, nil))
+	country := countrychecker.CheckCountryOrFail(logger, countryCheckerConfig, jobsGlobalConfig)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
