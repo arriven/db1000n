@@ -38,6 +38,7 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+// "log" in config
 func logJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
