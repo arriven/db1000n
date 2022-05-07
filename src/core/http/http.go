@@ -34,6 +34,8 @@ import (
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 
+	"github.com/Arriven/db1000n/src/core/customresolver"
+	"github.com/Arriven/db1000n/src/core/customtcpdial"
 	"github.com/Arriven/db1000n/src/utils"
 )
 
@@ -115,13 +117,8 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	tlsConfig := utils.NonNilOrDefault(clientConfig.TLSClientConfig, tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
 	})
-	proxyFunc := utils.GetProxyFunc(utils.ProxyParams{
-		URLs:        clientConfig.ProxyURLs,
-		LocalAddr:   utils.ResolveAddr("tcp", clientConfig.LocalAddr),
-		Timeout:     timeout,
-		Interface:   clientConfig.Interface,
-		HTTPEnabled: true,
-	})
+
+	dialFastHTTP := makeDialWithResolver(timeout, clientConfig, logger)
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {
@@ -137,7 +134,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 				DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 				DisablePathNormalizing:        true,
 				TLSConfig:                     &tlsConfig,
-				Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
+				Dial:                          dialFastHTTP,
 			}
 		}
 
@@ -161,8 +158,33 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		TLSConfig:                     &tlsConfig,
-		Dial:                          dialViaProxyFunc(proxyFunc, "tcp"),
+		Dial:                          dialFastHTTP,
 	}
+}
+
+func makeDialWithResolver(timeout time.Duration, clientConfig ClientConfig, logger *zap.Logger) fasthttp.DialFunc {
+	proxyFunc := utils.GetProxyFunc(utils.ProxyParams{
+		URLs:        clientConfig.ProxyURLs,
+		LocalAddr:   utils.ResolveAddr("tcp", clientConfig.LocalAddr),
+		Timeout:     timeout,
+		Interface:   clientConfig.Interface,
+		HTTPEnabled: true,
+	})
+
+	parentDialer := dialViaProxyFunc(proxyFunc, "tcp")
+
+	myResolver := customresolver.MasterResolver
+
+	// FastHttp dialer caches resolved IP DNS records
+	dialFastHTTP := (&customtcpdial.CustomTCPDialer{
+		DNSCacheDuration: 5 * time.Minute,
+
+		// db1000n / stoppropaganda implementation
+		ParentDialer: parentDialer,
+		Resolver:     myResolver,
+	}).Dial
+
+	return dialFastHTTP
 }
 
 func dialViaProxyFunc(proxyFunc utils.ProxyFunc, network string) fasthttp.DialFunc {
