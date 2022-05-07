@@ -35,10 +35,14 @@ func serveMetrics(ctx context.Context, logger *zap.Logger, listen string) {
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
 
-		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Warn("failure shutting down prometheus server", zap.Error(err))
+		if err := server.Shutdown(ctx); err != nil && !errors.Is(err,
+			http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
+			logger.Warn("failed to shut down prometheus server", zap.Error(err))
 		}
 	}(ctx, server)
 
-	logger.Warn("prometheus server", zap.Error(server.ListenAndServe()))
+	err := server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		logger.Warn("failed to start prometheus server", zap.Error(err))
+	}
 }
