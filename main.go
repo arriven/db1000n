@@ -41,7 +41,6 @@ import (
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
-	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 const simpleLogFormat = "simple"
@@ -93,7 +92,7 @@ func main() {
 	setUpPprof(logger, *pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
-	country := utils.CheckCountryOrFail(logger, countryCheckerConfig, templates.ParseAndExecute(logger, jobsGlobalConfig.ProxyURLs, nil))
+	country := utils.CheckCountryOrFail(logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

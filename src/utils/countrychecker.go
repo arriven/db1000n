@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"math/rand"
-	"net/http"
-	"net/url"
+	"net"
 	"strings"
 	"time"
 
+	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 )
 
@@ -35,8 +34,8 @@ func NewCountryCheckerConfigWithFlags() *CountryCheckerConfig {
 }
 
 // CheckCountryOrFail checks the country of client origin by IP and exits the program if it is in the blacklist.
-func CheckCountryOrFail(logger *zap.Logger, cfg *CountryCheckerConfig, proxyURLs string) string {
-	isCountryAllowed, country := CheckCountry(logger, strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck, proxyURLs, cfg.maxRetries)
+func CheckCountryOrFail(logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
+	isCountryAllowed, country := CheckCountry(logger, strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck, proxyParams, cfg.maxRetries)
 	if !isCountryAllowed {
 		logger.Fatal("not an allowed country, exiting", zap.String("country", country))
 	}
@@ -45,7 +44,7 @@ func CheckCountryOrFail(logger *zap.Logger, cfg *CountryCheckerConfig, proxyURLs
 }
 
 // CheckCountry checks which country the app is running from and whether it is in the blacklist.
-func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCheck bool, proxyURLs string, maxFetchRetries int) (bool, string) {
+func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCheck bool, proxyParams ProxyParams, maxFetchRetries int) (bool, string) {
 	var (
 		country, ip string
 		err         error
@@ -57,7 +56,7 @@ func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCh
 	for counter.Next() {
 		logger.Info("checking IP address,", zap.Int("iter", counter.iter))
 
-		if country, ip, err = fetchLocationInfo(logger, proxyURLs); err != nil {
+		if country, ip, err = fetchLocationInfo(logger, proxyParams); err != nil {
 			logger.Warn("error fetching location info", zap.Error(err))
 			Sleep(context.Background(), backoffController.Increment().GetTimeout())
 		} else {
@@ -88,52 +87,43 @@ func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCh
 	return true, country
 }
 
-func fetchLocationInfo(logger *zap.Logger, proxyURLs string) (country, ip string, err error) {
+func fetchLocationInfo(logger *zap.Logger, proxyParams ProxyParams) (country, ip string, err error) {
 	const (
 		ipCheckerURI   = "https://api.myip.com/"
 		requestTimeout = 3 * time.Second
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
+	proxyFunc := GetProxyFunc(proxyParams, true)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ipCheckerURI, nil)
-	if err != nil {
+	client := &fasthttp.Client{
+		MaxConnDuration:     requestTimeout,
+		ReadTimeout:         requestTimeout,
+		WriteTimeout:        requestTimeout,
+		MaxIdleConnDuration: requestTimeout,
+		Dial: func(addr string) (net.Conn, error) {
+			return proxyFunc("tcp", addr)
+		},
+	}
+
+	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
+
+	req.SetRequestURI(ipCheckerURI)
+	req.Header.SetMethod(fasthttp.MethodGet)
+
+	if err := client.Do(req, resp); err != nil {
 		return "", "", err
 	}
-
-	client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}}
-
-	if proxyURLs != "" {
-		logger.Info("proxy config detected, using it to check country")
-
-		proxies := strings.Split(proxyURLs, ",")
-
-		proxy := proxies[rand.Intn(len(proxies))] //nolint:gosec // Cryptographically secure random not required
-
-		logger.Info("using proxy", zap.String("proxy", proxy))
-
-		u, err := url.Parse(proxy)
-		if err != nil {
-			return "", "", err
-		}
-
-		client = &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(u)}}
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", "", err
-	}
-
-	defer resp.Body.Close()
 
 	ipInfo := struct {
 		Country string `json:"country"`
 		IP      string `json:"ip"`
 	}{}
 
-	if err := json.NewDecoder(resp.Body).Decode(&ipInfo); err != nil {
+	if err := json.Unmarshal(resp.Body(), &ipInfo); err != nil {
 		return "", "", err
 	}
 

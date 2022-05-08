@@ -34,6 +34,7 @@ import (
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
+	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
 // GlobalConfig passes commandline arguments to every job.
@@ -79,6 +80,14 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"initial exponential backoff timeout")
 
 	return &res
+}
+
+func (g GlobalConfig) GetProxyParams(logger *zap.Logger, data any) utils.ProxyParams {
+	return utils.ProxyParams{
+		URLs:      templates.ParseAndExecute(logger, g.ProxyURLs, data),
+		LocalAddr: utils.ResolveAddr("tcp", templates.ParseAndExecute(logger, g.LocalAddr, data)),
+		Interface: templates.ParseAndExecute(logger, g.Interface, data),
+	}
 }
 
 // Job comment for linter
