@@ -22,6 +22,8 @@ type ProxyParams struct {
 	Timeout   time.Duration
 }
 
+// this won't work for udp payloads but if people use proxies they might not want to have their ip exposed
+// so it's probably better to fail instead of routing the traffic directly
 func GetProxyFunc(params ProxyParams, protocol string) ProxyFunc {
 	direct := &net.Dialer{Timeout: params.Timeout, LocalAddr: resolveAddr(protocol, params.LocalAddr), Control: BindToInterface(params.Interface)}
 	if params.URLs == "" {
@@ -48,6 +50,7 @@ func GetProxyFunc(params ProxyParams, protocol string) ProxyFunc {
 		case "socks4", "socks4a":
 			return socks.Dial(u.String())(network, addr)
 		default:
+			// Not all http proxies support tunneling so it's safer to skip them for raw tcp payload
 			if protocol == "http" {
 				return fasthttpproxy.FasthttpHTTPDialerTimeout(u.Host, params.Timeout)(addr)
 			}
