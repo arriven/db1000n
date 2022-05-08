@@ -29,9 +29,7 @@ import (
 	"net/http"
 	pprofhttp "net/http/pprof"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -99,8 +97,6 @@ func main() {
 
 	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, *prometheusPushGateways, jobsGlobalConfig.ClientID, country)
 
-	go cancelOnSignal(logger, cancel)
-
 	reporter := newReporter(*logFormat, logger)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
 }
@@ -152,19 +148,6 @@ func setUpPprof(logger *zap.Logger, pprof string, debug bool) {
 
 	// this has to be wrapped into a lambda bc otherwise it blocks when evaluating argument for zap.Error
 	go func() { logger.Warn("pprof server", zap.Error(http.ListenAndServe(pprof, mux))) }()
-}
-
-func cancelOnSignal(logger *zap.Logger, cancel context.CancelFunc) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs,
-		syscall.SIGTERM,
-		syscall.SIGABRT,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-	)
-	<-sigs
-	logger.Info("terminating")
-	cancel()
 }
 
 func newReporter(logFormat string, logger *zap.Logger) metrics.Reporter {
