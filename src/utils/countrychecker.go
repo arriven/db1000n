@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -14,7 +15,8 @@ import (
 
 type CountryCheckerConfig struct {
 	countryBlackListCSV string
-	strictCountryCheck  bool
+	strict              bool
+	interval            time.Duration
 	maxRetries          int
 }
 
@@ -25,31 +27,60 @@ func NewCountryCheckerConfigWithFlags() *CountryCheckerConfig {
 	var res CountryCheckerConfig
 
 	flag.StringVar(&res.countryBlackListCSV, "country-list", GetEnvStringDefault("COUNTRY_LIST", "Ukraine"), "comma-separated list of countries")
-	flag.BoolVar(&res.strictCountryCheck, "strict-country-check", GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false),
+	flag.BoolVar(&res.strict, "strict-country-check", GetEnvBoolDefault("STRICT_COUNTRY_CHECK", false),
 		"enable strict country check; will also exit if IP can't be determined")
 	flag.IntVar(&res.maxRetries, "country-check-retries", GetEnvIntDefault("COUNTRY_CHECK_RETRIES", maxFetchRetries),
 		"how much retries should be made when checking the country")
+	flag.DurationVar(&res.interval, "country-check-interval", GetEnvDurationDefault("COUNTRY_CHECK_INTERVAL", 0),
+		"run country check in background with a regular interval")
 
 	return &res
 }
 
 // CheckCountryOrFail checks the country of client origin by IP and exits the program if it is in the blacklist.
-func CheckCountryOrFail(logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
-	isCountryAllowed, country := CheckCountry(logger, strings.Split(cfg.countryBlackListCSV, ","), cfg.strictCountryCheck, proxyParams, cfg.maxRetries)
-	if !isCountryAllowed {
-		logger.Fatal("not an allowed country, exiting", zap.String("country", country))
+func CheckCountryOrFail(ctx context.Context, logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
+	if cfg.interval != 0 {
+		go func() {
+			ticker := time.NewTicker(cfg.interval)
+
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					_ = ckeckCountryOnce(logger, cfg, proxyParams)
+				}
+			}
+		}()
+	}
+
+	return ckeckCountryOnce(logger, cfg, proxyParams)
+}
+
+func ckeckCountryOnce(logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
+	country, ip, err := getCountry(logger, proxyParams, cfg.maxRetries)
+	if err != nil {
+		if cfg.strict {
+			logger.Fatal("country strict check failed", zap.Error(err))
+		}
+
+		return ""
+	}
+
+	logger.Info("location info", zap.String("country", country), zap.String("ip", ip))
+
+	if strings.Contains(cfg.countryBlackListCSV, country) {
+		logger.Warn("you might need to enable VPN.")
+
+		if cfg.strict {
+			logger.Fatal("country strict check failed", zap.String("country", country))
+		}
 	}
 
 	return country
 }
 
-// CheckCountry checks which country the app is running from and whether it is in the blacklist.
-func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCheck bool, proxyParams ProxyParams, maxFetchRetries int) (bool, string) {
-	var (
-		country, ip string
-		err         error
-	)
-
+func getCountry(logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int) (country, ip string, err error) {
 	counter := Counter{Count: maxFetchRetries}
 	backoffController := BackoffController{BackoffConfig: DefaultBackoffConfig()}
 
@@ -60,31 +91,11 @@ func CheckCountry(logger *zap.Logger, countriesToAvoid []string, strictCountryCh
 			logger.Warn("error fetching location info", zap.Error(err))
 			Sleep(context.Background(), backoffController.Increment().GetTimeout())
 		} else {
-			break
+			return
 		}
 	}
 
-	if err != nil {
-		logger.Warn("Failed to check the country info", zap.Int("retries", maxFetchRetries))
-
-		if strictCountryCheck {
-			return false, ""
-		}
-
-		return true, ""
-	}
-
-	logger.Info("location info", zap.String("country", country), zap.String("ip", ip))
-
-	for i := range countriesToAvoid {
-		if country == strings.TrimSpace(countriesToAvoid[i]) {
-			logger.Warn("you might need to enable VPN.")
-
-			return !strictCountryCheck, country
-		}
-	}
-
-	return true, country
+	return "", "", fmt.Errorf("couldn't get location info in %d tries", maxFetchRetries)
 }
 
 func fetchLocationInfo(logger *zap.Logger, proxyParams ProxyParams) (country, ip string, err error) {

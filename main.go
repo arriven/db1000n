@@ -90,10 +90,10 @@ func main() {
 	setUpPprof(logger, *pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
 
-	country := utils.CheckCountryOrFail(logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil))
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	country := utils.CheckCountryOrFail(ctx, logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil))
 
 	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID, country)
 
