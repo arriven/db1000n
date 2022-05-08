@@ -143,13 +143,8 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req, resp := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
-	defer func() {
-		fasthttp.ReleaseRequest(req)
-		fasthttp.ReleaseResponse(resp)
-	}()
-
-	resp.SkipBody = true
+	req := fasthttp.AcquireRequest()
+	fasthttp.ReleaseRequest(req)
 
 	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
@@ -161,7 +156,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		http.InitRequest(requestConfig, req)
 
-		if err := sendFastHTTPRequest(client, req, resp); err != nil {
+		if err := sendFastHTTPRequest(client, req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
 
 			if a != nil {
