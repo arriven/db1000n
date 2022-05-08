@@ -40,6 +40,7 @@ import (
 type httpJobConfig struct {
 	BasicJobConfig
 
+	Static  bool
 	Request map[string]any
 	Client  map[string]any // See HTTPClientConfig
 }
@@ -148,15 +149,20 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
+	if jobConfig.Static {
+		if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
+			return nil, fmt.Errorf("error executing request template: %w", err)
+		}
+	}
+
 	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
 	for jobConfig.Next(ctx) {
-		var requestConfig http.RequestConfig
-		if err := utils.Decode(requestTpl.Execute(logger, ctx), &requestConfig); err != nil {
-			return nil, fmt.Errorf("error executing request template: %w", err)
+		if !jobConfig.Static {
+			if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
+				return nil, fmt.Errorf("error executing request template: %w", err)
+			}
 		}
-
-		http.InitRequest(requestConfig, req)
 
 		if err := client.Do(req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
@@ -189,6 +195,17 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	}
 
 	return nil, nil
+}
+
+func buildHTTPRequest(ctx context.Context, logger *zap.Logger, requestTpl *templates.MapStruct, req *fasthttp.Request) error {
+	var requestConfig http.RequestConfig
+	if err := utils.Decode(requestTpl.Execute(logger, ctx), &requestConfig); err != nil {
+		return fmt.Errorf("error executing request template: %w", err)
+	}
+
+	http.InitRequest(requestConfig, req)
+
+	return nil
 }
 
 func target(uri *fasthttp.URI) string { return string(uri.Scheme()) + "://" + string(uri.Host()) }
