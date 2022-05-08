@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/job/config"
@@ -120,6 +121,10 @@ func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, e
 		}
 	} else if logFormat != "" {
 		cfg.Encoding = logFormat
+
+		if logFormat == "console" {
+			cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+		}
 	}
 
 	level, err := zap.ParseAtomicLevel(logLevel)
