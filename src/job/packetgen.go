@@ -38,9 +38,9 @@ import (
 
 type packetgenJobConfig struct {
 	BasicJobConfig
-	StaticPacket bool
-	Packets      []*templates.MapStruct
-	Connection   packetgen.ConnectionConfig
+	Static     bool
+	Packets    []*templates.MapStruct
+	Connection packetgen.ConnectionConfig
 }
 
 // "packetgen" in config
@@ -77,23 +77,15 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	}
 	defer conn.Close()
 
-	packetsChan := utils.InfiniteRange(ctx, jobConfig.Packets)
-
-	var packet packetgen.Packet
-
-	if jobConfig.StaticPacket {
-		packet, err = getNextPacket(ctx, logger, packetsChan)
-		if err != nil {
-			return err
-		}
+	packetSrc, err := makePacketSource(ctx, logger, jobConfig.Packets, jobConfig.Static)
+	if err != nil {
+		return err
 	}
 
 	for jobConfig.Next(ctx) {
-		if !jobConfig.StaticPacket {
-			packet, err = getNextPacket(ctx, logger, packetsChan)
-			if err != nil {
-				return err
-			}
+		packet, err := packetSrc(ctx, logger)
+		if err != nil {
+			return err
 		}
 
 		n, err := conn.Write(packet)
@@ -118,7 +110,65 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	return nil
 }
 
-func getNextPacket(ctx context.Context, logger *zap.Logger, packetsChan chan *templates.MapStruct) (packetgen.Packet, error) {
+type packetSource func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error)
+
+func makePacketSource(ctx context.Context, logger *zap.Logger, packetTpls []*templates.MapStruct, static bool) (packetSource, error) {
+	if static {
+		packets, err := staticPackets(ctx, logger, packetTpls)
+		if err != nil {
+			return nil, err
+		}
+
+		packetsChan := utils.InfiniteRange(ctx, packets)
+
+		return func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error) {
+			return getNextStaticPacket(ctx, logger, packetsChan)
+		}, nil
+	}
+
+	packetsChan := utils.InfiniteRange(ctx, packetTpls)
+
+	return func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error) {
+		return getNextDynamicPacket(ctx, logger, packetsChan)
+	}, nil
+}
+
+func staticPackets(ctx context.Context, logger *zap.Logger, packetTpls []*templates.MapStruct) ([]packetgen.Packet, error) {
+	packets := make([]packetgen.Packet, 0, len(packetTpls))
+
+	for _, packetTpl := range packetTpls {
+		packetConfigRaw := packetTpl.Execute(logger, ctx)
+
+		var packetConfig packetgen.PacketConfig
+		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
+			return nil, err
+		}
+
+		packet, err := packetConfig.Build()
+		if err != nil {
+			return nil, err
+		}
+
+		packets = append(packets, packet)
+	}
+
+	return packets, nil
+}
+
+func getNextStaticPacket(ctx context.Context, logger *zap.Logger, packetsChan chan packetgen.Packet) (packetgen.Packet, error) {
+	select {
+	case <-ctx.Done():
+		return packetgen.Packet{}, ctx.Err()
+	case packet, more := <-packetsChan:
+		if !more {
+			return packetgen.Packet{}, errors.New("packetsChan closed")
+		}
+
+		return packet, nil
+	}
+}
+
+func getNextDynamicPacket(ctx context.Context, logger *zap.Logger, packetsChan chan *templates.MapStruct) (packetgen.Packet, error) {
 	select {
 	case <-ctx.Done():
 		return packetgen.Packet{}, ctx.Err()
@@ -128,7 +178,6 @@ func getNextPacket(ctx context.Context, logger *zap.Logger, packetsChan chan *te
 		}
 
 		packetConfigRaw := packetTpl.Execute(logger, ctx)
-		logger.Debug("rendered packet config template", zap.Reflect("config", packetConfigRaw))
 
 		var packetConfig packetgen.PacketConfig
 		if err := utils.Decode(packetConfigRaw, &packetConfig); err != nil {
@@ -180,6 +229,7 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 	var jobConfig struct {
 		BasicJobConfig
 		StaticPacket bool
+		Static       bool
 		Packet       map[string]any
 		Packets      []packetDescriptor
 		Connection   packetgen.ConnectionConfig
@@ -199,7 +249,7 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
-		StaticPacket:   jobConfig.StaticPacket,
+		Static:         jobConfig.StaticPacket || jobConfig.Static,
 		Packets:        packetTpls,
 		Connection:     jobConfig.Connection,
 	}, nil
