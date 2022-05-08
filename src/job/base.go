@@ -85,7 +85,7 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 func (g GlobalConfig) GetProxyParams(logger *zap.Logger, data any) utils.ProxyParams {
 	return utils.ProxyParams{
 		URLs:      templates.ParseAndExecute(logger, g.ProxyURLs, data),
-		LocalAddr: utils.ResolveAddr("tcp", templates.ParseAndExecute(logger, g.LocalAddr, data)),
+		LocalAddr: templates.ParseAndExecute(logger, g.LocalAddr, data),
 		Interface: templates.ParseAndExecute(logger, g.Interface, data),
 	}
 }

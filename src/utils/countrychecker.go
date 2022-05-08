@@ -93,7 +93,7 @@ func fetchLocationInfo(logger *zap.Logger, proxyParams ProxyParams) (country, ip
 		requestTimeout = 3 * time.Second
 	)
 
-	proxyFunc := GetProxyFunc(proxyParams, true)
+	proxyFunc := GetProxyFunc(proxyParams, "http")
 
 	client := &fasthttp.Client{
 		MaxConnDuration:     requestTimeout,

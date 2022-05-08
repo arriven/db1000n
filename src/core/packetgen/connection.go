@@ -37,8 +37,9 @@ import (
 
 // ConnectionConfig describes which network to use when sending packets
 type ConnectionConfig struct {
-	Type string
-	Args map[string]any
+	Type  string
+	Args  map[string]any
+	Proxy *utils.ProxyParams
 }
 
 func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error) {
@@ -56,7 +57,7 @@ func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error)
 			return nil, fmt.Errorf("error decoding connection config: %w", err)
 		}
 
-		return openNetConn(ctx, cfg)
+		return openNetConn(ctx, cfg, c.Proxy)
 	default:
 		return nil, fmt.Errorf("unknown connection type: %v", c.Type)
 	}
@@ -114,9 +115,7 @@ type netConnConfig struct {
 	Protocol        string
 	Address         string
 	Timeout         time.Duration
-	ProxyURLs       string
-	LocalAddr       string
-	Interface       string
+	Proxy           utils.ProxyParams
 	Reader          *netReaderConfig
 	TLSClientConfig *tls.Config
 }
@@ -150,14 +149,8 @@ func readStub(ctx context.Context, conn net.Conn, c *netReaderConfig) {
 	}
 }
 
-func openNetConn(ctx context.Context, c netConnConfig) (*netConn, error) {
-	proxyParams := utils.ProxyParams{
-		URLs:      c.ProxyURLs,
-		LocalAddr: utils.ResolveAddr(c.Protocol, c.LocalAddr),
-		Interface: c.Interface,
-		Timeout:   c.Timeout,
-	}
-	conn, err := utils.GetProxyFunc(proxyParams, false)(c.Protocol, c.Address)
+func openNetConn(ctx context.Context, c netConnConfig, proxyParams *utils.ProxyParams) (*netConn, error) {
+	conn, err := utils.GetProxyFunc(utils.NonNilOrDefault(proxyParams, utils.ProxyParams{}), c.Protocol)(c.Protocol, c.Address)
 
 	switch {
 	case err != nil:

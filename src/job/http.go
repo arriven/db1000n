@@ -206,17 +206,8 @@ func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfi
 		return nil, nil, nil, fmt.Errorf("error parsing client config: %w", err)
 	}
 
-	if global.ProxyURLs != "" {
-		clientConfig.ProxyURLs = templates.ParseAndExecute(logger, global.ProxyURLs, ctx)
-	}
-
-	if global.LocalAddr != "" {
-		clientConfig.LocalAddr = templates.ParseAndExecute(logger, global.LocalAddr, ctx)
-	}
-
-	if global.Interface != "" {
-		clientConfig.Interface = templates.ParseAndExecute(logger, global.Interface, ctx)
-	}
+	proxyCfg := utils.NonNilOrDefault(clientConfig.Proxy, global.GetProxyParams(logger, ctx))
+	clientConfig.Proxy = &proxyCfg
 
 	requestTpl, err = templates.ParseMapStruct(jobConfig.Request)
 	if err != nil {

@@ -17,13 +17,13 @@ type ProxyFunc func(network, addr string) (net.Conn, error)
 
 type ProxyParams struct {
 	URLs      string
-	LocalAddr net.Addr
+	LocalAddr string
 	Interface string
 	Timeout   time.Duration
 }
 
-func GetProxyFunc(params ProxyParams, httpEnabled bool) ProxyFunc {
-	direct := &net.Dialer{Timeout: params.Timeout, LocalAddr: params.LocalAddr, Control: BindToInterface(params.Interface)}
+func GetProxyFunc(params ProxyParams, protocol string) ProxyFunc {
+	direct := &net.Dialer{Timeout: params.Timeout, LocalAddr: resolveAddr(protocol, params.LocalAddr), Control: BindToInterface(params.Interface)}
 	if params.URLs == "" {
 		return proxy.FromEnvironmentUsing(direct).Dial
 	}
@@ -48,7 +48,7 @@ func GetProxyFunc(params ProxyParams, httpEnabled bool) ProxyFunc {
 		case "socks4", "socks4a":
 			return socks.Dial(u.String())(network, addr)
 		default:
-			if httpEnabled {
+			if protocol == "http" {
 				return fasthttpproxy.FasthttpHTTPDialerTimeout(u.Host, params.Timeout)(addr)
 			}
 
@@ -57,7 +57,7 @@ func GetProxyFunc(params ProxyParams, httpEnabled bool) ProxyFunc {
 	}
 }
 
-func ResolveAddr(network, addr string) net.Addr {
+func resolveAddr(protocol, addr string) net.Addr {
 	if addr == "" {
 		return nil
 	}
@@ -72,8 +72,8 @@ func ResolveAddr(network, addr string) net.Addr {
 
 	ip := net.ParseIP(addr)
 
-	switch network {
-	case "tcp", "tcp4", "tcp6":
+	switch protocol {
+	case "tcp", "tcp4", "tcp6", "http":
 		return &net.TCPAddr{IP: ip, Zone: zone}
 	case "udp", "udp4", "udp6":
 		return &net.UDPAddr{IP: ip, Zone: zone}

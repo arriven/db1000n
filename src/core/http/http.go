@@ -99,9 +99,7 @@ type ClientConfig struct {
 	WriteTimeout    *time.Duration
 	IdleTimeout     *time.Duration
 	MaxIdleConns    *int
-	ProxyURLs       string
-	LocalAddr       string
-	Interface       string
+	Proxy           *utils.ProxyParams
 }
 
 // NewClient creates a fasthttp client based on the config.
@@ -115,12 +113,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	tlsConfig := utils.NonNilOrDefault(clientConfig.TLSClientConfig, tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
 	})
-	proxyFunc := utils.GetProxyFunc(utils.ProxyParams{
-		URLs:      clientConfig.ProxyURLs,
-		LocalAddr: utils.ResolveAddr("tcp", clientConfig.LocalAddr),
-		Timeout:   timeout,
-		Interface: clientConfig.Interface,
-	}, true)
+	proxyFunc := utils.GetProxyFunc(*clientConfig.Proxy, "http")
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {

@@ -193,17 +193,8 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 		return nil, err
 	}
 
-	if globalConfig.ProxyURLs != "" && jobConfig.Connection.Args["protocol"] == "tcp" {
-		jobConfig.Connection.Args["proxy_urls"] = templates.ParseAndExecute(logger, globalConfig.ProxyURLs, ctx)
-	}
-
-	if globalConfig.LocalAddr != "" {
-		jobConfig.Connection.Args["local_addr"] = templates.ParseAndExecute(logger, globalConfig.LocalAddr, ctx)
-	}
-
-	if globalConfig.Interface != "" {
-		jobConfig.Connection.Args["interface"] = templates.ParseAndExecute(logger, globalConfig.Interface, ctx)
-	}
+	proxyCfg := utils.NonNilOrDefault(jobConfig.Connection.Proxy, globalConfig.GetProxyParams(logger, ctx))
+	jobConfig.Connection.Proxy = &proxyCfg
 
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
