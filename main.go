@@ -108,9 +108,8 @@ func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, e
 	}
 
 	if logFormat == simpleLogFormat {
-		// turn off all output except the message itself
+		// turn off all output except the message itself and log level
 		cfg.Encoding = "console"
-		cfg.EncoderConfig.LevelKey = ""
 		cfg.EncoderConfig.TimeKey = ""
 		cfg.EncoderConfig.NameKey = ""
 
