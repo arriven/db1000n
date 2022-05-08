@@ -38,7 +38,7 @@ import (
 
 type packetgenJobConfig struct {
 	BasicJobConfig
-	Static     bool
+	Dynamic    bool
 	Packets    []*templates.MapStruct
 	Connection packetgen.ConnectionConfig
 }
@@ -77,7 +77,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	}
 	defer conn.Close()
 
-	packetSrc, err := makePacketSource(ctx, logger, jobConfig.Packets, jobConfig.Static)
+	packetSrc, err := makePacketSource(ctx, logger, jobConfig.Packets, jobConfig.Dynamic)
 	if err != nil {
 		return err
 	}
@@ -112,24 +112,24 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 
 type packetSource func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error)
 
-func makePacketSource(ctx context.Context, logger *zap.Logger, packetTpls []*templates.MapStruct, static bool) (packetSource, error) {
-	if static {
-		packets, err := staticPackets(ctx, logger, packetTpls)
-		if err != nil {
-			return nil, err
-		}
-
-		packetsChan := utils.InfiniteRange(ctx, packets)
+func makePacketSource(ctx context.Context, logger *zap.Logger, packetTpls []*templates.MapStruct, dynamic bool) (packetSource, error) {
+	if dynamic {
+		packetsChan := utils.InfiniteRange(ctx, packetTpls)
 
 		return func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error) {
-			return getNextStaticPacket(ctx, logger, packetsChan)
+			return getNextDynamicPacket(ctx, logger, packetsChan)
 		}, nil
 	}
 
-	packetsChan := utils.InfiniteRange(ctx, packetTpls)
+	packets, err := staticPackets(ctx, logger, packetTpls)
+	if err != nil {
+		return nil, err
+	}
+
+	packetsChan := utils.InfiniteRange(ctx, packets)
 
 	return func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error) {
-		return getNextDynamicPacket(ctx, logger, packetsChan)
+		return getNextStaticPacket(ctx, logger, packetsChan)
 	}, nil
 }
 
@@ -228,11 +228,10 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 ) {
 	var jobConfig struct {
 		BasicJobConfig
-		StaticPacket bool
-		Static       bool
-		Packet       map[string]any
-		Packets      []packetDescriptor
-		Connection   packetgen.ConnectionConfig
+		Dynamic    bool
+		Packet     map[string]any
+		Packets    []packetDescriptor
+		Connection packetgen.ConnectionConfig
 	}
 
 	if err = ParseConfig(&jobConfig, args, *globalConfig); err != nil {
@@ -249,7 +248,7 @@ func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *Glo
 
 	return &packetgenJobConfig{
 		BasicJobConfig: jobConfig.BasicJobConfig,
-		Static:         jobConfig.StaticPacket || jobConfig.Static,
+		Dynamic:        jobConfig.Dynamic,
 		Packets:        packetTpls,
 		Connection:     jobConfig.Connection,
 	}, nil

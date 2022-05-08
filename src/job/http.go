@@ -40,7 +40,7 @@ import (
 type httpJobConfig struct {
 	BasicJobConfig
 
-	Static  bool
+	Dynamic bool
 	Request map[string]any
 	Client  map[string]any // See HTTPClientConfig
 }
@@ -149,7 +149,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
-	if jobConfig.Static {
+	if !jobConfig.Dynamic {
 		if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
 			return nil, fmt.Errorf("error executing request template: %w", err)
 		}
@@ -158,7 +158,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
 	for jobConfig.Next(ctx) {
-		if !jobConfig.Static {
+		if jobConfig.Dynamic {
 			if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
 				return nil, fmt.Errorf("error executing request template: %w", err)
 			}
