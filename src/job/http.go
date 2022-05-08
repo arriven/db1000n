@@ -71,7 +71,7 @@ func singleRequestJob(ctx context.Context, args config.Args, globalConfig *Globa
 
 	http.InitRequest(requestConfig, req)
 
-	if err = sendFastHTTPRequest(client, req, resp); err != nil {
+	if err = client.Do(req, resp); err != nil {
 		if a != nil {
 			a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
 		}
@@ -158,11 +158,12 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 		http.InitRequest(requestConfig, req)
 
-		if err := sendFastHTTPRequest(client, req, nil); err != nil {
+		if err := client.Do(req, nil); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
 
 			if a != nil {
 				a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
+				metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 			}
 
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
@@ -180,6 +181,8 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 				Inc(tgt, metrics.ResponsesReceivedStat).
 				Add(tgt, metrics.BytesSentStat, uint64(requestSize)).
 				Flush()
+
+			metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
 		}
 
 		backoffController.Reset()
@@ -212,18 +215,6 @@ func getHTTPJobConfigs(ctx context.Context, args config.Args, global GlobalConfi
 	}
 
 	return &jobConfig, &clientConfig, requestTpl, nil
-}
-
-func sendFastHTTPRequest(client http.Client, req *fasthttp.Request, resp *fasthttp.Response) error {
-	if err := client.Do(req, resp); err != nil {
-		metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
-
-		return err
-	}
-
-	metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
-
-	return nil
 }
 
 // nopWriter implements io.Writer interface to simply track how much data has to be serialized

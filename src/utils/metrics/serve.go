@@ -1,6 +1,3 @@
-//go:build !encrypted
-// +build !encrypted
-
 package metrics
 
 import (

@@ -23,22 +23,10 @@
 package metrics
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/base64"
-	"errors"
 	"flag"
-	"fmt"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/utils"
@@ -100,25 +88,18 @@ var (
 )
 
 // NewOptionsWithFlags returns metrics options initialized with command line flags.
-func NewOptionsWithFlags() (prometheusOn *bool, prometheusListenAddress *string, prometheusPushGateways *string) {
+func NewOptionsWithFlags() (prometheusOn *bool, prometheusListenAddress *string) {
 	return flag.Bool("prometheus_on", utils.GetEnvBoolDefault("PROMETHEUS_ON", true),
 			"Start metrics exporting via HTTP and pushing to gateways (specified via <prometheus_gateways>)"),
 		flag.String("prometheus_listen", utils.GetEnvStringDefault("PROMETHEUS_LISTEN", ":9090"),
-			"Address to listen on for metrics endpoint"),
-		flag.String("prometheus_gateways",
-			utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""),
-			"Comma separated list of prometheus push gateways")
+			"Address to listen on for metrics endpoint")
 }
 
-func InitOrFail(ctx context.Context, logger *zap.Logger, prometheusOn bool, prometheusListenAddress, prometheusPushGateways, clientID, country string) {
-	if err := ValidatePrometheusPushGateways(prometheusPushGateways); err != nil {
-		logger.Fatal("Invalid value for --prometheus_gateways", zap.String("value", prometheusPushGateways), zap.Error(err))
-	}
-
+func InitOrFail(ctx context.Context, logger *zap.Logger, prometheusOn bool, prometheusListenAddress, clientID, country string) {
 	if prometheusOn {
 		Init(clientID, country)
 
-		go ExportPrometheusMetrics(ctx, logger, clientID, prometheusListenAddress, prometheusPushGateways)
+		go ExportPrometheusMetrics(ctx, logger, clientID, prometheusListenAddress)
 	}
 }
 
@@ -175,138 +156,12 @@ func registerMetrics() {
 	prometheus.MustRegister(clientCounter)
 }
 
-// ValidatePrometheusPushGateways split value into list of comma separated values and validate that each value
-// is valid URL
-func ValidatePrometheusPushGateways(gatewayURLsCSV string) error {
-	if len(gatewayURLsCSV) == 0 {
-		return nil
-	}
-
-	for i, gatewayURL := range strings.Split(gatewayURLsCSV, ",") {
-		if _, err := url.Parse(gatewayURL); err != nil {
-			return fmt.Errorf("Can't parse %d-th (0-based) push gateway: %w", i, err)
-		}
-	}
-
-	return nil
-}
-
 // ExportPrometheusMetrics starts http server and export metrics at address <ip>:9090/metrics, also pushes metrics
 // to gateways randomly
-func ExportPrometheusMetrics(ctx context.Context, logger *zap.Logger, clientID, listen, gateways string) {
+func ExportPrometheusMetrics(ctx context.Context, logger *zap.Logger, clientID, listen string) {
 	registerMetrics()
 
-	if gateways != "" {
-		go pushMetrics(ctx, logger, clientID, strings.Split(gateways, ","))
-	}
-
 	serveMetrics(ctx, logger, listen)
-}
-
-// BasicAuth client's credentials for push gateway encrypted with utils/crypto.go#EncryptionKeys[0] key
-var BasicAuth = `YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNjcnlwdCBpYWlSV1VBRWcweEt2NWdTd240a0JBIDE4CmlONnhLcURxWEVWdmFuU1Rh` +
-	`SVl0dmplNGpLc0FqLzN5SE5neXdnM0xIMVUKLS0tIE1YdVNBVmk1NG9zNzRpQnh2R3U3MDBpWm5MNUxCb0hNeGxKTERGRDFRamMKJkpimmJGSDmx` +
-	`BX2e38Z38EQZK7aq/W29YMbZKz/omNL0GPvurXZA6GTPmmlD/XZ+EjCkW6bKajIS9y9533tsn6MR8NMtFJoS+z7M9b/yd8YJR6fW069b2A==`
-
-// getBasicAuth returns decrypted basic auth credential for push gateway
-func getBasicAuth() (string, string, error) {
-	encryptedData, err := base64.StdEncoding.DecodeString(BasicAuth)
-	if err != nil {
-		return "", "", err
-	}
-
-	decryptedData, err := utils.Decrypt(encryptedData)
-	if err != nil {
-		return "", "", err
-	}
-
-	const numBasicAuthParts = 2
-
-	parts := bytes.Split(decryptedData, []byte{':'})
-	if len(parts) != numBasicAuthParts {
-		return "", "", errors.New("invalid basic auth credential format")
-	}
-
-	return string(parts[0]), string(parts[1]), nil
-}
-
-// PushGatewayCA variable to embed self-signed CA for TLS
-var PushGatewayCA string
-
-// getTLSConfig returns tls.Config with system root CAs and embedded CA if not empty
-func getTLSConfig() (*tls.Config, error) {
-	rootCAs, err := x509.SystemCertPool()
-	if err != nil {
-		rootCAs = x509.NewCertPool()
-	}
-
-	if PushGatewayCA != "" {
-		decoded, err := base64.StdEncoding.DecodeString(PushGatewayCA)
-		if err != nil {
-			return nil, err
-		}
-
-		decrypted, err := utils.Decrypt(decoded)
-		if err != nil {
-			return nil, err
-		}
-
-		if ok := rootCAs.AppendCertsFromPEM(decrypted); !ok {
-			return nil, errors.New("invalid embedded CA")
-		}
-	}
-
-	return &tls.Config{
-		RootCAs:    rootCAs,
-		MinVersion: tls.VersionTLS12,
-	}, nil
-}
-
-func pushMetrics(ctx context.Context, logger *zap.Logger, clientID string, gateways []string) {
-	jobName := utils.GetEnvStringDefault("PROMETHEUS_JOB_NAME", "db1000n_default_add")
-	gateway := gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
-	tickerPeriod := utils.GetEnvDurationDefault("PROMETHEUS_PUSH_PERIOD", time.Minute)
-	ticker := time.NewTicker(tickerPeriod)
-
-	tlsConfig, err := getTLSConfig()
-	if err != nil {
-		logger.Debug("Can't get tls config", zap.Error(err))
-
-		return
-	}
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
-	user, password, err := getBasicAuth()
-	if err != nil {
-		logger.Debug("Can't fetch basic auth credentials", zap.Error(err))
-
-		return
-	}
-
-	pusher := setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := pusher.Add(); err != nil {
-				logger.Debug("Can't push metrics to gateway, changing gateway", zap.Error(err))
-
-				gateway = gateways[rand.Intn(len(gateways))] //nolint:gosec // Cryptographically secure random not required
-				pusher = setupPusher(push.New(gateway, jobName), clientID, httpClient, user, password)
-			}
-		}
-	}
-}
-
-func setupPusher(pusher *push.Pusher, clientID string, httpClient push.HTTPDoer, user, password string) *push.Pusher {
-	return pusher.Gatherer(prometheus.DefaultGatherer).Grouping(ClientIDLabel, clientID).Client(httpClient).BasicAuth(user, password)
 }
 
 // IncDNSBlast increments counter of sent dns queries
