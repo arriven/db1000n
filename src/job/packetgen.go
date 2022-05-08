@@ -38,7 +38,7 @@ import (
 
 type packetgenJobConfig struct {
 	BasicJobConfig
-	Dynamic    bool
+	Dynamic    bool // parse template on every iteration. slower but allows more variability in generated traffic
 	Packets    []*templates.MapStruct
 	Connection packetgen.ConnectionConfig
 }

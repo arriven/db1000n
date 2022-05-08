@@ -40,9 +40,9 @@ import (
 type httpJobConfig struct {
 	BasicJobConfig
 
-	Dynamic bool
-	Request map[string]any
-	Client  map[string]any // See HTTPClientConfig
+	Dynamic bool           // parse template on every iteration. slower but allows more variability in generated traffic
+	Request map[string]any // See http.RequestConfig
+	Client  map[string]any // See http.ClientConfig
 }
 
 // "http-request" in config
