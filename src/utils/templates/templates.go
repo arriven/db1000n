@@ -153,7 +153,7 @@ func Parse(input string) (*template.Template, error) {
 func Execute(logger *zap.Logger, tpl *template.Template, data any) string {
 	var res strings.Builder
 	if err := tpl.Execute(&res, data); err != nil {
-		logger.Warn("error executing template", zap.Error(err))
+		logger.Debug("error executing template", zap.Error(err))
 
 		return ""
 	}
@@ -165,14 +165,14 @@ func Execute(logger *zap.Logger, tpl *template.Template, data any) string {
 func ParseAndExecute(logger *zap.Logger, input string, data any) string {
 	tpl, err := Parse(input)
 	if err != nil {
-		logger.Warn("error parsing template", zap.Error(err))
+		logger.Debug("error parsing template", zap.Error(err))
 
 		return input
 	}
 
 	var output strings.Builder
 	if err = tpl.Execute(&output, data); err != nil {
-		logger.Warn("error executing template", zap.Error(err))
+		logger.Debug("error executing template", zap.Error(err))
 
 		return input
 	}
@@ -184,7 +184,7 @@ func ParseAndExecute(logger *zap.Logger, input string, data any) string {
 func ParseAndExecuteMapStruct(logger *zap.Logger, input map[string]any, data any) map[string]any {
 	tpl, err := ParseMapStruct(input)
 	if err != nil {
-		logger.Warn("error parsing template", zap.Error(err))
+		logger.Debug("error parsing template", zap.Error(err))
 
 		return input
 	}
