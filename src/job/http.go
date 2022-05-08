@@ -146,7 +146,7 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	client := http.NewClient(ctx, *clientConfig, logger)
 
 	req := fasthttp.AcquireRequest()
-	fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseRequest(req)
 
 	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
 
