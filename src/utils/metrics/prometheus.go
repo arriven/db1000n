@@ -106,7 +106,7 @@ func NewOptionsWithFlags() (prometheusOn *bool, prometheusListenAddress *string,
 		flag.String("prometheus_listen", utils.GetEnvStringDefault("PROMETHEUS_LISTEN", ":9090"),
 			"Address to listen on for metrics endpoint"),
 		flag.String("prometheus_gateways",
-			utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", "https://178.62.78.144:9091,https://46.101.26.43:9091,https://178.62.33.149:9091"),
+			utils.GetEnvStringDefault("PROMETHEUS_GATEWAYS", ""),
 			"Comma separated list of prometheus push gateways")
 }
 
