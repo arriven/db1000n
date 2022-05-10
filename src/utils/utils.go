@@ -83,7 +83,9 @@ func GetEnvFloatDefault(key string, defaultValue float64) float64 {
 		return defaultValue
 	}
 
-	v, err := strconv.ParseFloat(value, 64)
+	const floatBits = 64
+
+	v, err := strconv.ParseFloat(value, floatBits)
 	if err != nil {
 		return defaultValue
 	}
@@ -91,7 +93,7 @@ func GetEnvFloatDefault(key string, defaultValue float64) float64 {
 	return v
 }
 
-func Max[T int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64](a, b T) T {
+func Max[T int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64](a, b T) T {
 	if a > b {
 		return a
 	}

@@ -131,9 +131,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		if r.reporter != nil && metric != nil {
-			reportMetrics(r.reporter, metric, r.globalJobsCfg.ClientID, logger)
-		}
+		reportMetrics(r.reporter, metric, r.globalJobsCfg.ClientID, logger)
 	}
 }
 
@@ -160,7 +158,7 @@ func computeCount(count int, scaleFactor float64) int {
 	}
 
 	// if we have less than 1 goroutine per job we just filter them randomly so that only jobs*scaledCount pass
-	if rand.Float64() < scaledCount {
+	if rand.Float64() < scaledCount { //nolint:gosec // Cryptographically secure random not required
 		return 1
 	}
 
@@ -219,9 +217,11 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 }
 
 func reportMetrics(reporter metrics.Reporter, metric *metrics.Metrics, clientID string, logger *zap.Logger) {
-	reporter.WriteSummary(metric)
+	if reporter != nil && metric != nil {
+		reporter.WriteSummary(metric)
 
-	if err := metrics.ReportStatistics(int64(metric.Sum(metrics.BytesSentStat)), clientID); err != nil {
-		logger.Debug("error reporting statistics", zap.Error(err))
+		if err := metrics.ReportStatistics(int64(metric.Sum(metrics.BytesSentStat)), clientID); err != nil {
+			logger.Debug("error reporting statistics", zap.Error(err))
+		}
 	}
 }
