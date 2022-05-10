@@ -89,8 +89,8 @@ func parallelJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 			continue
 		}
 
-		if jobConfig.Jobs[i].Count < 1 {
-			jobConfig.Jobs[i].Count = 1
+		if globalConfig.ScaleFactor > 0 {
+			jobConfig.Jobs[i].Count = computeCount(jobConfig.Jobs[i].Count, globalConfig.ScaleFactor)
 		}
 
 		for j := 0; j < jobConfig.Jobs[i].Count; j++ {

@@ -46,7 +46,7 @@ type GlobalConfig struct {
 	Interface           string
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
-	ScaleFactor         int
+	ScaleFactor         float64
 	MinInterval         time.Duration
 	Backoff             utils.BackoffConfig
 }
@@ -67,7 +67,7 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"set to true if you want to only run plaintext jobs from the config for security considerations")
 	flag.BoolVar(&res.EnablePrimitiveJobs, "enable-primitive", utils.GetEnvBoolDefault("ENABLE_PRIMITIVE", true),
 		"set to true if you want to run primitive jobs that are less resource-efficient")
-	flag.IntVar(&res.ScaleFactor, "scale", utils.GetEnvIntDefault("SCALE_FACTOR", 1),
+	flag.Float64Var(&res.ScaleFactor, "scale", utils.GetEnvFloatDefault("SCALE_FACTOR", 1.0),
 		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
 	flag.DurationVar(&res.MinInterval, "min-interval", utils.GetEnvDurationDefault("MIN_INTERVAL", 0),
 		"minimum interval between job iterations")

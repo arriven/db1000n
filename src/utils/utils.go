@@ -76,6 +76,29 @@ func GetEnvDurationDefault(key string, defaultValue time.Duration) time.Duration
 	return v
 }
 
+// GetEnvFloatDefault returns environment variable or default value if no env varible is present
+func GetEnvFloatDefault(key string, defaultValue float64) float64 {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return defaultValue
+	}
+
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return defaultValue
+	}
+
+	return v
+}
+
+func Max[T int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64](a, b T) T {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
 func NonNilOrDefault[T any](v *T, dflt T) T {
 	if v != nil {
 		return *v

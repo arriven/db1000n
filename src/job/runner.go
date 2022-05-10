@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -130,7 +131,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		if r.reporter != nil {
+		if r.reporter != nil && metric != nil {
 			reportMetrics(r.reporter, metric, r.globalJobsCfg.ClientID, logger)
 		}
 	}
@@ -152,6 +153,20 @@ func nonNilConfigOrDefault(c, defaultConfig *config.RawMultiConfig) *config.RawM
 	return defaultConfig
 }
 
+func computeCount(count int, scaleFactor float64) int {
+	scaledCount := scaleFactor * float64(utils.Max(count, 1))
+	if scaledCount > 1 {
+		return int(scaledCount)
+	}
+
+	// if we have less than 1 goroutine per job we just filter them randomly so that only jobs*scaledCount pass
+	if rand.Float64() < scaledCount {
+		return 1
+	}
+
+	return 0
+}
+
 func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *metrics.Metrics, logger *zap.Logger) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
 
@@ -171,12 +186,8 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 			continue
 		}
 
-		if cfg.Jobs[i].Count < 1 {
-			cfg.Jobs[i].Count = 1
-		}
-
 		if r.globalJobsCfg.ScaleFactor > 0 {
-			cfg.Jobs[i].Count *= r.globalJobsCfg.ScaleFactor
+			cfg.Jobs[i].Count = computeCount(cfg.Jobs[i].Count, r.globalJobsCfg.ScaleFactor)
 		}
 
 		cfgMap := make(map[string]any)
