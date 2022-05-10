@@ -630,6 +630,10 @@ linters-settings:
   #     # https://staticcheck.io/docs/options#checks
   #     checks: ["all"]
 
+  gosec:
+    excludes:
+      - G404 # Cryptographically secure random not required across the whole project
+
   #   gosec:
   #     # To select a subset of rules to run.
   #     # Available rules: https://github.com/securego/gosec#available-rules

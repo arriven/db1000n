@@ -26,6 +26,7 @@ package job
 import (
 	"context"
 	"flag"
+	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,6 +48,7 @@ type GlobalConfig struct {
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         float64
+	RandomInterval      time.Duration
 	MinInterval         time.Duration
 	Backoff             utils.BackoffConfig
 }
@@ -69,6 +71,8 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		"set to true if you want to run primitive jobs that are less resource-efficient")
 	flag.Float64Var(&res.ScaleFactor, "scale", utils.GetEnvFloatDefault("SCALE_FACTOR", 1.0),
 		"used to scale the amount of jobs being launched, effect is similar to launching multiple instances at once")
+	flag.DurationVar(&res.RandomInterval, "random-interval", utils.GetEnvDurationDefault("RANDOM_INTERVAL", 0),
+		"random interval to add between job iterations")
 	flag.DurationVar(&res.MinInterval, "min-interval", utils.GetEnvDurationDefault("MIN_INTERVAL", 0),
 		"minimum interval between job iterations")
 
@@ -150,15 +154,20 @@ func ParseConfig(c Config, args config.Args, global GlobalConfig) error {
 
 // BasicJobConfig comment for linter
 type BasicJobConfig struct {
-	IntervalMs int
-	Interval   *time.Duration
+	IntervalMs     int
+	Interval       *time.Duration
+	RandomInterval time.Duration
 	utils.Counter
 	Backoff *utils.BackoffConfig
 }
 
 func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
-	if c.GetInterval() < global.MinInterval {
+	if c.GetInterval(true) < global.MinInterval {
 		c.Interval = &global.MinInterval
+	}
+
+	if c.RandomInterval < global.RandomInterval {
+		c.RandomInterval = global.RandomInterval
 	}
 
 	if c.Backoff == nil {
@@ -166,11 +175,16 @@ func (c *BasicJobConfig) FromGlobal(global GlobalConfig) {
 	}
 }
 
-func (c BasicJobConfig) GetInterval() time.Duration {
-	return utils.NonNilOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
+func (c BasicJobConfig) GetInterval(stable bool) time.Duration {
+	stableInterval := utils.NonNilOrDefault(c.Interval, time.Duration(c.IntervalMs)*time.Millisecond)
+	if stable {
+		return stableInterval
+	}
+
+	return stableInterval + time.Duration(rand.Int63n(utils.Max(c.RandomInterval.Nanoseconds(), 1)))
 }
 
 // Next comment for linter
 func (c *BasicJobConfig) Next(ctx context.Context) bool {
-	return utils.Sleep(ctx, c.GetInterval()) && c.Counter.Next()
+	return utils.Sleep(ctx, c.GetInterval(false)) && c.Counter.Next()
 }
