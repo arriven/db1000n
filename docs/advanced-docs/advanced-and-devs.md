@@ -69,4 +69,4 @@ See possible ways to deploy into public clouds
 
 ## See also
 
-* [db1000nX100](https://github.com/ihorlv/db1000nX100) - a project that automates VPN rotation for db1000n instances that allows you to generate geographically distributed traffic (i.e. to stress test geo-blocking)
+- [db1000nX100](https://github.com/ihorlv/db1000nX100) - a project that automates VPN rotation for db1000n instances that allows you to generate geographically distributed traffic (i.e. to stress test geo-blocking)
