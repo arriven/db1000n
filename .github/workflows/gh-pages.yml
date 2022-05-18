@@ -3,6 +3,7 @@ name: PushToGithubPages
 on:
   push:
     tags: ["**"]
+    branches: ["main"]
 
 jobs:
   deploy:
