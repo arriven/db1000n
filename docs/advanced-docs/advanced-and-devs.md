@@ -66,3 +66,7 @@ See possible ways to deploy into public clouds
 - [Digital Ocean](/db1000n/advanced-docs/terraform/digital-ocean/)
 - [Googls Cloud Platform](/db1000n/advanced-docs/terraform/gcp/)
 - [Heroku](/db1000n/advanced-docs/terraform/heroku/)
+
+## See also
+
+* [db1000nX100](https://github.com/ihorlv/db1000nX100) - a project that automates VPN rotation for db1000n instances that allows you to generate geographically distributed traffic (i.e. to stress test geo-blocking)
