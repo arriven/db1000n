@@ -12,7 +12,9 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 
 ## Quickstart guide
 
-### This tool is responsible only for traffic generation, you may want to use VPN if you want to test geo-blocking
+!!! attention
+
+    This tool is responsible only for traffic generation, you may want to use VPN if you want to test geo-blocking
 
 ### For dummies
 
