@@ -8,10 +8,6 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 
     Please check existing issues (both open and closed) before creating new ones. It will save me some time answering duplicated questions and right now time is the most critical resource. Regards.
 
-!!! info
-
-    Ви можете читати цю сторінку [Українською](/db1000n/uk/)!
-
 ---
 
 ## Quickstart guide
