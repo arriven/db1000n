@@ -16,12 +16,7 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 
 ## Quickstart guide
 
-### Use VPN (if you are in Ukraine)
-
-- Switch to Russia if possible
-- Don't use Ukraine as a VPN location!
-- But any other country or VPN location is okay
-- Stay safe!
+### This tool is responsible only for traffic generation, you may want to use VPN if you want to test geo-blocking
 
 ### For dummies
 
@@ -44,17 +39,6 @@ On 24th of February Russia has launched a full-blown invasion on Ukrainian terri
 !!! info
 
     You can get warnings from your computer about the file - ignore them (or allow in System Settings). Our software is open source. It can be checked and compiled by you yourself.
-
----
-
-## How to choose VPN
-
-### Free by request or promo code
-
-{%
-   include-markdown "./vpn.md"
-   start="Free VPN list:"
-%}
 
 ---
 
@@ -84,14 +68,6 @@ docker run --rm -it --pull always --network host ghcr.io/arriven/db1000n
 ### Advanced users
 
 See [For advanced](/db1000n/advanced-docs/advanced-and-devs/)
-
----
-
-## What’s next
-
-You need to keep your computer active, use VPN and make sure that the application is up and running.
-Our experts coordinate everything remotely without disturbing and interrupting you.
-Thanks for your help!
 
 ---
 

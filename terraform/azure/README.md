@@ -3,13 +3,13 @@
 ## Prerequisites
 
 - Install terraform
-- Register a new Azure account by providing a valid credit card and get 200$ free credits.
+- Have Azure account.
 - [Prepare environment for Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [The easiest option for auth is Azure CLI](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli)
 
 ## Deployment
 
-The composition creates container instances in 6 different regions for a broader attack. If you want to make a different setup, just alter modules in the `main.tf`.
+The composition creates container instances in 6 different regions for a broader attack simulation. If you want to make a different setup, just alter modules in the `main.tf`.
 
 Create a new `terraform.tfvars` file in the folder, if you want to change the default configuration of the farm (`db1000n` can be configured with either command line parameters or environment variables, former having precedence over the latter):
 

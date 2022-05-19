@@ -72,22 +72,6 @@
 
 ---
 
-???+ faq "How can I make it more effective?"
-
-    When selecting a VPN country, choose "friendly" countries for Russia:
-
-    - Russia
-    - Belarus
-    - Kazakhstan
-
-    ???+ warning "Objective"
-
-        Generate traffic from within, from their internal address.
-        Russia can close its propaganda to the world,
-        but they cannot close it to their citizens
-
----
-
 ???+ faq "What are primitive jobs?"
 
     Primitive jobs rely on generating as much raw traffic as possible. This might exhaust your system. They are also easier to detect and unadvisable to be used in the cloud environment.

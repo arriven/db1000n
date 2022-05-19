@@ -51,6 +51,8 @@ Almost all of these parameters can also be set via environment variables
 
 ## Config file reference
 
+This doc gets outdated frequently as the project is under active development but you can always check up to date configuration examples in `examples/config` folder
+
 The config is expected to be in json format and has following configuration values:
 
 - `jobs` - `[array]` array of attack job definitions to run, should be defined inside the root object
@@ -95,14 +97,6 @@ Warning: `packetgen` requires root privileges to run
 - `packet.network` - `[layer]` tcp/ip level 2 (OSI level 3) configuration. supports `ipv4` and `ipv6` protocols. see `src/core/packetgen/network.go` for all the available options
 - `packet.transport` - `[layer]` tcp/ip level 3 (OSI level 4) configuration. supports `tcp` and `udp` protocols. see `src/core/packetgen/transport.go` for all the available options
 - `packet.payload` - `[layer]` the data that goes on top of other layers. for now it can be `raw` for custom crafted payload string (i.e. you can write an http request directly here), `dns`, and `icmpv4`, but last two are not fully tested yet
-
-`dns-blast` args:
-
-- `root_domain` - `[string]`
-- `protocol` - `[string]` can be `udp`, `tcp`, or `tcp-tls`
-- `seed_domains` - `[array]`
-
-`slow-loris` - check `src/core/slowloris/slowloris.go` for reference
 
 all the jobs have shared args:
 

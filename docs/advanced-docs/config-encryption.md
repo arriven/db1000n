@@ -25,13 +25,13 @@ Let's take next config for example:
     {
       "type": "slow-loris",
       "args": {
-        "address": "80.87.198.26:53",
+        "address": "127.0.0.1:53",
         "ContentLength": 1000,
         "DialWorkersCount": 1,
         "RampUpInterval": 1,
         "SleepInterval": 1000,
         "DurationSeconds": 1000,
-        "Path": "https://meduza.io"
+        "Path": "https://example.com"
       }
     }
   ]
