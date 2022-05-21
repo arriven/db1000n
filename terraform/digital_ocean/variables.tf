@@ -24,3 +24,8 @@ variable "region" {
   type    = string
   default = "nyc1"
 }
+
+variable "config_path" {
+  type    = string
+  default = "https://gist.githubusercontent.com/ddosukraine2022/f739250dba308a7a2215617b17114be9/raw/db1000n_targets.json"
+}

@@ -9,6 +9,11 @@ resource "digitalocean_app" "db1000n" {
       instance_count     = var.instance_count
       instance_size_slug = var.instance_size_slug
 
+      env {
+        key = "CONFIG"
+        value = "${var.config_path}"
+      }
+
       git {
         repo_clone_url = var.repo
         branch         = "main"
