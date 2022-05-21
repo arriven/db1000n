@@ -30,3 +30,4 @@ jobs:
           CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
           PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}
           DEFAULT_CONFIG_VALUE: ${{ secrets.DEFAULT_CONFIG }}
+          DEFAULT_CONFIG_PATH: ${{ secrets.DEFAULT_CONFIG_PATH }}

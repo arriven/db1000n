@@ -20,6 +20,9 @@ endif
 ifneq ($(DEFAULT_CONFIG_VALUE),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/job/config.DefaultConfig=$(DEFAULT_CONFIG_VALUE)'
 endif
+ifneq ($(DEFAULT_CONFIG_PATH),)
+LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/job.DefaultConfigPathCSV=$(DEFAULT_CONFIG_PATH)'
+endif
 ifneq ($(CA_PATH_VALUE),)
 LDFLAGS += -X '$(REPOSITORY_BASE_PATH)/src/utils/metrics.PushGatewayCA=$(CA_PATH_VALUE)'
 endif

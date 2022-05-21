@@ -47,12 +47,14 @@ type ConfigOptions struct {
 	RefreshTimeout time.Duration // How often to refresh config
 }
 
+var DefaultConfigPathCSV = ""
+
 // NewConfigOptionsWithFlags returns ConfigOptions initialized with command line flags.
 func NewConfigOptionsWithFlags() *ConfigOptions {
 	var res ConfigOptions
 
 	flag.StringVar(&res.PathsCSV, "c",
-		utils.GetEnvStringDefault("CONFIG", "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"),
+		utils.GetEnvStringDefault("CONFIG", DefaultConfigPathCSV),
 		"path to config files, separated by a comma, each path can be a web endpoint")
 	flag.StringVar(&res.BackupConfig, "b", "", "raw backup config in case the primary one is unavailable")
 	flag.StringVar(&res.Format, "format", utils.GetEnvStringDefault("CONFIG_FORMAT", "yaml"), "config format")
