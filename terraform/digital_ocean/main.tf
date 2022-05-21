@@ -10,8 +10,8 @@ resource "digitalocean_app" "db1000n" {
       instance_size_slug = var.instance_size_slug
 
       env {
-        key = "CONFIG"
-        value = "${var.config_path}"
+        key   = "CONFIG"
+        value = var.config_path
       }
 
       git {
