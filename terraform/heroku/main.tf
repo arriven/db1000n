@@ -9,6 +9,7 @@ resource "heroku_app" "app" {
 
   config_vars = {
     GOVERSION = "1.18"
+    CONFIG = "${var.config_path}"
   }
 
   buildpacks = [
