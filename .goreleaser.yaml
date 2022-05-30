@@ -21,6 +21,12 @@ builds:
       - arm64
       - arm
       - "386"
+      - "mips"
+      - "mips64"
+      - "mips64le"
+      - "mipsle"
+      - "riscv64"
+      - "s390x"
     flags:
       - -tags=encrypted
     ldflags:
