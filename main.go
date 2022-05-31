@@ -35,10 +35,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/Arriven/db1000n/src/platform/mobile"
-
 	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/job/config"
+	"github.com/Arriven/db1000n/src/platform/mobile"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
