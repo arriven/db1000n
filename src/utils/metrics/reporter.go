@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -35,16 +36,24 @@ func (r *ZapReporter) WriteSummary(metrics *Metrics) {
 // ConsoleReporter
 
 type ConsoleReporter struct {
-	target io.Writer
+	target *bufio.Writer
 }
 
 // NewConsoleReporter creates a new Reporter which outputs straight to the console
 func NewConsoleReporter(target io.Writer) Reporter {
-	return &ConsoleReporter{target: target}
+	return &ConsoleReporter{target: bufio.NewWriter(target)}
 }
 
 func (r *ConsoleReporter) WriteSummary(metrics *Metrics) {
 	writer := tabwriter.NewWriter(r.target, 1, 1, 1, ' ', tabwriter.AlignRight)
+
+	r.writeSummaryTo(metrics, writer)
+
+	// Important to flush the remains of bufio.Writer
+	r.target.Flush()
+}
+
+func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Writer) {
 	stats, totals := metrics.SumAllStats()
 
 	defer writer.Flush()
