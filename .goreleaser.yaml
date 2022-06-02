@@ -27,6 +27,9 @@ builds:
       - "mipsle"
       - "riscv64"
       - "s390x"
+    gomips:
+      - hardfloat
+      - softfloat
     flags:
       - -tags=encrypted
     ldflags:
