@@ -41,7 +41,7 @@ builds:
       - -X github.com/Arriven/db1000n/src/job.DefaultConfigPathCSV={{ .Env.DEFAULT_CONFIG_PATH }}
 archives:
   - id: default
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     builds:
       - db1000n
     format: tar.gz
