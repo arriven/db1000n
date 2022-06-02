@@ -37,6 +37,7 @@ import (
 
 	"github.com/Arriven/db1000n/src/job"
 	"github.com/Arriven/db1000n/src/job/config"
+	"github.com/Arriven/db1000n/src/platform/mobile"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
 	"github.com/Arriven/db1000n/src/utils/ota"
@@ -45,6 +46,8 @@ import (
 const simpleLogFormat = "simple"
 
 func main() {
+	mobile.InitTerminal()
+
 	runnerConfigOptions := job.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
@@ -99,7 +102,14 @@ func main() {
 	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID, country)
 
 	reporter := newReporter(*logFormat, logger)
-	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
+	runner := job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter)
+
+	if mobile.IsMobile {
+		go runner.Run(ctx, logger)
+		mobile.RunTerminal()
+	} else {
+		runner.Run(ctx, logger)
+	}
 }
 
 func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, error) {
