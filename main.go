@@ -59,6 +59,7 @@ func main() {
 	logFormat := flag.String("log-format", utils.GetEnvStringDefault("LOG_FORMAT", simpleLogFormat), "overrides the default (simple) log output format,\n"+
 		"possible values are: json, console, simple\n"+
 		"simple is the most human readable format if you only look at the output in your terminal")
+	lessStats := flag.Bool("less-stats", utils.GetEnvBoolDefault("LESS_STATS", false), "group target stats by protocols - in case you have too many targets")
 
 	flag.Parse()
 
@@ -98,7 +99,7 @@ func main() {
 
 	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID, country)
 
-	reporter := newReporter(*logFormat, logger)
+	reporter := newReporter(*logFormat, *lessStats, logger)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
 }
 
@@ -154,10 +155,10 @@ func setUpPprof(logger *zap.Logger, pprof string, debug bool) {
 	go func() { logger.Warn("pprof server", zap.Error(http.ListenAndServe(pprof, mux))) }()
 }
 
-func newReporter(logFormat string, logger *zap.Logger) metrics.Reporter {
+func newReporter(logFormat string, groupTargets bool, logger *zap.Logger) metrics.Reporter {
 	if logFormat == simpleLogFormat {
-		return metrics.NewConsoleReporter(os.Stdout)
+		return metrics.NewConsoleReporter(os.Stdout, groupTargets)
 	}
 
-	return metrics.NewZapReporter(logger)
+	return metrics.NewZapReporter(logger, groupTargets)
 }
