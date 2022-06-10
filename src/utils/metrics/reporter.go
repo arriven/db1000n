@@ -19,16 +19,17 @@ type Reporter interface {
 // ZapReporter
 
 type ZapReporter struct {
-	logger *zap.Logger
+	logger       *zap.Logger
+	groupTargets bool
 }
 
 // NewZapReporter creates a new Reporter using a zap logger.
-func NewZapReporter(logger *zap.Logger) Reporter {
-	return &ZapReporter{logger: logger}
+func NewZapReporter(logger *zap.Logger, groupTargets bool) Reporter {
+	return &ZapReporter{logger: logger, groupTargets: groupTargets}
 }
 
 func (r *ZapReporter) WriteSummary(metrics *Metrics) {
-	stats, totals := metrics.SumAllStats()
+	stats, totals := metrics.SumAllStats(r.groupTargets)
 
 	r.logger.Info("stats", zap.Object("total", &totals), zap.Object("targets", stats))
 }
@@ -36,12 +37,13 @@ func (r *ZapReporter) WriteSummary(metrics *Metrics) {
 // ConsoleReporter
 
 type ConsoleReporter struct {
-	target *bufio.Writer
+	target       *bufio.Writer
+	groupTargets bool
 }
 
 // NewConsoleReporter creates a new Reporter which outputs straight to the console
-func NewConsoleReporter(target io.Writer) Reporter {
-	return &ConsoleReporter{target: bufio.NewWriter(target)}
+func NewConsoleReporter(target io.Writer, groupTargets bool) Reporter {
+	return &ConsoleReporter{target: bufio.NewWriter(target), groupTargets: groupTargets}
 }
 
 func (r *ConsoleReporter) WriteSummary(metrics *Metrics) {
@@ -54,7 +56,7 @@ func (r *ConsoleReporter) WriteSummary(metrics *Metrics) {
 }
 
 func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Writer) {
-	stats, totals := metrics.SumAllStats()
+	stats, totals := metrics.SumAllStats(r.groupTargets)
 
 	defer writer.Flush()
 
