@@ -23,7 +23,10 @@
 // Package metrics collects and reports job metrics.
 package metrics
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 type Metrics [NumStats]sync.Map // Array of metrics by Stat. Each metric is a map of uint64 values by dimensions.
 
@@ -37,8 +40,8 @@ func (m *Metrics) NewAccumulator(jobID string) *Accumulator {
 }
 
 // Calculates all targets and total stats
-func (m *Metrics) SumAllStats() (stats PerTargetStats, totals Stats) {
-	stats = m.sumAllStatsByTarget()
+func (m *Metrics) SumAllStats(groupTargets bool) (stats PerTargetStats, totals Stats) {
+	stats = m.sumAllStatsByTarget(groupTargets)
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
 		totals[s] = m.Sum(s)
@@ -66,7 +69,7 @@ func (m *Metrics) Sum(s Stat) uint64 {
 }
 
 // Returns a total sum of all metrics by target.
-func (m *Metrics) sumAllStatsByTarget() PerTargetStats {
+func (m *Metrics) sumAllStatsByTarget(groupTargets bool) PerTargetStats {
 	res := make(PerTargetStats)
 
 	for s := RequestsAttemptedStat; s < NumStats; s++ {
@@ -81,9 +84,21 @@ func (m *Metrics) sumAllStatsByTarget() PerTargetStats {
 				return true
 			}
 
-			stats := res[d.target]
+			var target string
+			if groupTargets {
+				protocol, _, found := strings.Cut(d.target, "://")
+				if found {
+					target = protocol
+				} else {
+					target = "other"
+				}
+			} else {
+				target = d.target
+			}
+
+			stats := res[target]
 			stats[s] += value
-			res[d.target] = stats
+			res[target] = stats
 
 			return true
 		})
