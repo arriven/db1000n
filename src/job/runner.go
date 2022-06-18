@@ -97,7 +97,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 		rawConfig := config.FetchRawMultiConfig(logger, strings.Split(r.cfgOptions.PathsCSV, ","),
 			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
 				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),
-			}))
+			}), r.globalJobsCfg.SkipEncrypted)
 		cfg := config.Unmarshal(rawConfig.Body, r.cfgOptions.Format)
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one

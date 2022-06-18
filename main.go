@@ -78,7 +78,8 @@ func main() {
 	case *version:
 		return
 	case *updaterMode:
-		config.UpdateLocal(logger, *destinationPath, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig))
+		config.UpdateLocal(logger, *destinationPath, strings.Split(runnerConfigOptions.PathsCSV, ","), []byte(runnerConfigOptions.BackupConfig),
+			jobsGlobalConfig.SkipEncrypted)
 
 		return
 	}

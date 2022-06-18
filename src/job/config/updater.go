@@ -18,11 +18,11 @@ func NewUpdaterOptionsWithFlags() (updaterMode *bool, destinationPath *string) {
 			"Destination config file to write (only applies if updater-mode is enabled")
 }
 
-func UpdateLocal(logger *zap.Logger, destinationPath string, configPaths []string, backupConfig []byte) {
+func UpdateLocal(logger *zap.Logger, destinationPath string, configPaths []string, backupConfig []byte, skipEncrypted bool) {
 	lastKnownConfig := &RawMultiConfig{Body: backupConfig}
 
 	for {
-		if rawConfig := FetchRawMultiConfig(logger, configPaths, lastKnownConfig); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
+		if rawConfig := FetchRawMultiConfig(logger, configPaths, lastKnownConfig, skipEncrypted); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
 			if err := writeConfig(logger, rawConfig.Body, destinationPath); err != nil {
 				logger.Error("error writing config", zap.Error(err))
 

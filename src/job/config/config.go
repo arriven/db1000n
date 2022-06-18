@@ -63,12 +63,10 @@ type RawMultiConfig struct {
 }
 
 // fetch tries to read a config from the list of mirrors until it succeeds
-func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
+func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
 	for i := range paths {
-		config, err := fetchSingle(paths[i], lastKnownConfig)
+		config, err := fetchAndDecrypt(logger, paths[i], lastKnownConfig, skipEncrypted)
 		if err != nil {
-			logger.Warn("failed to fetch config", zap.String("path", paths[i]), zap.Error(err))
-
 			continue
 		}
 
@@ -78,6 +76,37 @@ func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig) 
 	}
 
 	return lastKnownConfig
+}
+
+func fetchAndDecrypt(logger *zap.Logger, path string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) (*RawMultiConfig, error) {
+	config, err := fetchSingle(path, lastKnownConfig)
+	if err != nil {
+		logger.Warn("failed to fetch config", zap.String("path", path), zap.Error(err))
+
+		return nil, err
+	}
+
+	if utils.IsEncrypted(config.Body) {
+		if skipEncrypted {
+			logger.Warn("can't decrypt config", zap.String("error", "encryption disabled"))
+
+			return nil, fmt.Errorf("encryption disabled")
+		}
+
+		decryptedConfig, err := utils.Decrypt(config.Body)
+		if err != nil {
+			logger.Warn("can't decrypt config", zap.Error(err))
+
+			return nil, err
+		}
+
+		logger.Info("decrypted config")
+
+		config.Body = decryptedConfig
+		config.Encrypted = true
+	}
+
+	return config, nil
 }
 
 // fetchSingle reads a config from a single source
@@ -142,24 +171,8 @@ func fetchURL(configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiCon
 }
 
 // FetchRawMultiConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
-func FetchRawMultiConfig(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig) *RawMultiConfig {
-	newConfig := fetch(logger, paths, lastKnownConfig)
-
-	if utils.IsEncrypted(newConfig.Body) {
-		decryptedConfig, err := utils.Decrypt(newConfig.Body)
-		if err != nil {
-			logger.Warn("can't decrypt config", zap.Error(err))
-
-			return lastKnownConfig
-		}
-
-		logger.Info("decrypted config")
-
-		newConfig.Body = decryptedConfig
-		newConfig.Encrypted = true
-	}
-
-	return newConfig
+func FetchRawMultiConfig(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
+	return fetch(logger, paths, lastKnownConfig, skipEncrypted)
 }
 
 // Unmarshal config encoded with the given format.
