@@ -111,8 +111,8 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 			metric = &metrics.Metrics{} // clear info about previous targets and avoid old jobs from dumping old info to new metrics
 
-			if rawConfig.Encrypted {
-				logger.Info("config is encrypted, disabling logs")
+			if rawConfig.Protected {
+				logger.Info("config is protected, disabling logs")
 
 				cancel = r.runJobs(ctx, cfg, nil, zap.NewNop())
 			} else {

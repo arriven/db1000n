@@ -16,6 +16,8 @@ import (
 // EncryptionKeys random 32 byte key encoded into base64 string. Used by default for configs
 var EncryptionKeys = `/45pB920B6DFNwCB/n4rYUio3AVMawrdtrFnjTSIzL4=`
 
+var ProtectedKeys = ``
+
 // decryption takes a bunch of RAM to generate scrypt identity
 // we don't do decryption in hot paths so it's better to only allow one thread doing decryption at a time to avoi OOM
 var decryptMutex sync.Mutex
@@ -25,8 +27,13 @@ const (
 	keySeparator         = `&`
 )
 
+type encryptionKey struct {
+	key       string
+	protected bool //indicates that the content encrypted by this key shouldn't be logged anywhere
+}
+
 // GetEncryptionKeys returns list of encryption keys from ENCRYPTION_KEYS env variable name or default value
-func GetEncryptionKeys() ([]string, error) {
+func GetEncryptionKeys() ([]encryptionKey, error) {
 	keysString := GetEnvStringDefault(encryptionKeyEnvName, EncryptionKeys)
 	if keysString != EncryptionKeys {
 		// if user specified own keys, add default at end to be sure that it always used too
@@ -37,11 +44,17 @@ func GetEncryptionKeys() ([]string, error) {
 	// +1 to allocate for case if no separator and list contains key itself
 	// otherwise we just allocate +1 struct for string slice that stores just 2 int fields
 	// that is not a lot
-	output := make([]string, 0, strings.Count(keysString, keySeparator)+1)
+	output := make([]encryptionKey, 0, strings.Count(keysString, keySeparator)+strings.Count(ProtectedKeys, keySeparator)+1)
 
 	for _, key := range strings.Split(keysString, keySeparator) {
 		if key != "" {
-			output = append(output, key)
+			output = append(output, encryptionKey{key: key})
+		}
+	}
+
+	for _, key := range strings.Split(ProtectedKeys, keySeparator) {
+		if key != "" {
+			output = append(output, encryptionKey{key: key, protected: true})
 		}
 	}
 
@@ -54,10 +67,10 @@ func IsEncrypted(cfg []byte) bool {
 }
 
 // Decrypt decrypts config using EncryptionKeys
-func Decrypt(cfg []byte) (result []byte, err error) {
+func Decrypt(cfg []byte) (result []byte, protected bool, err error) {
 	keys, err := GetEncryptionKeys()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	decryptMutex.Lock()
@@ -65,17 +78,17 @@ func Decrypt(cfg []byte) (result []byte, err error) {
 
 	// iterate over all keys and return on first success decryption
 	for _, key := range keys {
-		result, err = decrypt(cfg, key)
+		result, err = decrypt(cfg, key.key)
 		runtime.GC() // force GC to decrease memory usage
 
 		if err != nil {
 			continue
 		}
 
-		return result, nil
+		return result, key.protected, nil
 	}
 
-	return nil, err
+	return nil, false, err
 }
 
 func decrypt(cfg []byte, key string) ([]byte, error) {

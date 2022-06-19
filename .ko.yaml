@@ -11,6 +11,6 @@ builds:
       - -s -w
       - -extldflags "-static"
       - -X github.com/Arriven/db1000n/src/utils/ota.Version={{ .Env.VERSION }}
-      - -X github.com/Arriven/db1000n/src/utils.EncryptionKeys={{ .Env.ENCRYPTION_KEYS }}
+      - -X github.com/Arriven/db1000n/src/utils.ProtectedKeys={{ .Env.PROTECTED_KEYS }}
       - -X github.com/Arriven/db1000n/src/job/config.DefaultConfig={{ .Env.DEFAULT_CONFIG_VALUE }}
       - -X github.com/Arriven/db1000n/src/job.DefaultConfigPathCSV={{ .Env.DEFAULT_CONFIG_PATH }}

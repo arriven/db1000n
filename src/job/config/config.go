@@ -57,7 +57,7 @@ type MultiConfig struct {
 
 type RawMultiConfig struct {
 	Body         []byte
-	Encrypted    bool
+	Protected    bool
 	lastModified string
 	etag         string
 }
@@ -93,7 +93,7 @@ func fetchAndDecrypt(logger *zap.Logger, path string, lastKnownConfig *RawMultiC
 			return nil, fmt.Errorf("encryption disabled")
 		}
 
-		decryptedConfig, err := utils.Decrypt(config.Body)
+		decryptedConfig, protected, err := utils.Decrypt(config.Body)
 		if err != nil {
 			logger.Warn("can't decrypt config", zap.Error(err))
 
@@ -103,7 +103,7 @@ func fetchAndDecrypt(logger *zap.Logger, path string, lastKnownConfig *RawMultiC
 		logger.Info("decrypted config")
 
 		config.Body = decryptedConfig
-		config.Encrypted = true
+		config.Protected = protected
 	}
 
 	return config, nil

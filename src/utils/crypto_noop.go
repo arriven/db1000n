@@ -19,6 +19,6 @@ func IsEncrypted(cfg []byte) bool {
 }
 
 // Decrypt decrypts config using EncryptionKeys
-func Decrypt(cfg []byte) ([]byte, error) {
-	return nil, fmt.Errorf("encryption not supported")
+func Decrypt(cfg []byte) ([]byte, bool, error) {
+	return nil, false, fmt.Errorf("encryption not supported")
 }

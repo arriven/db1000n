@@ -239,7 +239,7 @@ func encryptedJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 		return nil, err
 	}
 
-	decrypted, err := utils.Decrypt(decoded)
+	decrypted, protected, err := utils.Decrypt(decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -255,5 +255,9 @@ func encryptedJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 		return nil, fmt.Errorf("unknown job %q", jobCfg.Type)
 	}
 
-	return job(ctx, jobCfg.Args, globalConfig, nil, zap.NewNop())
+	if protected {
+		return job(ctx, jobCfg.Args, globalConfig, nil, zap.NewNop())
+	}
+
+	return job(ctx, jobCfg.Args, globalConfig, a, logger)
 }

@@ -27,8 +27,6 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENCRYPTION_KEYS: ${{ secrets.ENCRYPTION_KEYS }}
-          CA_PATH_VALUE: ${{ secrets.PROMETHEUS_ROOT_CA }}
-          PROMETHEUS_BASIC_AUTH: ${{ secrets.PROMETHEUS_BASIC_AUTH }}
+          PROTECTED_KEYS: ${{ secrets.PROTECTED_KEYS }}
           DEFAULT_CONFIG_VALUE: ${{ secrets.DEFAULT_CONFIG }}
           DEFAULT_CONFIG_PATH: ${{ secrets.DEFAULT_CONFIG_PATH }}
