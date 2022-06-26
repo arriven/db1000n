@@ -134,6 +134,7 @@ type netConn struct {
 func readStub(ctx context.Context, conn net.Conn, c *netReaderConfig) {
 	const bufSize = 1024
 	buf := make([]byte, bufSize)
+
 	ticker := time.NewTicker(c.Interval)
 	defer ticker.Stop()
 
