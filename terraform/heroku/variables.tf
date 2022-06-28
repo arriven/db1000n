@@ -34,5 +34,5 @@ variable "instance_type" {
 
 variable "config_path" {
   type    = string
-  default = "https://gist.githubusercontent.com/ddosukraine2022/f739250dba308a7a2215617b17114be9/raw/db1000n_targets.json"
+  default = "https://raw.githubusercontent.com/db1000n-coordinators/LoadTestConfig/main/config.v0.7.json"
 }
