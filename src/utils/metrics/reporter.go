@@ -62,7 +62,7 @@ func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Wri
 
 	// Print table's header
 	fmt.Fprintln(writer, "\n --- Traffic stats ---")
-	fmt.Fprintf(writer, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\n")
+	fmt.Fprintf(writer, "|\tTarget\t|\tRequests attempted\t|\tRequests sent\t|\tResponses received\t|\tData sent \t|\tData received \t|\n")
 
 	// Print all table rows
 	for _, tgt := range stats.sortedTargets() {
@@ -70,7 +70,7 @@ func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Wri
 	}
 
 	// Print table's footer
-	fmt.Fprintln(writer, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|")
+	fmt.Fprintln(writer, "|\t---\t|\t---\t|\t---\t|\t---\t|\t--- \t|\t--- \t|")
 	printStatsRow(writer, "Total", totals)
 	fmt.Fprintln(writer)
 }
@@ -78,10 +78,11 @@ func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Wri
 func printStatsRow(writer *tabwriter.Writer, rowName string, stats Stats) {
 	const BytesInMegabyte = 1024 * 1024
 
-	fmt.Fprintf(writer, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\n", rowName,
+	fmt.Fprintf(writer, "|\t%s\t|\t%d\t|\t%d\t|\t%d\t|\t%.2f MB \t|\t%.2f MB \t|\n", rowName,
 		stats[RequestsAttemptedStat],
 		stats[RequestsSentStat],
 		stats[ResponsesReceivedStat],
 		float64(stats[BytesSentStat])/BytesInMegabyte,
+		float64(stats[BytesReceivedStat])/BytesInMegabyte,
 	)
 }

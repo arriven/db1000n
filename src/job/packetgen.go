@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Arriven/db1000n/src/core/packetgen"
@@ -76,6 +77,8 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 		return err
 	}
 	defer conn.Close()
+
+	go readStub(ctx, conn, a.Clone(uuid.NewString()))
 
 	packetSrc, err := makePacketSource(ctx, logger, jobConfig.Packets, jobConfig.Dynamic)
 	if err != nil {
@@ -185,6 +188,31 @@ func getNextDynamicPacket(ctx context.Context, logger *zap.Logger, packetsChan c
 		}
 
 		return packetConfig.Build()
+	}
+}
+
+func readStub(ctx context.Context, conn packetgen.Connection, a *metrics.Accumulator) {
+	const bufSize = 1024
+	buf := make([]byte, bufSize)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			n, err := conn.Read(buf)
+			if err != nil {
+				return
+			}
+
+			if a != nil && n != 0 {
+				tgt := conn.Target()
+
+				a.Inc(tgt, metrics.ResponsesReceivedStat).
+					Add(tgt, metrics.BytesReceivedStat, uint64(n)).
+					Flush()
+			}
+		}
 	}
 }
 

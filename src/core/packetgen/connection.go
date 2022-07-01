@@ -65,6 +65,7 @@ func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error)
 
 type Connection interface {
 	Write(Packet) (int, error)
+	Read([]byte) (int, error)
 	Close() error
 	Target() string
 }
@@ -111,17 +112,14 @@ func (conn *rawConn) Close() error {
 
 func (conn *rawConn) Target() string { return conn.target }
 
+func (conn *rawConn) Read(_ []byte) (int, error) { return 0, nil }
+
 type netConnConfig struct {
 	Protocol        string
 	Address         string
 	Timeout         time.Duration
 	Proxy           utils.ProxyParams
-	Reader          *netReaderConfig
 	TLSClientConfig *tls.Config
-}
-
-type netReaderConfig struct {
-	Interval time.Duration
 }
 
 type netConn struct {
@@ -131,26 +129,6 @@ type netConn struct {
 	target string
 }
 
-func readStub(ctx context.Context, conn net.Conn, c *netReaderConfig) {
-	const bufSize = 1024
-	buf := make([]byte, bufSize)
-
-	ticker := time.NewTicker(c.Interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			_, err := conn.Read(buf)
-			if err != nil {
-				return
-			}
-		}
-	}
-}
-
 func openNetConn(ctx context.Context, c netConnConfig, proxyParams *utils.ProxyParams) (*netConn, error) {
 	conn, err := utils.GetProxyFunc(utils.NonNilOrDefault(proxyParams, utils.ProxyParams{}), c.Protocol)(c.Protocol, c.Address)
 
@@ -158,10 +136,6 @@ func openNetConn(ctx context.Context, c netConnConfig, proxyParams *utils.ProxyP
 	case err != nil:
 		return nil, err
 	case c.TLSClientConfig == nil:
-		if c.Reader != nil {
-			go readStub(ctx, conn, c.Reader)
-		}
-
 		return &netConn{Conn: conn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
 	}
 
@@ -170,10 +144,6 @@ func openNetConn(ctx context.Context, c netConnConfig, proxyParams *utils.ProxyP
 		tlsConn.Close()
 
 		return nil, err
-	}
-
-	if c.Reader != nil {
-		go readStub(ctx, conn, c.Reader)
 	}
 
 	return &netConn{Conn: tlsConn, buf: gopacket.NewSerializeBuffer(), target: c.Protocol + "://" + c.Address}, nil
@@ -192,3 +162,5 @@ func (conn *netConn) Close() error {
 }
 
 func (conn *netConn) Target() string { return conn.target }
+
+func (conn *netConn) Read(buf []byte) (int, error) { return conn.Conn.Read(buf) }

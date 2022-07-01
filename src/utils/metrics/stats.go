@@ -20,6 +20,7 @@ const (
 	RequestsSentStat
 	ResponsesReceivedStat
 	BytesSentStat
+	BytesReceivedStat
 
 	NumStats
 )
@@ -54,6 +55,7 @@ func (stats *Stats) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddUint64("requests_sent", stats[RequestsSentStat])
 	enc.AddUint64("responses_received", stats[ResponsesReceivedStat])
 	enc.AddUint64("bytes_sent", stats[BytesSentStat])
+	enc.AddUint64("bytes_received", stats[BytesReceivedStat])
 
 	return nil
 }

@@ -146,11 +146,13 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 	backoffController := utils.BackoffController{BackoffConfig: utils.NonNilOrDefault(jobConfig.Backoff, globalConfig.Backoff)}
 	client := http.NewClient(ctx, *clientConfig, logger)
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
+	var (
+		req  fasthttp.Request
+		resp fasthttp.Response
+	)
 
 	if !jobConfig.Dynamic {
-		if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
+		if err := buildHTTPRequest(ctx, logger, requestTpl, &req); err != nil {
 			return nil, fmt.Errorf("error executing request template: %w", err)
 		}
 	}
@@ -159,17 +161,16 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 
 	for jobConfig.Next(ctx) {
 		if jobConfig.Dynamic {
-			if err := buildHTTPRequest(ctx, logger, requestTpl, req); err != nil {
+			if err := buildHTTPRequest(ctx, logger, requestTpl, &req); err != nil {
 				return nil, fmt.Errorf("error executing request template: %w", err)
 			}
 		}
 
-		if err := client.Do(req, nil); err != nil {
+		if err := client.Do(&req, &resp); err != nil {
 			logger.Debug("error sending request", zap.Error(err), zap.Any("args", args))
 
 			if a != nil {
 				a.Inc(target(req.URI()), metrics.RequestsAttemptedStat).Flush()
-				metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusFail)
 			}
 
 			utils.Sleep(ctx, backoffController.Increment().GetTimeout())
@@ -177,18 +178,17 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 			continue
 		}
 
-		requestSize, _ := req.WriteTo(nopWriter{})
-
 		if a != nil {
+			requestSize, _ := req.WriteTo(nopWriter{})
+			responseSize, _ := resp.WriteTo(nopWriter{})
 			tgt := target(req.URI())
 
 			a.Inc(tgt, metrics.RequestsAttemptedStat).
 				Inc(tgt, metrics.RequestsSentStat).
 				Inc(tgt, metrics.ResponsesReceivedStat).
 				Add(tgt, metrics.BytesSentStat, uint64(requestSize)).
+				Add(tgt, metrics.BytesReceivedStat, uint64(responseSize)).
 				Flush()
-
-			metrics.IncHTTP(string(req.Host()), string(req.Header.Method()), metrics.StatusSuccess)
 		}
 
 		backoffController.Reset()
