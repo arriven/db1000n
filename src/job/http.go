@@ -157,8 +157,6 @@ func fastHTTPJob(ctx context.Context, args config.Args, globalConfig *GlobalConf
 		}
 	}
 
-	logger.Info("attacking", zap.Any("target", jobConfig.Request["path"]))
-
 	for jobConfig.Next(ctx) {
 		if jobConfig.Dynamic {
 			if err := buildHTTPRequest(ctx, logger, requestTpl, &req); err != nil {

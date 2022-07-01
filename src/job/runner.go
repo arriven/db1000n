@@ -198,6 +198,10 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
+			if cfg.Jobs[i].Name != "" {
+				logger.Info("Attacking", zap.String("target", cfg.Jobs[i].Name))
+			}
+
 			go func(i int) {
 				defer utils.PanicHandler(logger)
 
