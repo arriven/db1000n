@@ -49,7 +49,7 @@ func packetgenJob(ctx context.Context, args config.Args, globalConfig *GlobalCon
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jobConfig, err := parsePacketgenArgs(ctx, args, globalConfig, a, logger)
+	jobConfig, err := parsePacketgenArgs(ctx, args, globalConfig, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
@@ -72,7 +72,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	conn, err := packetgen.OpenConnection(ctx, jobConfig.Connection)
+	conn, err := packetgen.OpenConnection(jobConfig.Connection)
 	if err != nil {
 		return err
 	}
@@ -131,8 +131,8 @@ func makePacketSource(ctx context.Context, logger *zap.Logger, packetTpls []*tem
 
 	packetsChan := utils.InfiniteRange(ctx, packets)
 
-	return func(ctx context.Context, logger *zap.Logger) (packetgen.Packet, error) {
-		return getNextStaticPacket(ctx, logger, packetsChan)
+	return func(ctx context.Context, _ *zap.Logger) (packetgen.Packet, error) {
+		return getNextStaticPacket(ctx, packetsChan)
 	}, nil
 }
 
@@ -158,7 +158,7 @@ func staticPackets(ctx context.Context, logger *zap.Logger, packetTpls []*templa
 	return packets, nil
 }
 
-func getNextStaticPacket(ctx context.Context, logger *zap.Logger, packetsChan chan packetgen.Packet) (packetgen.Packet, error) {
+func getNextStaticPacket(ctx context.Context, packetsChan chan packetgen.Packet) (packetgen.Packet, error) {
 	select {
 	case <-ctx.Done():
 		return packetgen.Packet{}, ctx.Err()
@@ -251,7 +251,7 @@ func parsePackets(packets []packetDescriptor, dflt map[string]any) ([]*templates
 	return packetTpls, nil
 }
 
-func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
+func parsePacketgenArgs(ctx context.Context, args config.Args, globalConfig *GlobalConfig, logger *zap.Logger) (
 	tpl *packetgenJobConfig, err error,
 ) {
 	var jobConfig struct {

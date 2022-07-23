@@ -26,8 +26,10 @@ func serveMetrics(ctx context.Context, logger *zap.Logger, listen string) {
 	))
 
 	server := &http.Server{
-		Addr:    listen,
-		Handler: mux,
+		Addr:              listen,
+		Handler:           mux,
+		ReadTimeout:       time.Second,
+		ReadHeaderTimeout: time.Second,
 	}
 	go func(ctx context.Context, server *http.Server) {
 		<-ctx.Done()
