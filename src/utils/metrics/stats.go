@@ -36,6 +36,28 @@ func (ts PerTargetStats) sortedTargets() []string {
 	return res
 }
 
+func Diff(lhs, rhs Stats) Stats {
+	var res Stats
+	for i := range res {
+		res[i] = lhs[i] - rhs[i]
+	}
+
+	return res
+}
+
+func (ts PerTargetStats) Diff(other PerTargetStats) PerTargetStats {
+	if other == nil {
+		return ts
+	}
+
+	res := make(PerTargetStats)
+	for k := range ts {
+		res[k] = Diff(ts[k], other[k])
+	}
+
+	return res
+}
+
 // MarshalLogObject is required to log PerTargetStats objects to zap
 func (ts PerTargetStats) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for _, tgt := range ts.sortedTargets() {
