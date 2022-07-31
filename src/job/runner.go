@@ -37,6 +37,7 @@ import (
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
+	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -200,6 +201,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 		ctx = context.WithValue(ctx, templates.ContextKey("global_config"), r.globalJobsCfg)
 		ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
 		ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
+		ctx = context.WithValue(ctx, templates.ContextKey("version"), ota.Version)
 		ctx = context.WithValue(ctx, templates.ContextKey("metrics"), metric)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
