@@ -129,6 +129,8 @@ func Get(t string) Job {
 		return timeoutJob
 	case "loop":
 		return loopJob
+	case "lock":
+		return lockJob
 	case "js":
 		return jsJob
 	case "encrypted":

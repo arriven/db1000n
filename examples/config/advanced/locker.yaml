@@ -1,0 +1,23 @@
+jobs:
+  - type: lock
+    args:
+      key: test
+      job:
+        type: loop
+        args:
+          interval: 1s
+          job:
+            type: log
+            args:
+              text: test
+  - type: lock
+    args:
+      key: test
+      job:
+        type: loop
+        args:
+          interval: 1s
+          job:
+            type: log
+            args:
+              text: test2

@@ -38,6 +38,8 @@ import (
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
+var locker utils.Locker
+
 // "log" in config
 func logJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
@@ -188,6 +190,32 @@ func loopJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, 
 	}
 
 	return nil, nil
+}
+
+func lockJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var jobConfig struct {
+		BasicJobConfig
+
+		Key string
+		Job config.Config
+	}
+
+	if err := mapstructure.Decode(templates.ParseAndExecuteMapStruct(logger, args, ctx), &jobConfig); err != nil {
+		return nil, fmt.Errorf("error parsing job config: %w", err)
+	}
+
+	unlock := locker.Lock(jobConfig.Key)
+	defer unlock()
+
+	job := Get(jobConfig.Job.Type)
+	if job == nil {
+		return nil, fmt.Errorf("unknown job %q", jobConfig.Job.Type)
+	}
+
+	return job(ctx, jobConfig.Job.Args, globalConfig, a, logger)
 }
 
 // "js" in config
