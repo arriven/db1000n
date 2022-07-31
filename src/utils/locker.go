@@ -8,6 +8,7 @@ type Locker struct {
 
 func (m *Locker) Lock(key string) func() {
 	value, _ := m.mutexes.LoadOrStore(key, &sync.Mutex{})
+
 	mtx, ok := value.(*sync.Mutex)
 	if ok {
 		mtx.Lock()
