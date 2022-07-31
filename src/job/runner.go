@@ -27,6 +27,7 @@ import (
 	"context"
 	"flag"
 	"math/rand"
+	"runtime"
 	"strings"
 	"time"
 
@@ -196,6 +197,10 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 		}
 
 		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
+		ctx = context.WithValue(ctx, templates.ContextKey("global_config"), r.globalJobsCfg)
+		ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
+		ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
+		ctx = context.WithValue(ctx, templates.ContextKey("metrics"), metric)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
 			if cfg.Jobs[i].Name != "" {

@@ -203,11 +203,11 @@ func lockJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, 
 		Job config.Config
 	}
 
-	if err := mapstructure.Decode(templates.ParseAndExecuteMapStruct(logger, args, ctx), &jobConfig); err != nil {
+	if err := ParseConfig(&jobConfig, args, *globalConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	unlock := locker.Lock(jobConfig.Key)
+	unlock := locker.Lock(templates.ParseAndExecute(logger, jobConfig.Key, ctx))
 	defer unlock()
 
 	job := Get(jobConfig.Job.Type)
