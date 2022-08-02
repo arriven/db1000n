@@ -13,7 +13,7 @@ import (
 // Concurrency-safe.
 type Reporter interface {
 	// WriteSummary dumps Reporter contents into the target.
-	WriteSummary(*Metrics)
+	WriteSummary(*StatsTracker)
 }
 
 // ZapReporter
@@ -21,7 +21,6 @@ type Reporter interface {
 type ZapReporter struct {
 	logger       *zap.Logger
 	groupTargets bool
-	tracker      statsTracker
 }
 
 // NewZapReporter creates a new Reporter using a zap logger.
@@ -29,8 +28,8 @@ func NewZapReporter(logger *zap.Logger, groupTargets bool) Reporter {
 	return &ZapReporter{logger: logger, groupTargets: groupTargets}
 }
 
-func (r *ZapReporter) WriteSummary(metrics *Metrics) {
-	stats, totals, statsInterval, totalsInterval := r.tracker.sumStats(metrics, r.groupTargets)
+func (r *ZapReporter) WriteSummary(tracker *StatsTracker) {
+	stats, totals, statsInterval, totalsInterval := tracker.sumStats(r.groupTargets)
 
 	r.logger.Info("stats", zap.Object("total", &totals), zap.Object("targets", stats),
 		zap.Object("total_since_last_report", &totalsInterval), zap.Object("targets_since_last_report", statsInterval))
@@ -41,7 +40,6 @@ func (r *ZapReporter) WriteSummary(metrics *Metrics) {
 type ConsoleReporter struct {
 	target       *bufio.Writer
 	groupTargets bool
-	tracker      statsTracker
 }
 
 // NewConsoleReporter creates a new Reporter which outputs straight to the console
@@ -49,17 +47,17 @@ func NewConsoleReporter(target io.Writer, groupTargets bool) Reporter {
 	return &ConsoleReporter{target: bufio.NewWriter(target), groupTargets: groupTargets}
 }
 
-func (r *ConsoleReporter) WriteSummary(metrics *Metrics) {
+func (r *ConsoleReporter) WriteSummary(tracker *StatsTracker) {
 	writer := tabwriter.NewWriter(r.target, 1, 1, 1, ' ', tabwriter.AlignRight)
 
-	r.writeSummaryTo(metrics, writer)
+	r.writeSummaryTo(tracker, writer)
 
 	// Important to flush the remains of bufio.Writer
 	r.target.Flush()
 }
 
-func (r *ConsoleReporter) writeSummaryTo(metrics *Metrics, writer *tabwriter.Writer) {
-	stats, totals, statsInterval, totalsInterval := r.tracker.sumStats(metrics, r.groupTargets)
+func (r *ConsoleReporter) writeSummaryTo(tracker *StatsTracker, writer *tabwriter.Writer) {
+	stats, totals, statsInterval, totalsInterval := tracker.sumStats(r.groupTargets)
 
 	defer writer.Flush()
 
@@ -88,18 +86,4 @@ func printStatsRow(writer *tabwriter.Writer, rowName string, stats Stats, diff S
 		float64(diff[BytesSentStat])/BytesInMegabyte, float64(stats[BytesSentStat])/BytesInMegabyte,
 		float64(diff[BytesReceivedStat])/BytesInMegabyte, float64(stats[BytesReceivedStat])/BytesInMegabyte,
 	)
-}
-
-// statsTracker generalizes tracking stats changes between reports
-type statsTracker struct {
-	lastStats  PerTargetStats
-	lastTotals Stats
-}
-
-func (st *statsTracker) sumStats(metrics *Metrics, groupTargets bool) (stats PerTargetStats, totals Stats, statsInterval PerTargetStats, totalsInterval Stats) {
-	stats, totals = metrics.SumAllStats(groupTargets)
-	statsInterval, totalsInterval = stats.Diff(st.lastStats), Diff(totals, st.lastTotals)
-	st.lastStats, st.lastTotals = stats, totals
-
-	return
 }
