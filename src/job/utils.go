@@ -26,6 +26,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -61,13 +62,26 @@ func logJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a
 func setVarJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error) {
 	var jobConfig struct {
 		Value string
+		Type  string
 	}
 
 	if err := mapstructure.Decode(args, &jobConfig); err != nil {
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
+	switch jobConfig.Type {
+	case "int":
+		return strconv.Atoi(templates.ParseAndExecute(logger, jobConfig.Value, ctx))
+	case "uint":
+		val, err := strconv.ParseUint(templates.ParseAndExecute(logger, jobConfig.Value, ctx), 10, 32)
+		return uint(val), err
+	case "int64":
+		return strconv.ParseInt(templates.ParseAndExecute(logger, jobConfig.Value, ctx), 10, 64)
+	case "uint64":
+		return strconv.ParseUint(templates.ParseAndExecute(logger, jobConfig.Value, ctx), 10, 64)
+	default:
+		return templates.ParseAndExecute(logger, jobConfig.Value, ctx), nil
+	}
 }
 
 // "check" in config
