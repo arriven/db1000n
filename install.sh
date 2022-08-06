@@ -23,7 +23,8 @@ fi
 INSTALL_ARCH="unknown"
 case "$OSARCH" in
   x86_64*)  INSTALL_ARCH="amd64" ;;
-  i386*)    INSTALL_ARCH="386" ;; 
+  i386*)    INSTALL_ARCH="386" ;;
+  i686*)    INSTALL_ARCH="386" ;;
   armv6l)   INSTALL_ARCH="armv6" ;;
   armv7l)   INSTALL_ARCH="armv6" ;;
   arm*)     INSTALL_ARCH="arm64" ;;
