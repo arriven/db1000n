@@ -23,7 +23,6 @@
 package packetgen
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -42,7 +41,7 @@ type ConnectionConfig struct {
 	Proxy *utils.ProxyParams
 }
 
-func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error) {
+func OpenConnection(c ConnectionConfig) (Connection, error) {
 	switch c.Type {
 	case "raw":
 		var cfg rawConnConfig
@@ -57,7 +56,7 @@ func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error)
 			return nil, fmt.Errorf("error decoding connection config: %w", err)
 		}
 
-		return openNetConn(ctx, cfg, c.Proxy)
+		return openNetConn(cfg, c.Proxy)
 	default:
 		return nil, fmt.Errorf("unknown connection type: %v", c.Type)
 	}
@@ -129,7 +128,7 @@ type netConn struct {
 	target string
 }
 
-func openNetConn(ctx context.Context, c netConnConfig, proxyParams *utils.ProxyParams) (*netConn, error) {
+func openNetConn(c netConnConfig, proxyParams *utils.ProxyParams) (*netConn, error) {
 	conn, err := utils.GetProxyFunc(utils.NonNilOrDefault(proxyParams, utils.ProxyParams{}), c.Protocol)(c.Protocol, c.Address)
 
 	switch {

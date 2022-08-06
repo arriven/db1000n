@@ -46,7 +46,7 @@ func udpJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a
 func rawnetJob(ctx context.Context, protocol string, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error,
 ) {
-	packetgenArgs, err := parseRawNetJobArgs(logger, globalConfig, args, protocol)
+	packetgenArgs, err := parseRawNetJobArgs(globalConfig, args, protocol)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func rawnetJob(ctx context.Context, protocol string, args config.Args, globalCon
 	return packetgenJob(ctx, packetgenArgs, globalConfig, a, logger)
 }
 
-func parseRawNetJobArgs(logger *zap.Logger, globalConfig *GlobalConfig, args config.Args, protocol string) (
+func parseRawNetJobArgs(globalConfig *GlobalConfig, args config.Args, protocol string) (
 	result map[string]any, err error,
 ) {
 	var jobConfig struct {

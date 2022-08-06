@@ -91,14 +91,6 @@ func randomAplhaNum(n int) string {
 	return randomString(n, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 }
 
-func mod(lhs, rhs int) int {
-	return lhs % rhs
-}
-
-func add(lhs, rhs int) int {
-	return lhs + rhs
-}
-
 // ContextKey used to work with context and not trigger linter
 type ContextKey string
 
@@ -144,6 +136,16 @@ func Parse(input string) (*template.Template, error) {
 		"get_url":             getURLContent,
 		"mod":                 mod,
 		"add":                 add,
+		"sub":                 sub,
+		"umod":                umod,
+		"uadd":                uadd,
+		"usub":                usub,
+		"mod64":               mod64,
+		"add64":               add64,
+		"sub64":               sub64,
+		"umod64":              umod64,
+		"uadd64":              uadd64,
+		"usub64":              usub64,
 		"ctx_key":             ctxKey,
 		"cookie_string":       cookieString,
 	}).Parse(input)

@@ -27,6 +27,7 @@ import (
 	"context"
 	"flag"
 	"math/rand"
+	"runtime"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/Arriven/db1000n/src/job/config"
 	"github.com/Arriven/db1000n/src/utils"
 	"github.com/Arriven/db1000n/src/utils/metrics"
+	"github.com/Arriven/db1000n/src/utils/ota"
 	"github.com/Arriven/db1000n/src/utils/templates"
 )
 
@@ -89,9 +91,10 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	defer refreshTimer.Stop()
 	metrics.IncClient()
 
-	var cancel context.CancelFunc
-
-	var metric *metrics.Metrics
+	var (
+		cancel  context.CancelFunc
+		tracker *metrics.StatsTracker
+	)
 
 	for {
 		rawConfig := config.FetchRawMultiConfig(logger, strings.Split(r.cfgOptions.PathsCSV, ","),
@@ -109,7 +112,8 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 				cancel()
 			}
 
-			metric = &metrics.Metrics{} // clear info about previous targets and avoid old jobs from dumping old info to new metrics
+			metric := &metrics.Metrics{} // clear info about previous targets and avoid old jobs from dumping old info to new metrics
+			tracker = metrics.NewStatsTracker(metric)
 
 			if rawConfig.Protected {
 				logger.Info("config is protected, disabling logs")
@@ -133,7 +137,7 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 			return
 		}
 
-		reportMetrics(r.reporter, metric, r.globalJobsCfg.ClientID, logger)
+		reportMetrics(r.reporter, tracker, r.globalJobsCfg.ClientID, logger)
 	}
 }
 
@@ -169,6 +173,9 @@ func computeCount(count int, scaleFactor float64) int {
 
 func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *metrics.Metrics, logger *zap.Logger) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
+	ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
+	ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
+	ctx = context.WithValue(ctx, templates.ContextKey("version"), ota.Version)
 
 	var jobInstancesCount int
 
@@ -196,6 +203,7 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 		}
 
 		ctx := context.WithValue(ctx, templates.ContextKey("config"), cfgMap)
+		ctx = context.WithValue(ctx, templates.ContextKey("metrics"), metric)
 
 		for j := 0; j < cfg.Jobs[i].Count; j++ {
 			if cfg.Jobs[i].Name != "" {
@@ -222,11 +230,12 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 	return cancel
 }
 
-func reportMetrics(reporter metrics.Reporter, metric *metrics.Metrics, clientID string, logger *zap.Logger) {
-	if reporter != nil && metric != nil {
-		reporter.WriteSummary(metric)
+func reportMetrics(reporter metrics.Reporter, tracker *metrics.StatsTracker, clientID string, logger *zap.Logger) {
+	if reporter != nil && tracker != nil {
+		reporter.WriteSummary(tracker)
 
-		if err := metrics.ReportStatistics(int64(metric.Sum(metrics.BytesSentStat)), clientID); err != nil {
+		// TODO: get rid of this
+		if err := metrics.ReportStatistics(0, clientID); err != nil {
 			logger.Debug("error reporting statistics", zap.Error(err))
 		}
 	}

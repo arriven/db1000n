@@ -87,7 +87,7 @@ func getCountry(logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int
 	for counter.Next() {
 		logger.Info("checking IP address,", zap.Int("iter", counter.iter))
 
-		if country, ip, err = fetchLocationInfo(logger, proxyParams); err != nil {
+		if country, ip, err = fetchLocationInfo(proxyParams); err != nil {
 			logger.Warn("error fetching location info", zap.Error(err))
 			Sleep(context.Background(), backoffController.Increment().GetTimeout())
 		} else {
@@ -98,7 +98,7 @@ func getCountry(logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int
 	return "", "", fmt.Errorf("couldn't get location info in %d tries", maxFetchRetries)
 }
 
-func fetchLocationInfo(logger *zap.Logger, proxyParams ProxyParams) (country, ip string, err error) {
+func fetchLocationInfo(proxyParams ProxyParams) (country, ip string, err error) {
 	const (
 		ipCheckerURI   = "https://api.myip.com/"
 		requestTimeout = 3 * time.Second
