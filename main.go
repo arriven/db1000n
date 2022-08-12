@@ -29,6 +29,7 @@ import (
 	"net/http"
 	pprofhttp "net/http/pprof"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -60,6 +61,8 @@ func main() {
 		"possible values are: json, console, simple\n"+
 		"simple is the most human readable format if you only look at the output in your terminal")
 	lessStats := flag.Bool("less-stats", utils.GetEnvBoolDefault("LESS_STATS", false), "group target stats by protocols - in case you have too many targets")
+	periodicGCEnabled := flag.Bool("periodic-gc", utils.GetEnvBoolDefault("PERIODIC_GC", false),
+		"set to true if you want to run periodic garbage collection(useful in pooling scenarios, like db1000nx100)")
 
 	flag.Parse()
 
@@ -89,6 +92,7 @@ func main() {
 		logger.Warn("failed to increase rlimit", zap.Error(err))
 	}
 
+	go periodicGC(periodicGCEnabled, runnerConfigOptions.RefreshTimeout, logger)
 	go ota.WatchUpdates(logger, otaConfig)
 	setUpPprof(logger, *pprof, *debug)
 	rand.Seed(time.Now().UnixNano())
@@ -102,6 +106,27 @@ func main() {
 
 	reporter := newReporter(*logFormat, *lessStats, logger)
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
+}
+
+func periodicGC(enabled *bool, period time.Duration, log *zap.Logger) {
+	if !*enabled {
+		return
+	}
+	var m runtime.MemStats
+	for {
+		<-time.After(period)
+		runtime.ReadMemStats(&m)
+		memBefore := m.Alloc
+		start := time.Now()
+		runtime.GC()
+		runtime.ReadMemStats(&m)
+		log.Info("GC finished",
+			zap.Duration("GC took(Sec)", time.Since(start)),
+			zap.Uint64("previous(MiB)", utils.ToMiB(memBefore)),
+			zap.Uint64("current(MiB)", utils.ToMiB(m.Alloc)),
+			zap.Uint64("recovered(MiB)", utils.ToMiB(memBefore-m.Alloc)),
+		)
+	}
 }
 
 func newZapLogger(debug bool, logLevel string, logFormat string) (*zap.Logger, error) {

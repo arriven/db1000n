@@ -176,3 +176,7 @@ func Unmarshal(input []byte, output any, format string) error {
 
 	return nil
 }
+
+func ToMiB(bytes uint64) uint64 {
+	return bytes / 1048576
+}
