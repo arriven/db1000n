@@ -74,6 +74,7 @@ func setVarJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig
 		return strconv.Atoi(templates.ParseAndExecute(logger, jobConfig.Value, ctx))
 	case "uint":
 		val, err := strconv.ParseUint(templates.ParseAndExecute(logger, jobConfig.Value, ctx), 10, 32)
+
 		return uint(val), err
 	case "int64":
 		return strconv.ParseInt(templates.ParseAndExecute(logger, jobConfig.Value, ctx), 10, 64)
@@ -122,6 +123,8 @@ func sleepJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig,
 func discardErrorJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (
 	data any, err error, //nolint:unparam // data is here to match Job
 ) {
+	defer utils.PanicHandler(logger)
+
 	var jobConfig struct {
 		BasicJobConfig
 

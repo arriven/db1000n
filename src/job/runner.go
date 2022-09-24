@@ -84,6 +84,9 @@ func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig, reporter 
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
+	ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
+	ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
+	ctx = context.WithValue(ctx, templates.ContextKey("version"), ota.Version)
 	ctx = context.WithValue(ctx, templates.ContextKey("global"), r.globalJobsCfg)
 	lastKnownConfig := &config.RawMultiConfig{}
 	refreshTimer := time.NewTicker(r.cfgOptions.RefreshTimeout)
@@ -92,12 +95,12 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 	metrics.IncClient()
 
 	var (
-		cancel  context.CancelFunc
+		cancel  context.CancelFunc = func() {}
 		tracker *metrics.StatsTracker
 	)
 
 	for {
-		rawConfig := config.FetchRawMultiConfig(logger, strings.Split(r.cfgOptions.PathsCSV, ","),
+		rawConfig := config.FetchRawMultiConfig(ctx, logger, strings.Split(r.cfgOptions.PathsCSV, ","),
 			nonNilConfigOrDefault(lastKnownConfig, &config.RawMultiConfig{
 				Body: []byte(nonEmptyStringOrDefault(r.cfgOptions.BackupConfig, config.DefaultConfig)),
 			}), r.globalJobsCfg.SkipEncrypted)
@@ -105,13 +108,9 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 
 		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) && cfg != nil { // Only restart jobs if the new config differs from the current one
 			logger.Info("new config received, applying")
+			cancel()
 
 			lastKnownConfig = rawConfig
-
-			if cancel != nil {
-				cancel()
-			}
-
 			metric := &metrics.Metrics{} // clear info about previous targets and avoid old jobs from dumping old info to new metrics
 			tracker = metrics.NewStatsTracker(metric)
 
@@ -130,14 +129,14 @@ func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
 		select {
 		case <-refreshTimer.C:
 		case <-ctx.Done():
-			if cancel != nil {
-				cancel()
-			}
+			cancel()
 
 			return
 		}
 
-		reportMetrics(r.reporter, tracker, r.globalJobsCfg.ClientID, logger)
+		if r.reporter != nil && tracker != nil {
+			r.reporter.WriteSummary(tracker)
+		}
 	}
 }
 
@@ -173,9 +172,6 @@ func computeCount(count int, scaleFactor float64) int {
 
 func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *metrics.Metrics, logger *zap.Logger) (cancel context.CancelFunc) {
 	ctx, cancel = context.WithCancel(ctx)
-	ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
-	ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
-	ctx = context.WithValue(ctx, templates.ContextKey("version"), ota.Version)
 
 	var jobInstancesCount int
 
@@ -228,15 +224,4 @@ func (r *Runner) runJobs(ctx context.Context, cfg *config.MultiConfig, metric *m
 	logger.Info("job instances (re)started", zap.Int("count", jobInstancesCount))
 
 	return cancel
-}
-
-func reportMetrics(reporter metrics.Reporter, tracker *metrics.StatsTracker, clientID string, logger *zap.Logger) {
-	if reporter != nil && tracker != nil {
-		reporter.WriteSummary(tracker)
-
-		// TODO: get rid of this
-		if err := metrics.ReportStatistics(0, clientID); err != nil {
-			logger.Debug("error reporting statistics", zap.Error(err))
-		}
-	}
 }

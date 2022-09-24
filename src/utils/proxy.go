@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net"
@@ -24,7 +25,7 @@ type ProxyParams struct {
 
 // this won't work for udp payloads but if people use proxies they might not want to have their ip exposed
 // so it's probably better to fail instead of routing the traffic directly
-func GetProxyFunc(params ProxyParams, protocol string) ProxyFunc {
+func GetProxyFunc(ctx context.Context, params ProxyParams, protocol string) ProxyFunc {
 	direct := &net.Dialer{Timeout: params.Timeout, LocalAddr: resolveAddr(protocol, params.LocalAddr), Control: BindToInterface(params.Interface)}
 	if params.URLs == "" {
 		return proxy.FromEnvironmentUsing(direct).Dial

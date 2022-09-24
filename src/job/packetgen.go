@@ -72,7 +72,7 @@ func sendPacket(ctx context.Context, logger *zap.Logger, jobConfig *packetgenJob
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	conn, err := packetgen.OpenConnection(jobConfig.Connection)
+	conn, err := packetgen.OpenConnection(ctx, jobConfig.Connection)
 	if err != nil {
 		return err
 	}

@@ -63,9 +63,9 @@ type RawMultiConfig struct {
 }
 
 // fetch tries to read a config from the list of mirrors until it succeeds
-func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
+func fetch(ctx context.Context, logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
 	for i := range paths {
-		config, err := fetchAndDecrypt(logger, paths[i], lastKnownConfig, skipEncrypted)
+		config, err := fetchAndDecrypt(ctx, logger, paths[i], lastKnownConfig, skipEncrypted)
 		if err != nil {
 			continue
 		}
@@ -78,8 +78,8 @@ func fetch(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, 
 	return lastKnownConfig
 }
 
-func fetchAndDecrypt(logger *zap.Logger, path string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) (*RawMultiConfig, error) {
-	config, err := fetchSingle(path, lastKnownConfig)
+func fetchAndDecrypt(ctx context.Context, logger *zap.Logger, path string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) (*RawMultiConfig, error) {
+	config, err := fetchSingle(ctx, path, lastKnownConfig)
 	if err != nil {
 		logger.Warn("failed to fetch config", zap.String("path", path), zap.Error(err))
 
@@ -110,7 +110,7 @@ func fetchAndDecrypt(logger *zap.Logger, path string, lastKnownConfig *RawMultiC
 }
 
 // fetchSingle reads a config from a single source
-func fetchSingle(path string, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
+func fetchSingle(ctx context.Context, path string, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
 	configURL, err := url.ParseRequestURI(path)
 	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
 	if err != nil || filepath.IsAbs(path) {
@@ -122,13 +122,13 @@ func fetchSingle(path string, lastKnownConfig *RawMultiConfig) (*RawMultiConfig,
 		return &RawMultiConfig{Body: res, lastModified: "", etag: ""}, nil
 	}
 
-	return fetchURL(configURL, lastKnownConfig)
+	return fetchURL(ctx, configURL, lastKnownConfig)
 }
 
-func fetchURL(configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
+func fetchURL(ctx context.Context, configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiConfig, error) {
 	const requestTimeout = 20 * time.Second
 
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, configURL.String(), nil)
@@ -171,8 +171,8 @@ func fetchURL(configURL *url.URL, lastKnownConfig *RawMultiConfig) (*RawMultiCon
 }
 
 // FetchRawMultiConfig retrieves the current config using a list of paths. Falls back to the last known config in case of errors.
-func FetchRawMultiConfig(logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
-	return fetch(logger, paths, lastKnownConfig, skipEncrypted)
+func FetchRawMultiConfig(ctx context.Context, logger *zap.Logger, paths []string, lastKnownConfig *RawMultiConfig, skipEncrypted bool) *RawMultiConfig {
+	return fetch(ctx, logger, paths, lastKnownConfig, skipEncrypted)
 }
 
 // Unmarshal config encoded with the given format.

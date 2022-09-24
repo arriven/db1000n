@@ -113,7 +113,7 @@ func NewClient(ctx context.Context, clientConfig ClientConfig, logger *zap.Logge
 	tlsConfig := utils.NonNilOrDefault(clientConfig.TLSClientConfig, tls.Config{
 		InsecureSkipVerify: true, //nolint:gosec // This is intentional
 	})
-	proxyFunc := utils.GetProxyFunc(*clientConfig.Proxy, "http")
+	proxyFunc := utils.GetProxyFunc(ctx, *clientConfig.Proxy, "http")
 
 	if clientConfig.StaticHost != nil {
 		makeHostClient := func(tls bool) *fasthttp.HostClient {

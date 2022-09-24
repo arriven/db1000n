@@ -41,6 +41,7 @@ import (
 // GlobalConfig passes commandline arguments to every job.
 type GlobalConfig struct {
 	ClientID string
+	UserID   string
 
 	ProxyURLs           string
 	LocalAddr           string
@@ -59,6 +60,8 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 		ClientID: uuid.NewString(),
 	}
 
+	flag.StringVar(&res.UserID, "user-id", utils.GetEnvStringDefault("USER_ID", ""),
+		"user id for optional metrics")
 	flag.StringVar(&res.ProxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
 		"system proxy to set by default (can be a comma-separated list or a template)")
 	flag.StringVar(&res.LocalAddr, "local-address", utils.GetEnvStringDefault("LOCAL_ADDRESS", ""),

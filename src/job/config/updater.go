@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"os"
 	"time"
@@ -22,7 +23,8 @@ func UpdateLocal(logger *zap.Logger, destinationPath string, configPaths []strin
 	lastKnownConfig := &RawMultiConfig{Body: backupConfig}
 
 	for {
-		if rawConfig := FetchRawMultiConfig(logger, configPaths, lastKnownConfig, skipEncrypted); !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
+		rawConfig := FetchRawMultiConfig(context.Background(), logger, configPaths, lastKnownConfig, skipEncrypted)
+		if !bytes.Equal(lastKnownConfig.Body, rawConfig.Body) {
 			if err := writeConfig(logger, rawConfig.Body, destinationPath); err != nil {
 				logger.Error("error writing config", zap.Error(err))
 

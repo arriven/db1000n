@@ -26,11 +26,11 @@ const (
 
 type encryptionKey struct {
 	key       string
-	protected bool //indicates that the content encrypted by this key shouldn't be logged anywhere
+	protected bool // indicates that the content encrypted by this key shouldn't be logged anywhere
 }
 
-// GetEncryptionKeys returns list of encryption keys from ENCRYPTION_KEYS env variable name or default value
-func GetEncryptionKeys() ([]encryptionKey, error) {
+// getEncryptionKeys returns list of encryption keys from ENCRYPTION_KEYS env variable name or default value
+func getEncryptionKeys() []encryptionKey {
 	keysString := GetEnvStringDefault(encryptionKeyEnvName, EncryptionKeys)
 	if keysString != EncryptionKeys {
 		// if user specified own keys, add default at end to be sure that it always used too
@@ -55,7 +55,7 @@ func GetEncryptionKeys() ([]encryptionKey, error) {
 		}
 	}
 
-	return output, nil
+	return output
 }
 
 // IsEncrypted returns true if cfg encrypted with age tool (https://github.com/FiloSottile/age)
@@ -65,17 +65,13 @@ func IsEncrypted(cfg []byte) bool {
 
 // Decrypt decrypts config using EncryptionKeys
 func Decrypt(cfg []byte) (result []byte, protected bool, err error) {
-	keys, err := GetEncryptionKeys()
-	if err != nil {
-		return nil, false, err
-	}
-
 	decryptMutex.Lock()
 	defer decryptMutex.Unlock()
 
 	// iterate over all keys and return on first success decryption
-	for _, key := range keys {
+	for _, key := range getEncryptionKeys() {
 		result, err = decrypt(cfg, key.key)
+
 		runtime.GC() // force GC to decrease memory usage
 
 		if err != nil {

@@ -48,17 +48,17 @@ func CheckCountryOrFail(ctx context.Context, logger *zap.Logger, cfg *CountryChe
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					_ = ckeckCountryOnce(logger, cfg, proxyParams)
+					_ = ckeckCountryOnce(ctx, logger, cfg, proxyParams)
 				}
 			}
 		}()
 	}
 
-	return ckeckCountryOnce(logger, cfg, proxyParams)
+	return ckeckCountryOnce(ctx, logger, cfg, proxyParams)
 }
 
-func ckeckCountryOnce(logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
-	country, ip, err := getCountry(logger, proxyParams, cfg.maxRetries)
+func ckeckCountryOnce(ctx context.Context, logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams ProxyParams) string {
+	country, ip, err := getCountry(ctx, logger, proxyParams, cfg.maxRetries)
 	if err != nil {
 		if cfg.strict {
 			logger.Fatal("country strict check failed", zap.Error(err))
@@ -80,16 +80,16 @@ func ckeckCountryOnce(logger *zap.Logger, cfg *CountryCheckerConfig, proxyParams
 	return country
 }
 
-func getCountry(logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int) (country, ip string, err error) {
+func getCountry(ctx context.Context, logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int) (country, ip string, err error) {
 	counter := Counter{Count: maxFetchRetries}
 	backoffController := BackoffController{BackoffConfig: DefaultBackoffConfig()}
 
 	for counter.Next() {
 		logger.Info("checking IP address,", zap.Int("iter", counter.iter))
 
-		if country, ip, err = fetchLocationInfo(proxyParams); err != nil {
+		if country, ip, err = fetchLocationInfo(ctx, proxyParams); err != nil {
 			logger.Warn("error fetching location info", zap.Error(err))
-			Sleep(context.Background(), backoffController.Increment().GetTimeout())
+			Sleep(ctx, backoffController.Increment().GetTimeout())
 		} else {
 			return
 		}
@@ -98,13 +98,13 @@ func getCountry(logger *zap.Logger, proxyParams ProxyParams, maxFetchRetries int
 	return "", "", fmt.Errorf("couldn't get location info in %d tries", maxFetchRetries)
 }
 
-func fetchLocationInfo(proxyParams ProxyParams) (country, ip string, err error) {
+func fetchLocationInfo(ctx context.Context, proxyParams ProxyParams) (country, ip string, err error) {
 	const (
 		ipCheckerURI   = "https://api.myip.com/"
 		requestTimeout = 3 * time.Second
 	)
 
-	proxyFunc := GetProxyFunc(proxyParams, "http")
+	proxyFunc := GetProxyFunc(ctx, proxyParams, "http")
 
 	client := &fasthttp.Client{
 		MaxConnDuration:     requestTimeout,

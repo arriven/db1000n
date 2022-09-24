@@ -21,6 +21,12 @@ linters-settings:
     section-separators:
       - newLine
 
+  gomnd:
+    ignored-functions:
+      - strings.SplitN
+      - strconv.ParseUint
+      - strconv.ParseInt
+
   gosec:
     excludes:
       - G404 # Cryptographically secure random not required across the whole project

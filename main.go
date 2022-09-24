@@ -100,24 +100,25 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	country := utils.CheckCountryOrFail(ctx, logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil))
-
-	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID, country)
-
-	reporter := newReporter(*logFormat, *lessStats, logger)
-	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, reporter).Run(ctx, logger)
+	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID,
+		utils.CheckCountryOrFail(ctx, logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil)))
+	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, newReporter(*logFormat, *lessStats, logger)).Run(ctx, logger)
 }
 
 func periodicGC(enabled *bool, period time.Duration, log *zap.Logger) {
 	if !*enabled {
 		return
 	}
+
 	var m runtime.MemStats
+
 	for {
 		<-time.After(period)
 		runtime.ReadMemStats(&m)
+
 		memBefore := m.Alloc
 		start := time.Now()
+
 		runtime.GC()
 		runtime.ReadMemStats(&m)
 		log.Info("GC finished",
@@ -177,8 +178,15 @@ func setUpPprof(logger *zap.Logger, pprof string, debug bool) {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprofhttp.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprofhttp.Trace))
 
+	server := &http.Server{
+		Addr:         pprof,
+		Handler:      mux,
+		ReadTimeout:  time.Second,
+		WriteTimeout: time.Second,
+	}
+
 	// this has to be wrapped into a lambda bc otherwise it blocks when evaluating argument for zap.Error
-	go func() { logger.Warn("pprof server", zap.Error(http.ListenAndServe(pprof, mux))) }()
+	go func() { logger.Warn("pprof server", zap.Error(server.ListenAndServe())) }()
 }
 
 func newReporter(logFormat string, groupTargets bool, logger *zap.Logger) metrics.Reporter {
