@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+         <loc>https://arriven.github.io/db1000n/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/faq/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/faq/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/faq/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/license/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/license/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/license/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/over-the-air/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/over-the-air/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/over-the-air/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/advanced-and-devs/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/advanced-and-devs/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/advanced-and-devs/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/config-encryption/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/config-encryption/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/config-encryption/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/configuration/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/configuration/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/configuration/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/docker-vpn/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/docker-vpn/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/docker-vpn/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/pull-request-template/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/pull-request-template/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/pull-request-template/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/kubernetes/helm-charts/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/kubernetes/helm-charts/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/kubernetes/helm-charts/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/kubernetes/manifests/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/kubernetes/manifests/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/kubernetes/manifests/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/aws_ec2/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/aws_ec2/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/aws_ec2/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/aws_eks/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/aws_eks/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/aws_eks/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/aws_lightsail/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/aws_lightsail/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/aws_lightsail/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/azure/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/azure/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/azure/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/digital-ocean/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/digital-ocean/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/digital-ocean/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/gcp/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/gcp/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/gcp/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/heroku/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/heroku/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/heroku/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/hetzner-cloud/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/hetzner-cloud/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/hetzner-cloud/"/>
+         
+    </url>
+    <url>
+         <loc>https://arriven.github.io/db1000n/advanced-docs/terraform/vultr/</loc>
+         <lastmod>2022-09-24</lastmod>
+         <changefreq>daily</changefreq>
+         <xhtml:link rel="alternate" hreflang="en" href="https://arriven.github.io/db1000n/en/advanced-docs/terraform/vultr/"/>
+         <xhtml:link rel="alternate" hreflang="uk" href="https://arriven.github.io/db1000n/uk/advanced-docs/terraform/vultr/"/>
+         
+    </url>
+</urlset>
