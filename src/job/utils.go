@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -97,7 +98,7 @@ func checkJob(ctx context.Context, args config.Args, globalConfig *GlobalConfig,
 		return nil, fmt.Errorf("error parsing job config: %w", err)
 	}
 
-	if templates.ParseAndExecute(logger, jobConfig.Value, ctx) != "true" {
+	if strings.TrimSpace(templates.ParseAndExecute(logger, jobConfig.Value, ctx)) != "true" {
 		return nil, fmt.Errorf("validation failed %v", jobConfig.Value)
 	}
 
