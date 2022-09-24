@@ -2,7 +2,7 @@ package utils
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"runtime"
 	"strings"
 	"sync"
@@ -95,5 +95,5 @@ func decrypt(cfg []byte, key string) ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadAll(decryptedReader)
+	return io.ReadAll(decryptedReader)
 }
