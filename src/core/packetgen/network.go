@@ -60,6 +60,7 @@ type IPPacketConfig struct {
 	SrcIP        string
 	DstIP        string
 	NextProtocol *int
+	TTL          uint8
 }
 
 // buildIPV4Packet generates a layers.IPv4 and returns it with source IP address and destination IP address
@@ -76,6 +77,7 @@ func buildIPV4Packet(c IPPacketConfig) *layers.IPv4 {
 		DstIP:    net.ParseIP(c.DstIP).To4(),
 		Version:  ipv4,
 		Protocol: next,
+		TTL:      c.TTL,
 	}
 }
 

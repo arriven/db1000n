@@ -27,10 +27,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"syscall"
 	"time"
 
 	"github.com/google/gopacket"
-	"golang.org/x/net/ipv6"
 
 	"github.com/Arriven/db1000n/src/utils"
 )
@@ -45,12 +45,7 @@ type ConnectionConfig struct {
 func OpenConnection(ctx context.Context, c ConnectionConfig) (Connection, error) {
 	switch c.Type {
 	case "raw":
-		var cfg rawConnConfig
-		if err := utils.Decode(c.Args, &cfg); err != nil {
-			return nil, fmt.Errorf("error decoding connection config: %w", err)
-		}
-
-		return openRawConn(cfg)
+		return openRawConn()
 	case "net":
 		var cfg netConnConfig
 		if err := utils.Decode(c.Args, &cfg); err != nil {
@@ -70,31 +65,27 @@ type Connection interface {
 	Target() string
 }
 
-// raw ipv4/ipv6 connection
-type rawConnConfig struct {
-	Name    string
-	Address string
-}
-
 type rawConn struct {
-	*ipv6.PacketConn
+	fd  int
 	buf gopacket.SerializeBuffer
-
-	target string
 }
 
 // openRawConn opens a raw ip network connection based on the provided config
 // use ipv6 as it also supports ipv4
-func openRawConn(c rawConnConfig) (*rawConn, error) {
-	packetConn, err := net.ListenPacket(c.Name, c.Address)
+func openRawConn() (*rawConn, error) {
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW)
+	if err != nil {
+		return nil, err
+	}
+
+	err = syscall.SetsockoptInt(fd, syscall.IPPROTO_IP, syscall.IP_HDRINCL, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	return &rawConn{
-		PacketConn: ipv6.NewPacketConn(packetConn),
-		buf:        gopacket.NewSerializeBuffer(),
-		target:     c.Name + "://" + c.Address,
+		fd:  fd,
+		buf: gopacket.NewSerializeBuffer(),
 	}, nil
 }
 
@@ -103,14 +94,19 @@ func (conn *rawConn) Write(packet Packet) (n int, err error) {
 		return 0, fmt.Errorf("error serializing packet: %w", err)
 	}
 
-	return conn.PacketConn.WriteTo(conn.buf.Bytes(), nil, &net.IPAddr{IP: packet.IP()})
+	addr := &syscall.SockaddrInet4{}
+
+	// ipv6 is not supported for now
+	copy(addr.Addr[:], packet.IP().To4())
+
+	return 0, syscall.Sendto(conn.fd, conn.buf.Bytes(), 0, addr)
 }
 
 func (conn *rawConn) Close() error {
-	return conn.PacketConn.Close()
+	return syscall.Close(conn.fd)
 }
 
-func (conn *rawConn) Target() string { return conn.target }
+func (conn *rawConn) Target() string { return "raw://" }
 
 func (conn *rawConn) Read(_ []byte) (int, error) { return 0, nil }
 
