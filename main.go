@@ -49,7 +49,6 @@ func main() {
 	runnerConfigOptions := job.NewConfigOptionsWithFlags()
 	jobsGlobalConfig := job.NewGlobalConfigWithFlags()
 	otaConfig := ota.NewConfigWithFlags()
-	countryCheckerConfig := utils.NewCountryCheckerConfigWithFlags()
 	updaterMode, destinationPath := config.NewUpdaterOptionsWithFlags()
 	prometheusOn, prometheusListenAddress := metrics.NewOptionsWithFlags()
 	pprof := flag.String("pprof", utils.GetEnvStringDefault("GO_PPROF_ENDPOINT", ""), "enable pprof")
@@ -100,8 +99,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID,
-		utils.CheckCountryOrFail(ctx, logger, countryCheckerConfig, jobsGlobalConfig.GetProxyParams(logger, nil)))
+	metrics.InitOrFail(ctx, logger, *prometheusOn, *prometheusListenAddress, jobsGlobalConfig.ClientID, "")
 	job.NewRunner(runnerConfigOptions, jobsGlobalConfig, newReporter(*logFormat, *lessStats, logger)).Run(ctx, logger)
 }
 

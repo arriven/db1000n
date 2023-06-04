@@ -5,6 +5,7 @@ import (
 )
 
 // DefaultConfig is the config embedded into the app that it will use if not able to fetch any other config
+//
 //nolint:lll // Makes no sense splitting this into multiple lines
 var DefaultConfig = ``
 

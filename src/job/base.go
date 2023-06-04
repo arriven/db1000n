@@ -26,7 +26,12 @@ package job
 import (
 	"context"
 	"flag"
+	"io"
 	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,9 +48,11 @@ type GlobalConfig struct {
 	ClientID string
 	UserID   string
 
-	ProxyURLs           string
-	LocalAddr           string
-	Interface           string
+	proxyURLs           string
+	proxylist           string
+	defaultProxyProto   string
+	localAddr           string
+	iface               string
 	SkipEncrypted       bool
 	EnablePrimitiveJobs bool
 	ScaleFactor         float64
@@ -62,11 +69,13 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 
 	flag.StringVar(&res.UserID, "user-id", utils.GetEnvStringDefault("USER_ID", ""),
 		"user id for optional metrics")
-	flag.StringVar(&res.ProxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
+	flag.StringVar(&res.proxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
 		"system proxy to set by default (can be a comma-separated list or a template)")
-	flag.StringVar(&res.LocalAddr, "local-address", utils.GetEnvStringDefault("LOCAL_ADDRESS", ""),
+	flag.StringVar(&res.proxylist, "proxylist", "", "file or url to read a list of proxies from")
+	flag.StringVar(&res.defaultProxyProto, "default-proxy-proto", "socks5", "protocol to fallback to if proxy contains only address")
+	flag.StringVar(&res.localAddr, "local-address", utils.GetEnvStringDefault("LOCAL_ADDRESS", ""),
 		"specify ip address of local interface to use")
-	flag.StringVar(&res.Interface, "interface", utils.GetEnvStringDefault("NETWORK_INTERFACE", ""),
+	flag.StringVar(&res.iface, "interface", utils.GetEnvStringDefault("NETWORK_INTERFACE", ""),
 		"specify which interface to bind to for attacks (ignored on windows)")
 	flag.BoolVar(&res.SkipEncrypted, "skip-encrypted", utils.GetEnvBoolDefault("SKIP_ENCRYPTED", false),
 		"set to true if you want to only run plaintext jobs from the config for security considerations")
@@ -91,16 +100,61 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 
 func (g GlobalConfig) GetProxyParams(logger *zap.Logger, data any) utils.ProxyParams {
 	return utils.ProxyParams{
-		URLs:      templates.ParseAndExecute(logger, g.ProxyURLs, data),
-		LocalAddr: templates.ParseAndExecute(logger, g.LocalAddr, data),
-		Interface: templates.ParseAndExecute(logger, g.Interface, data),
+		URLs:         templates.ParseAndExecute(logger, g.proxyURLs, data),
+		DefaultProto: g.defaultProxyProto,
+		LocalAddr:    templates.ParseAndExecute(logger, g.localAddr, data),
+		Interface:    templates.ParseAndExecute(logger, g.iface, data),
 	}
+}
+
+func (g *GlobalConfig) initProxylist(ctx context.Context) error {
+	if g.proxyURLs != "" || g.proxylist == "" {
+		return nil
+	}
+	proxylist, err := readProxylist(ctx, g.proxylist)
+	if err != nil {
+		return err
+	}
+	g.proxyURLs = string(proxylist)
+	return nil
+}
+
+func readProxylist(ctx context.Context, path string) ([]byte, error) {
+	proxylistURL, err := url.ParseRequestURI(path)
+	// absolute paths can be interpreted as a URL with no schema, need to check for that explicitly
+	if err != nil || filepath.IsAbs(path) {
+		res, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		return res, nil
+	}
+
+	const requestTimeout = 20 * time.Second
+
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, proxylistURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
 
 // Job comment for linter
 type Job = func(ctx context.Context, args config.Args, globalConfig *GlobalConfig, a *metrics.Accumulator, logger *zap.Logger) (data any, err error)
 
 // Get job by type name
+//
 //nolint:cyclop // The string map alternative is orders of magnitude slower
 func Get(t string) Job {
 	switch t {

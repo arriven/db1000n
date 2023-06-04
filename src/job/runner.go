@@ -84,6 +84,10 @@ func NewRunner(cfgOptions *ConfigOptions, globalJobsCfg *GlobalConfig, reporter 
 
 // Run the runner and block until Stop() is called
 func (r *Runner) Run(ctx context.Context, logger *zap.Logger) {
+	if err := r.globalJobsCfg.initProxylist(ctx); err != nil {
+		logger.Warn("failed to init proxylist", zap.Error(err))
+	}
+
 	ctx = context.WithValue(ctx, templates.ContextKey("goos"), runtime.GOOS)
 	ctx = context.WithValue(ctx, templates.ContextKey("goarch"), runtime.GOARCH)
 	ctx = context.WithValue(ctx, templates.ContextKey("version"), ota.Version)

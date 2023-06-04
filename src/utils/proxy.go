@@ -17,10 +17,11 @@ import (
 type ProxyFunc func(network, addr string) (net.Conn, error)
 
 type ProxyParams struct {
-	URLs      string
-	LocalAddr string
-	Interface string
-	Timeout   time.Duration
+	URLs         string
+	DefaultProto string
+	LocalAddr    string
+	Interface    string
+	Timeout      time.Duration
 }
 
 // this won't work for udp payloads but if people use proxies they might not want to have their ip exposed
@@ -31,13 +32,18 @@ func GetProxyFunc(ctx context.Context, params ProxyParams, protocol string) Prox
 		return proxy.FromEnvironmentUsing(direct).Dial
 	}
 
-	proxies := strings.Split(params.URLs, ",")
+	proxies := strings.Fields(strings.ReplaceAll(params.URLs, ",", " "))
 
 	// We need to dial new proxy on each call
 	return func(network, addr string) (net.Conn, error) {
-		u, err := url.Parse(proxies[rand.Intn(len(proxies))]) //nolint:gosec // Cryptographically secure random not required
+		selected := proxies[rand.Intn(len(proxies))] //nolint:gosec // Cryptographically secure random not required
+		u, err := url.Parse(selected)
 		if err != nil {
-			return nil, fmt.Errorf("error building proxy %v: %w", u.String(), err)
+			selected = params.DefaultProto + "://" + selected
+			u, err = url.Parse(selected)
+			if err != nil {
+				return nil, fmt.Errorf("error building proxy %v: %w", selected, err)
+			}
 		}
 
 		switch u.Scheme {
