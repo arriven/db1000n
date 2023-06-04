@@ -37,9 +37,11 @@ func GetProxyFunc(ctx context.Context, params ProxyParams, protocol string) Prox
 	// We need to dial new proxy on each call
 	return func(network, addr string) (net.Conn, error) {
 		selected := proxies[rand.Intn(len(proxies))] //nolint:gosec // Cryptographically secure random not required
+
 		u, err := url.Parse(selected)
 		if err != nil {
 			selected = params.DefaultProto + "://" + selected
+
 			u, err = url.Parse(selected)
 			if err != nil {
 				return nil, fmt.Errorf("error building proxy %v: %w", selected, err)

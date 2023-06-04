@@ -111,11 +111,14 @@ func (g *GlobalConfig) initProxylist(ctx context.Context) error {
 	if g.proxyURLs != "" || g.proxylist == "" {
 		return nil
 	}
+
 	proxylist, err := readProxylist(ctx, g.proxylist)
 	if err != nil {
 		return err
 	}
+
 	g.proxyURLs = string(proxylist)
+
 	return nil
 }
 
