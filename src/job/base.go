@@ -47,6 +47,7 @@ import (
 type GlobalConfig struct {
 	ClientID string
 	UserID   string
+	Source   string
 
 	proxyURLs           string
 	proxylist           string
@@ -69,6 +70,8 @@ func NewGlobalConfigWithFlags() *GlobalConfig {
 
 	flag.StringVar(&res.UserID, "user-id", utils.GetEnvStringDefault("USER_ID", ""),
 		"user id for optional metrics")
+	flag.StringVar(&res.Source, "source", utils.GetEnvStringDefault("SOURCE", "standalone"),
+		"run source info")
 	flag.StringVar(&res.proxyURLs, "proxy", utils.GetEnvStringDefault("SYSTEM_PROXY", ""),
 		"system proxy to set by default (can be a comma-separated list or a template)")
 	flag.StringVar(&res.proxylist, "proxylist", "", "file or url to read a list of proxies from")
