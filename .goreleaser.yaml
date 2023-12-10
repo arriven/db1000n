@@ -32,6 +32,10 @@ builds:
       - softfloat
     flags:
       - -tags=encrypted
+    goarm:
+      - "5"
+      - "6"
+      - "7"
     ldflags:
       - -s -w
       - -extldflags "-static"
